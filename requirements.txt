@@ -10,7 +10,7 @@ pytorch_lightning
 aiohttp
 accelerate
 --extra-index-url https://download.pytorch.org/whl/cu117
-torch
+torch==1.13.1+cu117
 torchvision
 xformers
 scipy
@@ -32,7 +32,6 @@ rich
 
 basicsr
 
-#triton==2.0.0
 openai-whisper
 sounddevice
 soundfile
