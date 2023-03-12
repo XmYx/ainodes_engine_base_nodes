@@ -189,7 +189,7 @@ class ImageOpNode(CalcNode):
     icon = "icons/in.png"
     op_code = OP_NODE_IMAGE_OPS
     op_title = "Image Operators"
-    content_label_objname = "diffusers_sampling_node"
+    content_label_objname = "image_op_node"
     category = "image"
 
 

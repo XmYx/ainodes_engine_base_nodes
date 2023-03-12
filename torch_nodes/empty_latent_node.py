@@ -70,7 +70,7 @@ class LatentNode(CalcNode):
     icon = "icons/in.png"
     op_code = OP_NODE_LATENT
     op_title = "Empty Latent Image"
-    content_label_objname = "diffusers_sampling_node"
+    content_label_objname = "empty_latent_node"
     category = "latent"
 
     def __init__(self, scene):
@@ -207,7 +207,7 @@ class LatentCompositeNode(CalcNode):
     icon = "icons/in.png"
     op_code = OP_NODE_LATENT_COMPOSITE
     op_title = "Composite Latent Images"
-    content_label_objname = "diffusers_sampling_node"
+    content_label_objname = "latent_comp_node"
     category = "latent"
 
     def __init__(self, scene):

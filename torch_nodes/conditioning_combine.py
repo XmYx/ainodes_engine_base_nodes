@@ -105,7 +105,7 @@ class ConditioningCombineNode(CalcNode):
     icon = "icons/in.png"
     op_code = OP_NODE_CONDITIONING_COMBINE
     op_title = "Combine Conditioning"
-    content_label_objname = "diffusers_sampling_node"
+    content_label_objname = "cond_combine_node"
     category = "conditioning"
 
 
@@ -178,7 +178,7 @@ class ConditioningAreaNode(CalcNode):
     icon = "icons/in.png"
     op_code = OP_NODE_CONDITIONING_SET_AREA
     op_title = "Set Conditioning Area"
-    content_label_objname = "diffusers_sampling_node"
+    content_label_objname = "cond_area_node"
     category = "conditioning"
 
     def __init__(self, scene):

@@ -56,7 +56,7 @@ class ConditioningNode(CalcNode):
     icon = "icons/in.png"
     op_code = OP_NODE_CONDITIONING
     op_title = "Conditioning"
-    content_label_objname = "diffusers_sampling_node"
+    content_label_objname = "cond_node"
     category = "conditioning"
 
 
