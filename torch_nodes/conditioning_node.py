@@ -9,7 +9,7 @@ from ainodes_backend.node_engine.utils import dumpException
 #gs = Singleton()
 
 from ainodes_backend import singleton as gs
-from ainodes_frontend.nodes.torch_nodes.torch_loader import TorchLoaderNode
+from ..torch_nodes.torch_loader import TorchLoaderNode
 
 OP_NODE_CONDITIONING = get_next_opcode()
 class ConditioningWidget(QDMNodeContentWidget):
