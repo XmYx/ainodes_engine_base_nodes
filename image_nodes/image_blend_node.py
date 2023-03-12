@@ -6,7 +6,7 @@ from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.qops.qimage_ops import pixmap_to_pil_image, pil_image_to_pixmap, \
+from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap, \
     pixmap_composite_method_list
 
 OP_NODE_IMAGE_BLEND = get_next_opcode()

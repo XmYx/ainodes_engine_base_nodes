@@ -1,18 +1,17 @@
 import os
 
-#from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
 from qtpy import QtWidgets
 
-#from ainodes_backend.model_loader import ModelLoader
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import load_controlnet
+from ..ainodes_backend import torch_gc, load_controlnet
+
 from ainodes_frontend import singleton as gs
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
 OP_NODE_CONTROLNET_LOADER = get_next_opcode()
+
 class ControlnetLoaderWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image

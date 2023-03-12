@@ -2,8 +2,8 @@ import torch
 
 #from comfy import model_management, samplers
 from ainodes_frontend import singleton as gs
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import samplers
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.torch_gc import torch_gc
+from . import samplers
+from .torch_gc import torch_gc
 
 
 def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False):

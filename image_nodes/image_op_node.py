@@ -4,16 +4,16 @@ from PIL import ImageOps, Image
 #from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
 from qtpy import QtWidgets, QtCore
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.cnet_preprocessors import hed
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.cnet_preprocessors.mlsd import MLSDdetector
+from ..ainodes_backend.cnet_preprocessors import hed
+from ..ainodes_backend.cnet_preprocessors.mlsd import MLSDdetector
+from ..ainodes_backend.cnet_preprocessors.midas import MidasDetector
+from ..ainodes_backend.cnet_preprocessors import OpenposeDetector
+from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.cnet_preprocessors.midas import MidasDetector
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.cnet_preprocessors import OpenposeDetector
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 
 OP_NODE_IMAGE_OPS = get_next_opcode()
 

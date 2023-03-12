@@ -1,8 +1,8 @@
 import psutil
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.k_diffusion import external as k_diffusion_external, \
+from .k_diffusion import external as k_diffusion_external, \
     sampling as k_diffusion_sampling
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.extra_samplers import uni_pc
+from .extra_samplers import uni_pc
 import torch
 import contextlib
 #from . import model_management

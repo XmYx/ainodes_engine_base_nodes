@@ -4,8 +4,7 @@ import threading
 import numpy as np
 from einops import rearrange
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import common_ksampler
-from ainodes_frontend import singleton as gs
+from ..ainodes_backend import common_ksampler, torch_gc
 
 import torch
 from PIL import Image
@@ -13,7 +12,7 @@ from PIL.ImageQt import ImageQt
 from qtpy import QtWidgets, QtCore, QtGui
 from qtpy.QtGui import QPixmap
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
+from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget

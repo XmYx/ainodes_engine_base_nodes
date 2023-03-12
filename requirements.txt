@@ -18,7 +18,6 @@ torchdiffeq
 torchsde
 opencv-contrib-python
 
-
 # Semseg Requirements:
 tqdm
 tabulate

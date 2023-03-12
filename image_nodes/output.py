@@ -3,13 +3,16 @@ import os
 
 from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
+from qtpy import QtWidgets, QtGui, QtCore
+
+from ..ainodes_backend import pixmap_to_pil_image
+
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
-from qtpy import QtWidgets, QtGui, QtCore
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image
+
 
 OP_NODE_IMG_PREVIEW = get_next_opcode()
 

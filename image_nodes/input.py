@@ -3,6 +3,7 @@ from PIL.ImageQt import ImageQt
 from qtpy import QtCore
 from qtpy.QtWidgets import QLabel, QFileDialog, QVBoxLayout
 from qtpy.QtGui import QPixmap
+
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget

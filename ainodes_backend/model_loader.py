@@ -11,8 +11,8 @@ import os
 
 from omegaconf import OmegaConf
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.lora_loader import ModelPatcher
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.torch_gc import torch_gc
+from .lora_loader import ModelPatcher
+from .torch_gc import torch_gc
 from ldm.util import instantiate_from_config
 from ainodes_frontend import singleton as gs
 

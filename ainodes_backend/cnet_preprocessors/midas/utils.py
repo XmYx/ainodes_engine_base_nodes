@@ -5,7 +5,6 @@ import numpy as np
 import cv2
 import torch
 
-
 def read_pfm(path):
     """Read pfm file.
 

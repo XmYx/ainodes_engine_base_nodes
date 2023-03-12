@@ -4,23 +4,21 @@ import threading
 import numpy as np
 from einops import rearrange
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.inpaint import run_inpaint
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.k_sampler import common_ksampler
+from ..ainodes_backend.inpaint import run_inpaint
+from ..ainodes_backend.k_sampler import common_ksampler
+from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap, torch_gc
 
 import torch
 from PIL import Image
 from PIL.ImageQt import ImageQt
-#from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
 from qtpy import QtWidgets, QtCore
 from qtpy.QtGui import QPixmap
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
+from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
-from ainodes_frontend import singleton as gs
 
 OP_NODE_INPAINT = get_next_opcode()
 class InpaintWidget(QDMNodeContentWidget):

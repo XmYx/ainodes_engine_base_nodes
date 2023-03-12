@@ -1,6 +1,6 @@
 import torch
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.controlnet_loader import load_torch_file
+from .controlnet_loader import load_torch_file
 from ainodes_frontend import singleton as gs
 
 LORA_CLIP_MAP = {

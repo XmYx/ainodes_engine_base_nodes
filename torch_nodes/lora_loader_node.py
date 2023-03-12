@@ -1,7 +1,8 @@
 import os
 from qtpy import QtWidgets
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.lora_loader import load_lora_for_models
+from ..ainodes_backend.lora_loader import load_lora_for_models
+
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget

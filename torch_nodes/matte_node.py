@@ -1,15 +1,15 @@
 import cv2
 import numpy as np
 from PIL import Image
-#from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
 from qtpy import QtWidgets, QtCore
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.matte.matte import MatteInference
+from ..ainodes_backend.matte.matte import MatteInference
+from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 from ainodes_frontend import singleton as gs
 
 OP_NODE_MATTE = get_next_opcode()

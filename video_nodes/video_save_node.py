@@ -6,13 +6,16 @@ import imageio
 import numpy as np
 from qtpy import QtWidgets
 from qtpy.QtWidgets import QPushButton, QVBoxLayout
+
+from ..ainodes_backend import pixmap_to_pil_image
+
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image
 
 OP_NODE_VIDEO_SAVE = get_next_opcode()
+
 class VideoOutputWidget(QDMNodeContentWidget):
     def initUI(self):
         self.video = GifRecorder()

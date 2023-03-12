@@ -2,7 +2,7 @@ import contextlib
 
 import torch
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import cldm
+from . import cldm
 from ainodes_frontend import singleton as gs
 
 

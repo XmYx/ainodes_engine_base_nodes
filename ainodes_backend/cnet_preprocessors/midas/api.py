@@ -10,8 +10,6 @@ from .midas.dpt_depth import DPTDepthModel
 from .midas.midas_net import MidasNet
 from .midas.midas_net_custom import MidasNet_small
 from .midas.transforms import Resize, NormalizeImage, PrepareForNet
-#from comfy_controlnet_preprocessors.util import annotator_ckpts_path
-
 
 ISL_PATHS = {
     "dpt_large": os.path.join("models/annotators", "dpt_large-midas-2f21e586.pt"),
