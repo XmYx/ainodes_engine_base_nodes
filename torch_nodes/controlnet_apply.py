@@ -20,11 +20,15 @@ class CNApplyWidget(QDMNodeContentWidget):
         self.strength.setSingleStep(0.01)
         self.strength.setValue(1.00)
 
+        self.control_net_selector = QtWidgets.QComboBox()
+        self.control_net_selector.addItems(["controlnet", "t2i"])
+
         self.button = QtWidgets.QPushButton("Run")
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(15,15,15,25)
         #layout.addWidget(self.text_label)
         layout.addWidget(self.strength)
+        layout.addWidget(self.control_net_selector)
         layout.addWidget(self.button)
         self.setLayout(layout)
 
@@ -104,7 +108,8 @@ class CNApplyNode(CalcNode):
     def onMarkedDirty(self):
         self.value = None
     def apply_control_net(self, progress_callback=None):
-        print(f"CONTROLNET APPLY NODE: Applying {gs.models['loaded_controlnet']}")
+        if self.content.control_net_selector.currentText() == 'controlnet':
+            print(f"CONTROLNET APPLY NODE: Applying {gs.models['loaded_controlnet']}")
         start_time = time.time()
         try:
             cond_node, index = self.getInput(1)
@@ -116,7 +121,7 @@ class CNApplyNode(CalcNode):
             image = latent_node.getOutput(index)
         except:
             image = None
-
+        cnet_string = self.content.control_net_selector.currentText()
         image = pixmap_to_pil_image(image)
         image = image.convert("RGB")
         image = np.array(image).astype(np.float32) / 255.0
@@ -125,7 +130,7 @@ class CNApplyNode(CalcNode):
         control_hint = image.movedim(-1,1)
         for t in conditioning:
             n = [t[0], t[1].copy()]
-            c_net = gs.models["controlnet"]
+            c_net = gs.models[cnet_string]
             c_net.set_cond_hint(control_hint, self.content.strength.value())
             if 'control' in t[1]:
                 c_net.set_previous_controlnet(t[1]['control'])
@@ -138,6 +143,7 @@ class CNApplyNode(CalcNode):
         conditioning = None
         control_hint = None
         torch_gc()
+        print("APPLIED")
         return c
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
