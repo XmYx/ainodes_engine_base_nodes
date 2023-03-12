@@ -1,18 +1,16 @@
 import time
-
 import numpy as np
-
 import torch
-#from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
 from qtpy import QtWidgets, QtCore
 
-from ainodes_backend.torch_gc import torch_gc
-from ainodes_frontend.nodes.base.node_config import register_node, get_next_opcode
-from ainodes_frontend.nodes.base.ai_node_base import CalcNode, CalcGraphicsNode
-from ainodes_backend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_backend.node_engine.utils import dumpException
-from ainodes_backend import singleton as gs
-from ainodes_backend.qops import pixmap_to_pil_image
+from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
+from ainodes_frontend import singleton as gs
+from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image
+
+from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
+from ainodes_frontend.node_engine.utils import dumpException
+from ainodes_frontend.base import register_node, get_next_opcode
+from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 
 OP_NODE_CN_APPLY = get_next_opcode()
 class CNApplyWidget(QDMNodeContentWidget):

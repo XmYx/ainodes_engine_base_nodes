@@ -4,13 +4,13 @@ from PIL import Image
 #from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
 from qtpy import QtWidgets, QtCore, QtGui
 
-from ainodes_backend.resizeRight import interp_methods, resizeright
-from ainodes_frontend.nodes.base.node_config import register_node, get_next_opcode
-from ainodes_frontend.nodes.base.ai_node_base import CalcNode, CalcGraphicsNode
-from ainodes_backend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_backend.node_engine.utils import dumpException
-from ainodes_backend import singleton as gs
-from ainodes_backend.qops import pixmap_to_pil_image
+from ainodes_frontend import singleton as gs
+from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.resizeRight import resizeright, interp_methods
+from ainodes_frontend.base import register_node, get_next_opcode
+from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
+from ainodes_frontend.node_engine.utils import dumpException
+from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image
 from einops import repeat
 
 OP_NODE_LATENT = get_next_opcode()
@@ -124,11 +124,11 @@ class LatentNode(CalcNode):
             self.value = self.generate_latent()
         if self.content.rescale_latent.isChecked() == True:
             self.value = resizeright.resize(self.value, scale_factors=None,
-                                         out_shape=[self.value.shape[0], self.value.shape[1], int(self.content.height.value() // 8),
+                                            out_shape=[self.value.shape[0], self.value.shape[1], int(self.content.height.value() // 8),
                                                     int(self.content.width.value() // 8)],
-                                         interp_method=interp_methods.lanczos3, support_sz=None,
-                                         antialiasing=True, by_convs=True, scale_tolerance=None,
-                                         max_numerator=10, pad_mode='reflect')
+                                            interp_method=interp_methods.lanczos3, support_sz=None,
+                                            antialiasing=True, by_convs=True, scale_tolerance=None,
+                                            max_numerator=10, pad_mode='reflect')
             print(f"Latent rescaled to: {self.value.shape}")
 
         self.setOutput(0, self.value)

@@ -1,14 +1,14 @@
 from qtpy import QtWidgets, QtCore
 
-from ainodes_frontend.nodes.base.node_config import register_node, get_next_opcode
-from ainodes_frontend.nodes.base.ai_node_base import CalcNode, CalcGraphicsNode
-from ainodes_backend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_backend.node_engine.utils import dumpException
+from ainodes_frontend.base import register_node, get_next_opcode
+from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
+from ainodes_frontend.node_engine.utils import dumpException
 
 #from singleton import Singleton
 #gs = Singleton()
 
-from ainodes_backend import singleton as gs
+from ainodes_frontend import singleton as gs
 from ..torch_nodes.torch_loader import TorchLoaderNode
 
 OP_NODE_CONDITIONING = get_next_opcode()
