@@ -107,6 +107,13 @@ class RIFENode(CalcNode):
         self.grNode.height = 220
     @QtCore.Slot(int)
     def evalImplementation(self, index=0):
+        exp = self.content.exp.value()
+        ratio = self.content.ratio.value()
+        if ratio == 0.0:
+            ratio = None
+        rthreshold = self.content.rthreshold.value()
+        rmaxcycles = self.content.rmaxcycles.value()
+
         if self.getInput(1) != None:
             node, index = self.getInput(1)
             pixmap1 = node.getOutput(index)
@@ -119,19 +126,13 @@ class RIFENode(CalcNode):
             pixmap2 = None
         if pixmap1 != None and pixmap2 != None:
 
-            exp = self.content.exp.value()
-            ratio = self.content.ratio.value()
-            if ratio == 0.0:
-                ratio = None
-            rthreshold = self.content.rthreshold.value()
-            rmaxcycles = self.content.rmaxcycles.value()
 
 
             image1 = pixmap_to_pil_image(pixmap1)
             image2 = pixmap_to_pil_image(pixmap2)
             np_image1 = np.array(image1)
             np_image2 = np.array(image2)
-            frames = gs.models["rife"].infer(image1=np_image1, image2=np_image2, exp=5, ratio=None, rthreshold=0.02, rmaxcycles=8)
+            frames = gs.models["rife"].infer(image1=np_image1, image2=np_image2, exp=exp, ratio=ratio, rthreshold=rthreshold, rmaxcycles=rmaxcycles)
             print(f"RIFE NODE:  {len(frames)}")
             for frame in frames:
                 image = Image.fromarray(frame)
@@ -149,8 +150,7 @@ class RIFENode(CalcNode):
                 self.rife_temp.append(np_image)
 
                 if len(self.rife_temp) == 2:
-                    frames = gs.models["rife"].infer(image1=self.rife_temp[0], image2=self.rife_temp[1], exp=6, ratio=None,
-                                                     rthreshold=0.01, rmaxcycles=24)
+                    frames = gs.models["rife"].infer(image1=self.rife_temp[0], image2=self.rife_temp[1], exp=exp, ratio=ratio, rthreshold=rthreshold, rmaxcycles=rmaxcycles)
                     print(f"RIFE NODE:  {len(frames)}")
                     for frame in frames:
                         image = Image.fromarray(frame)

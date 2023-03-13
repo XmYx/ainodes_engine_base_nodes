@@ -31,12 +31,12 @@ rich
 
 basicsr
 
-openai-whisper
-sounddevice
-soundfile
-pydub
+#openai-whisper
+#sounddevice
+#soundfile
+#pydub
 ffmpeg-python
-wavio
+#wavio
 pyqtgraph
 
 tf-nightly
