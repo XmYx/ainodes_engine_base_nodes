@@ -54,7 +54,7 @@ class ExecNode(CalcNode):
     op_code = OP_NODE_EXEC
     op_title = "Execute"
     content_label_objname = "exec_node"
-    category = "debug"
+    category = "exec"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[1])

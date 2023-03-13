@@ -36,7 +36,7 @@ class ExecSplitterNode(CalcNode):
     op_code = OP_NODE_EXEC_SPLITTER
     op_title = "Execute Splitter"
     content_label_objname = "exec_splitter_node"
-    category = "debug"
+    category = "exec"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[1,1])
@@ -53,9 +53,6 @@ class ExecSplitterNode(CalcNode):
         self.input_socket_name = ["EXEC"]
         self.output_socket_name = ["EXEC_1", "EXEC_2"]
 
-        #self.content.setMinimumHeight(400)
-        #self.content.setMinimumWidth(256)
-        #self.content.image.changeEvent.connect(self.onInputChanged)
 
     def evalImplementation(self, index=0):
         self.markDirty(True)

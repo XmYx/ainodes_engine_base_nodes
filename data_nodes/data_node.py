@@ -1,10 +1,10 @@
 #from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
 from qtpy import QtWidgets, QtCore
-
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
+
 
 OP_NODE_DATA = get_next_opcode()
 class DataWidget(QDMNodeContentWidget):
@@ -120,7 +120,7 @@ class DataNode(CalcNode):
     op_code = OP_NODE_DATA
     op_title = "Data"
     content_label_objname = "data_node"
-    category = "debug"
+    category = "data"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[6,1], outputs=[6,1])

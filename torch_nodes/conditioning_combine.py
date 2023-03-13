@@ -1,3 +1,4 @@
+import torch
 from qtpy import QtWidgets, QtCore
 
 from ainodes_frontend.base import register_node, get_next_opcode
@@ -148,9 +149,9 @@ class ConditioningCombineNode(CalcNode):
             conditioning2 = cond_2_node.getOutput(index)
             c = conditioning1 + conditioning2
             print("COND COMBINE NODE: Conditionings combined.")
-
             return c
-        except:
+        except Exception as e:
+            print(f"COND COMBINE NODE: \nFailed: {e}")
             return None
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):

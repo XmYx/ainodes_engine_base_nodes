@@ -10,6 +10,7 @@ import hashlib
 import os
 
 from omegaconf import OmegaConf
+from torch.nn.functional import silu
 
 from .lora_loader import ModelPatcher
 from .torch_gc import torch_gc
@@ -19,7 +20,7 @@ from ainodes_frontend import singleton as gs
 import torch
 from torch import nn
 import safetensors.torch
-
+import ldm.modules.diffusionmodules.model
 
 class ModelLoader(torch.nn.Module):
     """
@@ -31,6 +32,7 @@ class ModelLoader(torch.nn.Module):
         self.device = "cuda"
         print("PyTorch model loader")
 
+        ldm.modules.diffusionmodules.model.nonlinearity = silu
 
     def load_model(self, file=None, config=None, inpaint=False, verbose=False):
 
