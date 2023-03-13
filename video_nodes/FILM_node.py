@@ -11,9 +11,9 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap, \
     pixmap_composite_method_list
-from ..ainodes_backend.RIFE.infer_rife import RIFEModel
+from ..ainodes_backend.FILM.inference import FilmModel
 
-OP_NODE_IMAGE_BLEND = get_next_opcode()
+OP_NODE_FILM = get_next_opcode()
 
 from ainodes_frontend import singleton as gs
 
@@ -55,23 +55,23 @@ class BlendWidget(QDMNodeContentWidget):
         return res
 
 
-@register_node(OP_NODE_IMAGE_BLEND)
+@register_node(OP_NODE_FILM)
 class BlendNode(CalcNode):
     icon = "icons/in.png"
-    op_code = OP_NODE_IMAGE_BLEND
-    op_title = "RIFE"
-    content_label_objname = "rife_node"
-    category = "image"
+    op_code = OP_NODE_FILM
+    op_title = "FILM"
+    content_label_objname = "FILM_node"
+    category = "video"
 
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,5,1], outputs=[5,1])
         self.painter = QtGui.QPainter()
 
-        self.rife_temp = []
+        self.FILM_temp = []
 
-        if "rife" not in gs.models:
-            gs.models["rife"] = RIFEModel()
+        if "FILM" not in gs.models:
+            gs.models["FILM"] = FilmModel()
         #self.eval()
         #self.content.eval_signal.connect(self.eval)
 
@@ -100,8 +100,8 @@ class BlendNode(CalcNode):
             image2 = pixmap_to_pil_image(pixmap2)
             np_image1 = np.array(image1)
             np_image2 = np.array(image2)
-            frames = gs.models["rife"].infer(image1=np_image1, image2=np_image2, exp=5, ratio=None, rthreshold=0.02, rmaxcycles=8)
-            print(f"RIFE NODE:  {len(frames)}")
+            frames = gs.models["FILM"].inference(self, np_image1, np_image2, inter_frames=25)
+            print(f"FILM NODE:  {len(frames)}")
             for frame in frames:
                 image = Image.fromarray(frame)
                 pixmap = pil_image_to_pixmap(image)
@@ -115,12 +115,12 @@ class BlendNode(CalcNode):
             try:
                 image = pixmap_to_pil_image(pixmap1)
                 np_image = np.array(image)
-                self.rife_temp.append(np_image)
+                self.FILM_temp.append(np_image)
 
-                if len(self.rife_temp) == 2:
-                    frames = gs.models["rife"].infer(image1=self.rife_temp[0], image2=self.rife_temp[1], exp=6, ratio=None,
-                                                     rthreshold=0.01, rmaxcycles=24)
-                    print(f"RIFE NODE:  {len(frames)}")
+                if len(self.FILM_temp) == 2:
+                    frames = gs.models["FILM"].inference(self, self.FILM_temp[0], self.FILM_temp[1], inter_frames=25)
+
+                    print(f"FILM NODE:  {len(frames)}")
                     for frame in frames:
                         image = Image.fromarray(frame)
                         pixmap = pil_image_to_pixmap(image)
@@ -129,10 +129,10 @@ class BlendNode(CalcNode):
                             self.executeChild(output_index=1)
                         time.sleep(0.05)
 
-                    self.rife_temp = [self.rife_temp[1]]
+                    self.FILM_temp = [self.FILM_temp[1]]
 
                 #self.setOutput(0, pixmap2)
-                print(f"RIFE NODE: Using only First input")
+                print(f"FILM NODE: Using only First input")
             except:
                 if len(self.getOutputs(1)) > 0:
                     self.executeChild(output_index=1)
@@ -141,7 +141,7 @@ class BlendNode(CalcNode):
         elif pixmap1 != None:
             try:
                 self.setOutput(0, pixmap1)
-                print(f"RIFE NODE: Using only Second input - Passthrough")
+                print(f"FILM NODE: Using only Second input - Passthrough")
                 if len(self.getOutputs(1)) > 0:
                     self.executeChild(output_index=1)
 

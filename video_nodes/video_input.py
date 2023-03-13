@@ -95,7 +95,7 @@ class VideoInputNode(CalcNode):
     op_code = OP_NODE_VIDEO_INPUT
     op_title = "Video Input"
     content_label_objname = "video_input_node"
-    category = "debug"
+    category = "video"
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC", "IMAGE"]
 

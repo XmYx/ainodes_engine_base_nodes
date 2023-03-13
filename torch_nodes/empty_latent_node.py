@@ -71,7 +71,7 @@ class LatentNode(CalcNode):
     op_code = OP_NODE_LATENT
     op_title = "Empty Latent Image"
     content_label_objname = "empty_latent_node"
-    category = "latent"
+    category = "sampling"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[2,5,1], outputs=[2,1])

@@ -57,7 +57,7 @@ class ConditioningNode(CalcNode):
     op_code = OP_NODE_CONDITIONING
     op_title = "Conditioning"
     content_label_objname = "cond_node"
-    category = "conditioning"
+    category = "sampling"
 
 
     def __init__(self, scene):

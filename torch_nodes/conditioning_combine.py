@@ -107,7 +107,7 @@ class ConditioningCombineNode(CalcNode):
     op_code = OP_NODE_CONDITIONING_COMBINE
     op_title = "Combine Conditioning"
     content_label_objname = "cond_combine_node"
-    category = "conditioning"
+    category = "sampling"
 
 
     def __init__(self, scene):
