@@ -14,6 +14,7 @@ from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
+from ..ainodes_backend.deforum.deforum_anim_warp import anim_frame_warp_3d
 
 OP_NODE_IMAGE_OPS = get_next_opcode()
 
@@ -34,7 +35,8 @@ image_ops_methods = [
     "mirror",
     "posterize",
     "solarize",
-    "flip"
+    "flip",
+    "depth_transform"
 ]
 image_ops_valid_methods = [
     "autocontrast",
@@ -296,7 +298,33 @@ class ImageOpNode(CalcNode):
             image = Image.fromarray(image)
             detector.model.cpu()
             detector.model = None
+            del detector
+        elif method == 'depth_transform':
+            image = np.array(image)
+            detector = MidasDetector()
+            detector.load_midas()
+            a = self.content.midas_a.value()
+            bg_threshold = self.content.midas_bg.value()
 
+            tensor = detector.predict(image)
+
+
+            device = "cuda"
+            translation_x = 0
+            translation_y = 0
+            translation_z = 5
+            rotation_3d_x = 0
+            rotation_3d_y = 1
+            rotation_3d_z = 0
+
+            np_image = anim_frame_warp_3d(device, image, tensor, translation_x, translation_y, translation_z, rotation_3d_x, rotation_3d_y, rotation_3d_z)
+
+
+            #depth_map_np, normal_map_np = detector(image, a, bg_threshold)
+            #image = HWC3(depth_map_np)
+            image = Image.fromarray(np_image)
+            detector.model.cpu()
+            detector.model = None
             del detector
         elif method == 'normal':
             image = np.array(image)

@@ -40,3 +40,6 @@ ffmpeg-python
 pyqtgraph
 
 tf-nightly
+
+#Deforum
+pandas

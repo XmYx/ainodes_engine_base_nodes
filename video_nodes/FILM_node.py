@@ -102,7 +102,7 @@ class FILMNode(CalcNode):
             np_image2 = np.array(image2)
             frames = gs.models["FILM"].inference(np_image1, np_image2, inter_frames=25)
             print(f"FILM NODE:  {len(frames)}")
-            for frame in frames:
+            for frame in range(len(frames) - 2):
                 image = Image.fromarray(frame)
                 pixmap = pil_image_to_pixmap(image)
                 self.setOutput(0, pixmap)

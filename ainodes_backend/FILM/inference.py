@@ -70,6 +70,6 @@ class FilmModel():
         return_frames = []
         for frame in frames:
             return_frames.append(frame)
-        for frame in frames[1:][::-1]:
-            return_frames.append(frame)
+        #for frame in frames[1:][::-1]:
+        #    return_frames.append(frame)
         return frames

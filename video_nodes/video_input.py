@@ -1,5 +1,6 @@
 import cv2
 from PIL import Image
+from qtpy import QtWidgets
 from qtpy.QtWidgets import QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFileDialog
 from qtpy.QtCore import Qt
 
@@ -20,6 +21,11 @@ class VideoInputWidget(QDMNodeContentWidget):
         self.label = QLabel()
         self.label.setAlignment(Qt.AlignCenter)
 
+        self.skip_frames = QtWidgets.QSpinBox()
+        self.skip_frames.setMinimum(1)
+        self.skip_frames.setMaximum(4096)
+        self.skip_frames.setValue(1)
+
         self.load_button = QPushButton("Load Video", self)
         self.load_button.clicked.connect(self.loadVideo)
 
@@ -38,6 +44,7 @@ class VideoInputWidget(QDMNodeContentWidget):
         layout.addWidget(self.load_button)
 
         buttons_layout = QHBoxLayout()
+        buttons_layout.addWidget(self.skip_frames)
         buttons_layout.addWidget(self.play_button)
         #buttons_layout.addWidget(self.pause_button)
         buttons_layout.addWidget(self.stop_button)
@@ -116,7 +123,8 @@ class VideoInputNode(CalcNode):
         self.content.stop_button.clicked.connect(self.content.video.reset)
         self.markInvalid(True)
     def evalImplementation(self, index=0):
-        pixmap = self.content.video.get_frame()
+        skip = self.content.skip_frames.value()
+        pixmap = self.content.video.get_frame(skip=skip)
         if pixmap != None:
             self.setOutput(0, pixmap)
             self.markDirty(False)
@@ -160,12 +168,18 @@ class VideoPlayer:
     def __del__(self):
         self.video_capture.release()
 
-    def get_frame(self):
+    def get_frame(self, skip=1):
+        # Skip frames based on the specified interval
+        for _ in range(skip - 1):
+            self.video_capture.grab()
+
+        # Read the next frame and convert it to a pixmap
         ret, frame = self.video_capture.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
         image = Image.fromarray(frame)
         pixmap = pil_image_to_pixmap(image)
+
+        # Return the pixmap if the read was successful
         if ret:
             return pixmap
         else:
