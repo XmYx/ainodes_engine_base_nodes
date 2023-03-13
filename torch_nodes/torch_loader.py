@@ -83,6 +83,8 @@ class TorchLoaderNode(CalcNode):
         self.grNode = CalcGraphicsNode(self)
         self.grNode.width = 340
         self.grNode.height = 160
+        self.content.setMinimumHeight(140)
+        self.content.setMinimumWidth(340    )
 
     def evalImplementation(self, index=0):
         #print(gs.models)

@@ -13,41 +13,66 @@ from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap, \
     pixmap_composite_method_list
 from ..ainodes_backend.RIFE.infer_rife import RIFEModel
 
-OP_NODE_IMAGE_BLEND = get_next_opcode()
+OP_NODE_RIFE = get_next_opcode()
 
 from ainodes_frontend import singleton as gs
 
-class BlendWidget(QDMNodeContentWidget):
+class RIFEWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image
         self.text_label = QtWidgets.QLabel("Image Operator:")
 
-        self.blend = QtWidgets.QDoubleSpinBox()
-        self.blend.setMinimum(0.00)
-        self.blend.setSingleStep(0.01)
-        self.blend.setMaximum(1.00)
-        self.blend.setValue(0.00)
+        self.exp = QtWidgets.QSpinBox()
+        self.exp.setMinimum(1)
+        self.exp.setSingleStep(1)
+        self.exp.setMaximum(100)
+        self.exp.setValue(5)
 
-        self.composite_method = QtWidgets.QComboBox()
-        self.composite_method.addItems(pixmap_composite_method_list)
+        self.ratio = QtWidgets.QDoubleSpinBox()
+        self.ratio.setMinimum(0.00)
+        self.ratio.setSingleStep(0.01)
+        self.ratio.setMaximum(1.00)
+        self.ratio.setValue(0.00)
+
+        self.rthreshold = QtWidgets.QDoubleSpinBox()
+        self.rthreshold.setMinimum(0.00)
+        self.rthreshold.setSingleStep(0.01)
+        self.rthreshold.setMaximum(100.00)
+        self.rthreshold.setValue(0.02)
+
+        self.rmaxcycles = QtWidgets.QSpinBox()
+        self.rmaxcycles.setMinimum(1)
+        self.rmaxcycles.setSingleStep(1)
+        self.rmaxcycles.setMaximum(4096)
+        self.rmaxcycles.setValue(8)
+
+
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0,0,0,0)
-        layout.addWidget(self.composite_method)
-        layout.addWidget(self.blend)
+        layout.addWidget(self.exp)
+        layout.addWidget(self.ratio)
+        layout.addWidget(self.rthreshold)
+        layout.addWidget(self.rmaxcycles)
 
         self.setLayout(layout)
 
 
     def serialize(self):
         res = super().serialize()
-        res['blend'] = self.blend.value()
+        res['exp'] = self.exp.value()
+        res['ratio'] = self.ratio.value()
+        res['rthreshold'] = self.rthreshold.value()
+        res['rmaxcycles'] = self.rmaxcycles.value()
         return res
 
     def deserialize(self, data, hashmap={}):
         res = super().deserialize(data, hashmap)
         try:
-            self.blend.setValue(int(data['h']))
+            self.exp.setValue(int(data['exp']))
+            self.ratio.setValue(float(data['ratio']))
+            self.rthreshold.setValue(float(data['rthreshold']))
+            self.rmaxcycles.setValue(int(data['rmaxcycles']))
             #self.image.setPixmap(value)
             return True & res
         except Exception as e:
@@ -55,30 +80,28 @@ class BlendWidget(QDMNodeContentWidget):
         return res
 
 
-@register_node(OP_NODE_IMAGE_BLEND)
-class BlendNode(CalcNode):
+@register_node(OP_NODE_RIFE)
+class RIFENode(CalcNode):
     icon = "icons/in.png"
-    op_code = OP_NODE_IMAGE_BLEND
+    op_code = OP_NODE_RIFE
     op_title = "RIFE"
     content_label_objname = "rife_node"
     category = "video"
 
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[5,5,1], outputs=[5,1])
+        super().__init__(scene, inputs=[5,5,1], outputs=[5,1,1])
         self.painter = QtGui.QPainter()
 
         self.rife_temp = []
 
         if "rife" not in gs.models:
             gs.models["rife"] = RIFEModel()
-        #self.eval()
-        #self.content.eval_signal.connect(self.eval)
 
     def initInnerClasses(self):
-        self.content = BlendWidget(self)
+        self.content = RIFEWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.output_socket_name = ["EXEC", "IMAGE"]
+        self.output_socket_name = ["EXEC", "EXEC/F", "IMAGE"]
         self.input_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
 
         self.grNode.height = 220
@@ -95,6 +118,14 @@ class BlendNode(CalcNode):
         else:
             pixmap2 = None
         if pixmap1 != None and pixmap2 != None:
+
+            exp = self.content.exp.value()
+            ratio = self.content.ratio.value()
+            if ratio == 0.0:
+                ratio = None
+            rthreshold = self.content.rthreshold.value()
+            rmaxcycles = self.content.rmaxcycles.value()
+
 
             image1 = pixmap_to_pil_image(pixmap1)
             image2 = pixmap_to_pil_image(pixmap2)
@@ -134,22 +165,23 @@ class BlendNode(CalcNode):
                 #self.setOutput(0, pixmap2)
                 print(f"RIFE NODE: Using only First input")
             except:
-                if len(self.getOutputs(1)) > 0:
-                    self.executeChild(output_index=1)
+                if len(self.getOutputs(2)) > 0:
+                    self.executeChild(output_index=2)
 
                 pass
         elif pixmap1 != None:
             try:
                 self.setOutput(0, pixmap1)
                 print(f"RIFE NODE: Using only Second input - Passthrough")
-                if len(self.getOutputs(1)) > 0:
-                    self.executeChild(output_index=1)
+                if len(self.getOutputs(2)) > 0:
+                    self.executeChild(output_index=2)
 
             except:
-                if len(self.getOutputs(1)) > 0:
-                    self.executeChild(output_index=1)
 
                 pass
+        if len(self.getOutputs(2)) > 0:
+            self.executeChild(output_index=2)
+
         return None
     def onMarkedDirty(self):
         self.value = None

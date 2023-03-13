@@ -1,12 +1,9 @@
 import bisect
-import os
 from tqdm import tqdm
 import torch
 import numpy as np
-import cv2
 
 from .film_util import load_image
-
 
 class FilmModel():
 
@@ -16,8 +13,13 @@ class FilmModel():
         self.model_path = "models/other/film_net_fp16.pt"
         self.model = torch.jit.load(self.model_path, map_location='cpu')
         self.model.eval()
-        self.model = self.model.half()
-
+        self.model = self.model.half().cuda()
+        self.apply_torch_options()
+    def apply_torch_options(self):
+        torch.set_grad_enabled(False)
+        if torch.cuda.is_available():
+            torch.backends.cudnn.enabled = True
+            torch.backends.cudnn.benchmark = True
 
     def inference(self, img1, img2, inter_frames):
 
@@ -62,43 +64,12 @@ class FilmModel():
             results.insert(insert_position, prediction.clamp(0, 1).cpu().float())
             del remains[step]
 
-        #video_folder = os.path.split(save_path)[0]
-        #os.makedirs(video_folder, exist_ok=True)
-
         y1, x1, y2, x2 = crop_region_1
         frames = [(tensor[0] * 255).byte().flip(0).permute(1, 2, 0).numpy()[y1:y2, x1:x2].copy() for tensor in results]
 
-        w, h = frames[0].shape[1::-1]
-        #fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
-        #writer = cv2.VideoWriter(save_path, fourcc, fps, (w, h))
         return_frames = []
         for frame in frames:
             return_frames.append(frame)
-            #writer.write(frame)
-
         for frame in frames[1:][::-1]:
             return_frames.append(frame)
-            #writer.write(frame)
-
-        #writer.release()
         return frames
-
-
-if __name__ == '__main__':
-    import argparse
-
-    parser = argparse.ArgumentParser(description='Test frame interpolator model')
-
-    parser.add_argument('model_path', type=str, help='Path to the TorchScript model')
-    parser.add_argument('img1', type=str, help='Path to the first image')
-    parser.add_argument('img2', type=str, help='Path to the second image')
-
-    parser.add_argument('--save_path', type=str, default='img1 folder', help='Path to save the interpolated frames')
-    parser.add_argument('--gpu', action='store_true', help='Use GPU')
-    parser.add_argument('--fp16', action='store_true', help='Use FP16')
-    parser.add_argument('--frames', type=int, default=18, help='Number of frames to interpolate')
-    parser.add_argument('--fps', type=int, default=10, help='FPS of the output video')
-
-    args = parser.parse_args()
-
-    inference(args.model_path, args.img1, args.img2, args.save_path, args.gpu, args.frames, args.fps, args.fp16)

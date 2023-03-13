@@ -1,5 +1,6 @@
 import datetime
 import os
+import subprocess
 
 import cv2
 import imageio
@@ -20,7 +21,8 @@ class VideoOutputWidget(QDMNodeContentWidget):
     def initUI(self):
         self.video = GifRecorder()
         self.current_frame = 0
-
+        self.type_select = QtWidgets.QComboBox()
+        self.type_select.addItems(["GIF", "mp4_ffmpeg", "mp4_fourcc"])
         self.save_button = QPushButton("Save buffer to GIF", self)
         #self.new_button = QPushButton("New Video", self)
         #self.save_button.clicked.connect(self.loadVideo)
@@ -45,7 +47,7 @@ class VideoOutputWidget(QDMNodeContentWidget):
 
 
         layout = QVBoxLayout()
-        #layout.addWidget(self.new_button)
+        layout.addWidget(self.type_select)
         layout.addWidget(self.save_button)
         #layout.addWidget(self.width_value)
         #layout.addWidget(self.height_value)
@@ -136,11 +138,10 @@ class VideoOutputNode(CalcNode):
     def start_new_video(self):
         self.markDirty(True)
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        os.makedirs("output/gifs", exist_ok=True)
-
         self.filename = f"output/gifs/{timestamp}.gif"
         fps = self.content.fps.value()
-        self.content.video.close(self.filename, fps)
+        type = self.content.type_select.currentText()
+        self.content.video.close(timestamp, fps, type)
         print(f"VIDEO SAVE NODE: Done. The frame buffer is now empty.")
 
 class VideoRecorder:
@@ -149,7 +150,7 @@ class VideoRecorder:
         pass
     def start_recording(self, filename, fps, width, height):
         #fourcc = cv2.VideoWriter_fourcc(*'GIF')
-        self.video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'GIF'), fps, (width, height))
+        self.video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
         #self.video_writer = cv2.VideoWriter(filename, fourcc, fps, (width, height))
 
     def add_frame(self, frame):
@@ -176,9 +177,35 @@ class GifRecorder:
         self.frames.append(frame)
         print(f"VIDEO SAVE NODE: Image added to frame buffer, current frames: {len(self.frames)}")
 
-    def close(self, filename, fps):
-        self.filename = filename
-        self.fps = fps
-        print(f"VIDEO SAVE NODE: Video saving {len(self.frames)} frames at {self.fps}fps as {self.filename}")
-        imageio.mimsave(self.filename, self.frames, fps=self.fps)
+    def close(self, timestamp, fps, type='GIF'):
+        if type == 'GIF':
+            os.makedirs("output/gifs", exist_ok=True)
+            filename = f"output/gifs/{timestamp}.gif"
+            self.filename = filename
+            self.fps = fps
+            print(f"VIDEO SAVE NODE: Video saving {len(self.frames)} frames at {self.fps}fps as {self.filename}")
+            imageio.mimsave(self.filename, self.frames, fps=self.fps)
+        elif type == 'mp4_ffmpeg':
+            os.makedirs("output/mp4s", exist_ok=True)
+            filename = f"output/mp4s/{timestamp}.mp4"
+            width = self.frames[0].shape[0]
+            height = self.frames[0].shape[1]
+            cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
+                   'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-an',
+                   filename]
+            video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+            for frame in self.frames:
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                video_writer.stdin.write(frame.tobytes())
+            video_writer.communicate()
+        elif type == 'mp4_fourcc':
+            os.makedirs("output/mp4s", exist_ok=True)
+            filename = f"output/mp4s/{timestamp}.mp4"
+            width = self.frames[0].shape[0]
+            height = self.frames[0].shape[1]
+            video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+            for frame in self.frames:
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                video_writer.write(frame)
+            video_writer.release()
         self.frames = []
