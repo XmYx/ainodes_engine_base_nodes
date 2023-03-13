@@ -38,3 +38,5 @@ pydub
 ffmpeg-python
 wavio
 pyqtgraph
+
+tf-nightly

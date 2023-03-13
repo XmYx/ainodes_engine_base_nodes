@@ -1,5 +1,7 @@
 import datetime
 import os
+import threading
+import time
 
 from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
@@ -79,7 +81,12 @@ class ImagePreviewWidget(CalcNode):
         #self.content.mark_dirty_signal.connect(self.markDirty)
         #self.content.image.changeEvent.connect(self.onInputChanged)
 
+
     def evalImplementation(self, index=0):
+        thread0 = threading.Thread(target=self.evalImplementation_thread)
+        thread0.start()
+
+    def evalImplementation_thread(self, index=0):
         #self.markDirty(True)
         if self.getInput(0) is not None:
             input_node, other_index = self.getInput(0)
@@ -96,6 +103,7 @@ class ImagePreviewWidget(CalcNode):
                 return
             #print("Preview Node Value", val)
             self.content.image.setPixmap(val)
+
             self.setOutput(0, val)
             self.markInvalid(False)
             self.markDirty(False)
