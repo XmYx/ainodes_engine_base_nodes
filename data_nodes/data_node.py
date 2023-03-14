@@ -29,13 +29,13 @@ class DataWidget(QDMNodeContentWidget):
         self.data_types = QtWidgets.QComboBox()
         self.update_data_types()
 
-        self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.setContentsMargins(15,15,15,25)
-        self.layout.addWidget(self.add_button)
-        self.layout.addWidget(self.print_button)
-        self.layout.addWidget(self.node_types)
-        self.layout.addWidget(self.data_types)
-        self.setLayout(self.layout)
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(15,15,15,25)
+        layout.addWidget(self.add_button)
+        layout.addWidget(self.print_button)
+        layout.addWidget(self.node_types)
+        layout.addWidget(self.data_types)
+        self.setLayout(layout)
         self.add_button.clicked.connect(self.add_widget)
 
     def add_widget(self):
@@ -53,47 +53,52 @@ class DataWidget(QDMNodeContentWidget):
         elif data_type_class == "text":
             widget = QtWidgets.QLineEdit()
         if widget is not None:
+            label = QtWidgets.QLabel(data_type)
             widget.setAccessibleName(name)
+            widget.setObjectName(name)
             # Check if a widget with the same AccessibleName already exists
-            for i in range(self.layout.count()):
-                item = self.layout.itemAt(i)
+            for i in range(self.layout().count()):
+                item = self.layout().itemAt(i)
                 if isinstance(item, QtWidgets.QLayout):
                     for j in range(item.count()):
                         existing_widget = item.itemAt(j).widget()
                         if existing_widget and existing_widget.accessibleName() == name:
                             return
             delete_button = QtWidgets.QPushButton("Delete")
-            delete_button.clicked.connect(lambda: self.layout.removeWidget(delete_button))
-            delete_button.clicked.connect(lambda: self.layout.removeWidget(widget))
+            delete_button.clicked.connect(lambda: self.layout().removeWidget(delete_button))
+            delete_button.clicked.connect(lambda: self.layout().removeWidget(widget))
+            delete_button.clicked.connect(lambda: self.layout().removeWidget(label))
             delete_button.clicked.connect(widget.deleteLater)
             delete_button.clicked.connect(delete_button.deleteLater)
+            delete_button.clicked.connect(label.deleteLater)
             hbox = QtWidgets.QHBoxLayout()
+            hbox.addWidget(label)
             hbox.addWidget(widget)
             hbox.addWidget(delete_button)
-            self.layout.addLayout(hbox)
+            self.layout().addLayout(hbox)
         self.node.resize()
     def get_widget_values(self):
         widget_values = {}
-        for i in range(self.layout.count()):
-            item = self.layout.itemAt(i)
-            if isinstance(item, QtWidgets.QLayout):
+        for i in range(self.layout().count()):
+            item = self.layout().itemAt(i)
+            #print(item)
+            if isinstance(item, QtWidgets.QHBoxLayout):
                 for j in range(item.count()):
                     sub_item = item.itemAt(j)
+                    #print(sub_item)
                     if isinstance(sub_item, QtWidgets.QWidgetItem):
                         widget = sub_item.widget()
-                        try:
-                            accessible_name = widget.accessibleName()
-                            print(accessible_name)
-                            if accessible_name:
-                                node_type, data_type = accessible_name.split("_")
-                                if isinstance(widget, QtWidgets.QLineEdit):
-                                    widget_values[(node_type, data_type)] = widget.text()
-                                elif isinstance(widget, QtWidgets.QSpinBox):
-                                    widget_values[(node_type, data_type)] = widget.value()
-                                elif isinstance(widget, QtWidgets.QDoubleSpinBox):
-                                    widget_values[(node_type, data_type)] = widget.value()
-                        except:
-                            pass
+                        accessible_name = widget.accessibleName()
+                        #print(accessible_name)
+                        if accessible_name:
+                            node_type, data_type = accessible_name.split("_", 1)
+                            if isinstance(widget, QtWidgets.QLineEdit):
+                                widget_values[(node_type, data_type)] = widget.text()
+                            elif isinstance(widget, QtWidgets.QSpinBox):
+                                widget_values[(node_type, data_type)] = widget.value()
+                            elif isinstance(widget, QtWidgets.QDoubleSpinBox):
+                                widget_values[(node_type, data_type)] = widget.value()
+        #print(widget_values)
         return widget_values
 
     def update_data_types(self):
@@ -134,8 +139,8 @@ class DataNode(CalcNode):
     @QtCore.Slot()
     def resize(self):
         y = 300
-        for i in range(self.content.layout.count()):
-            item = self.content.layout.itemAt(i)
+        for i in range(self.content.layout().count()):
+            item = self.content.layout().itemAt(i)
             if isinstance(item, QtWidgets.QLayout):
                 for j in range(item.count()):
                     y += 15
@@ -162,7 +167,7 @@ class DataNode(CalcNode):
             data = None
 
         values = self.content.get_widget_values()
-        print("WIDGET DATA:", values)
+        #print("WIDGET DATA:", values)
         #for key, value in values.items():
        #     print("DICT:", key[0], key[1], value)
 
@@ -171,7 +176,7 @@ class DataNode(CalcNode):
         else:
             data = values
 
-        print("DATA:", data)
+        #print("DATA:", data)
         self.setOutput(0, data)
         if len(self.getOutputs(1)) > 0:
             self.executeChild(1)

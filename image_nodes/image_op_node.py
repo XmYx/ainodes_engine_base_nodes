@@ -248,36 +248,35 @@ class ImageOpNode(CalcNode):
         elif method == 'depth_transform':
             image = np.array(image)
             detector = MidasDetector()
+            detector.model.cpu()
+            detector.model = None
+
             detector.load_midas()
             a = self.content.midas_a.value()
             bg_threshold = self.content.midas_bg.value()
-
+            device = "cuda"
+            args = {
+                    "translation_x" : 0,
+                    "translation_y" : 0,
+                    "translation_z" : 0,
+                    "rotation_3d_x" : 0,
+                    "rotation_3d_y" : 0,
+                    "rotation_3d_z" : 0,
+                    }
             tensor = detector.predict(image)
             if self.getInput(1) != None:
                 node, index = self.getInput(1)
-
-                # print("RETURN", node, index)
-
                 data = node.getOutput(index)
-                print(data)
-
-            device = "cuda"
-            translation_x = 0
-            translation_y = 0
-            translation_z = 5
-            rotation_3d_x = 0
-            rotation_3d_y = 1
-            rotation_3d_z = 0
-
-            np_image = anim_frame_warp_3d(device, image, tensor, translation_x, translation_y, translation_z, rotation_3d_x, rotation_3d_y, rotation_3d_z)
-
-
-            #depth_map_np, normal_map_np = detector(image, a, bg_threshold)
-            #image = HWC3(depth_map_np)
+                for key, value in data.items():
+                    if key[0] == 'Warp3D':
+                        print(key, value)
+                        args[key[1]] = value
+            np_image = anim_frame_warp_3d(device, image, tensor, args["translation_x"], args["translation_y"], args["translation_z"], args["rotation_3d_x"], args["rotation_3d_y"], args["rotation_3d_z"])
             image = Image.fromarray(np_image)
-            detector.model.cpu()
-            detector.model = None
+            detector.deforum_midas.cpu()
+            detector.deforum_midas = None
             del detector
+
         elif method == 'normal':
             image = np.array(image)
             detector = MidasDetector()
