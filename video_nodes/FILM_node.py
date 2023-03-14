@@ -39,21 +39,6 @@ class FILMWidget(QDMNodeContentWidget):
         self.setLayout(layout)
 
 
-    def serialize(self):
-        res = super().serialize()
-        res['film'] = self.film.value()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            self.film.setValue(int(data['film']))
-            #self.image.setPixmap(value)
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
-
 
 @register_node(OP_NODE_FILM)
 class FILMNode(CalcNode):

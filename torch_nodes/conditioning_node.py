@@ -12,43 +12,18 @@ from ainodes_frontend import singleton as gs
 OP_NODE_CONDITIONING = get_next_opcode()
 class ConditioningWidget(QDMNodeContentWidget):
     def initUI(self):
-        # Create a label to display the image
-        #self.text_label = QtWidgets.QLabel("Diffusers:")
         self.prompt = QtWidgets.QTextEdit()
         self.steps = QtWidgets.QSpinBox()
         self.steps.setMinimum(1)
         self.steps.setMaximum(1000)
         self.steps.setValue(25)
         self.button = QtWidgets.QPushButton("Get Conditioning")
-        #self.button.clicked.connect(self.parent.parent.eval)
-        #self.infer_button = QtWidgets.QPushButton("")
-        #self.infer_button.clicked.connect(self.parent.parent.emit_run_signal)
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(15,15,15,20)
         layout.setSpacing(10)
-        #layout.addWidget(self.text_label)
         layout.addWidget(self.prompt)
-        #layout.addWidget(self.steps)
         layout.addWidget(self.button)
-        #layout.addWidget(self.infer_button)
         self.setLayout(layout)
-
-
-    def serialize(self):
-        res = super().serialize()
-        res['prompt'] = self.prompt.toPlainText()
-        #res = self.serializeWidgets(res)
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            #self.deserializeWidgets(data)
-            self.prompt.setText(data['prompt'])
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 
 
 @register_node(OP_NODE_CONDITIONING)

@@ -11,9 +11,10 @@ class DataWidget(QDMNodeContentWidget):
     resize_signal = QtCore.Signal()
     def initUI(self):
 
-        self.node_types_list = ["KSampler", "Debug"]
+        self.node_types_list = ["KSampler", "Warp3D", "Debug"]
         self.node_data_types = {
             "KSampler":[("steps", "int"), ("scale", "float"), ("seed", "text")],
+            "Warp3D":[("translation_x", "int"),("translation_y", "int"),("translation_z", "int"),("rotation_3d_x", "int"),("rotation_3d_y", "int"),("rotation_3d_z", "int")],
             "Debug":[("debug", "text")]
         }
 
@@ -71,7 +72,7 @@ class DataWidget(QDMNodeContentWidget):
             hbox.addWidget(delete_button)
             self.layout.addLayout(hbox)
         self.node.resize()
-    """def get_widget_values(self):
+    def get_widget_values(self):
         widget_values = {}
         for i in range(self.layout.count()):
             item = self.layout.itemAt(i)
@@ -93,7 +94,7 @@ class DataWidget(QDMNodeContentWidget):
                                     widget_values[(node_type, data_type)] = widget.value()
                         except:
                             pass
-        return widget_values"""
+        return widget_values
 
     def update_data_types(self):
         node_type = self.node_types.currentText()
@@ -101,17 +102,6 @@ class DataWidget(QDMNodeContentWidget):
         for data_type, _ in self.node_data_types[node_type]:
             self.data_types.addItem(data_type)
 
-    def serialize(self):
-        res = super().serialize()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 
 
 @register_node(OP_NODE_DATA)
@@ -174,7 +164,7 @@ class DataNode(CalcNode):
         values = self.content.get_widget_values()
         print("WIDGET DATA:", values)
         #for key, value in values.items():
-        #    print("DICT:", key[0], key[1], value)
+       #     print("DICT:", key[0], key[1], value)
 
         if data != None:
             data = merge_dicts(data, values)

@@ -33,19 +33,6 @@ class CNApplyWidget(QDMNodeContentWidget):
         self.setLayout(layout)
 
 
-    def serialize(self):
-        res = super().serialize()
-        res['strength'] = self.strength.value()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            self.strength.setValue(data['strength'])
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 
 
 @register_node(OP_NODE_CN_APPLY)

@@ -47,22 +47,6 @@ class LatentWidget(QDMNodeContentWidget):
 
         self.setLayout(layout)
 
-    def serialize(self):
-        res = super().serialize()
-        res['w'] = self.width.value()
-        res['h'] = self.height.value()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            #value = data['value']
-            self.width.setValue(int(data["w"]))
-            self.height.setValue(int(data["h"]))
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 
 
 @register_node(OP_NODE_LATENT)

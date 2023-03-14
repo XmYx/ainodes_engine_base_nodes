@@ -15,6 +15,7 @@ from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend.deforum.deforum_anim_warp import anim_frame_warp_3d
+from ..ainodes_backend.semseg.semseg_inference import SemSegModel
 
 OP_NODE_IMAGE_OPS = get_next_opcode()
 
@@ -36,7 +37,8 @@ image_ops_methods = [
     "posterize",
     "solarize",
     "flip",
-    "depth_transform"
+    "depth_transform",
+    "semseg"
 ]
 image_ops_valid_methods = [
     "autocontrast",
@@ -52,71 +54,43 @@ image_ops_valid_methods = [
 
 class ImageOpsWidget(QDMNodeContentWidget):
     def initUI(self):
-        # Create a label to display the image
+        self.create_widgets()
+        self.create_layouts()
+        self.setLayout(self.main_layout)
+        self.dropdown.currentIndexChanged.connect(self.dropdownChanged)
+        self.height_value.valueChanged.connect(self.calculate_image_ratio)
+        self.width_value.valueChanged.connect(self.calculate_image_ratio)
+        self.dropdownChanged()
+
+    def create_widgets(self):
         self.text_label = QtWidgets.QLabel("Image Operator:")
-        self.dropdown = QtWidgets.QComboBox()
-        self.dropdown.addItems(image_ops_methods)
+        self.dropdown = self.create_combo_box(image_ops_methods, "Image Operator:")
         self.dropdown.currentIndexChanged.connect(self.dropdownChanged)
 
-        self.width_value = QtWidgets.QSpinBox()
-        self.width_value.setMinimum(64)
-        self.width_value.setSingleStep(64)
-        self.width_value.setMaximum(4096)
-        self.width_value.setValue(512)
-
-        self.height_value = QtWidgets.QSpinBox()
-        self.height_value.setMinimum(64)
-        self.height_value.setSingleStep(64)
-        self.height_value.setMaximum(4096)
-        self.height_value.setValue(512)
+        self.width_value = self.create_spin_box("Width:", 64, 4096, 512, 64)
+        self.height_value = self.create_spin_box("Height:", 64, 4096, 512, 64)
 
         self.resize_ratio_label = QtWidgets.QLabel("Resize Ratio")
 
-        self.canny_low = QtWidgets.QSpinBox()
-        self.canny_low.setMinimum(0)
-        self.canny_low.setSingleStep(1)
-        self.canny_low.setMaximum(255)
-        self.canny_low.setValue(100)
-        self.canny_low.setVisible(False)
+        self.canny_low = self.create_spin_box("Canny Low:", 0, 255, 100, 1)
+        self.canny_high = self.create_spin_box("Canny High:", 0, 255, 100, 1)
 
-        self.canny_high = QtWidgets.QSpinBox()
-        self.canny_high.setMinimum(0)
-        self.canny_high.setSingleStep(1)
-        self.canny_high.setMaximum(255)
-        self.canny_high.setValue(100)
-        self.canny_high.setVisible(False)
+        self.midas_a = self.create_double_spin_box("Midas A:", 0.00, 100.00, 0.01, np.pi * 2.0)
+        self.midas_bg = self.create_double_spin_box("Midas Bg:", 0.00, 100.00, 1.00, 0.01)
 
-        self.midas_a = QtWidgets.QDoubleSpinBox()
-        self.midas_a.setMinimum(0)
-        self.midas_a.setSingleStep(0.01)
-        self.midas_a.setMaximum(100)
-        self.midas_a.setValue(np.pi*2.0)
-        self.midas_a.setVisible(False)
+    def create_layouts(self):
+        self.main_layout = QtWidgets.QVBoxLayout(self)
+        self.main_layout.setContentsMargins(15, 15, 15, 15)
+        self.main_layout.addLayout(self.dropdown.layout)
+        self.main_layout.addLayout(self.width_value.layout)
+        self.main_layout.addLayout(self.height_value.layout)
+        self.main_layout.addWidget(self.resize_ratio_label)
+        self.main_layout.addLayout(self.canny_low.layout)
+        self.main_layout.addLayout(self.canny_high.layout)
+        self.main_layout.addLayout(self.midas_a.layout)
+        self.main_layout.addLayout(self.midas_bg.layout)
 
-        self.midas_bg = QtWidgets.QDoubleSpinBox()
-        self.midas_bg.setMinimum(0)
-        self.midas_bg.setSingleStep(1)
-        self.midas_bg.setMaximum(100)
-        self.midas_bg.setValue(0.01)
-        self.midas_bg.setVisible(False)
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
-        layout.addWidget(self.dropdown)
-        layout.addWidget(self.width_value)
-        layout.addWidget(self.height_value)
-        layout.addWidget(self.resize_ratio_label)
-        layout.addWidget(self.canny_low)
-        layout.addWidget(self.canny_high)
-        layout.addWidget(self.midas_a)
-        layout.addWidget(self.midas_bg)
-
-        self.setLayout(layout)
-
-        self.height_value.valueChanged.connect(self.calculate_image_ratio)
-        self.width_value.valueChanged.connect(self.calculate_image_ratio)
-
-    def dropdownChanged(self, event):
+    def dropdownChanged(self, event=None):
         value = self.dropdown.currentText()
         if value == 'resize':
             self.width_value.setVisible(True)
@@ -158,33 +132,6 @@ class ImageOpsWidget(QDMNodeContentWidget):
         text = return_ratio_string(ratio, width, height)
         self.resize_ratio_label.setText(text)
 
-    def serialize(self):
-        res = super().serialize()
-        res['dropdown'] = self.dropdown.currentText()
-        res['w'] = self.width_value.value()
-        res['h'] = self.height_value.value()
-        res['canny_high'] = self.canny_high.value()
-        res['canny_low'] = self.canny_low.value()
-        res['midas_a'] = self.midas_a.value()
-        res['midas_bg'] = self.midas_bg.value()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            self.dropdown.setCurrentText(data['dropdown'])
-            self.height_value.setValue(int(data['h']))
-            self.width_value.setValue(int(data['w']))
-            self.canny_high.setValue(float(data['canny_high']))
-            self.canny_low.setValue(float(data['canny_low']))
-            self.midas_a.setValue(float(data['midas_a']))
-            self.midas_bg.setValue(float(data['midas_bg']))
-            #self.image.setPixmap(value)
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
-
 
 @register_node(OP_NODE_IMAGE_OPS)
 class ImageOpNode(CalcNode):
@@ -196,7 +143,7 @@ class ImageOpNode(CalcNode):
 
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[5,1], outputs=[5,1])
+        super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
         #self.eval()
         self.content.eval_signal.connect(self.eval)
 
@@ -204,11 +151,11 @@ class ImageOpNode(CalcNode):
         self.content = ImageOpsWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.content.dropdown.currentIndexChanged.connect(self.evalImplementation)
-        self.output_socket_name = ["EXEC", "IMAGE"]
-        self.input_socket_name = ["EXEC", "IMAGE"]
+        self.output_socket_name = ["EXEC", "DATA","IMAGE"]
+        self.input_socket_name = ["EXEC", "DATA", "IMAGE"]
 
-        self.grNode.height = 200
-        self.grNode.width = 260
+        self.grNode.height = 340
+        self.grNode.width = 280
 
         self.content.setMinimumHeight(130)
         self.content.setMinimumWidth(260)
@@ -219,20 +166,19 @@ class ImageOpNode(CalcNode):
         #if self.getInput(index) != None:
         #self.markInvalid()
         #self.markDescendantsDirty()
-        #print(self.getInput(index))
-        if self.getInput(index) != (None,None):
+        if self.getInput(index) != None:
             node, index = self.getInput(index)
-
+            if node != None:
             #print("RETURN", node, index)
 
-            pixmap = node.getOutput(index)
-            method = self.content.dropdown.currentText()
-            self.value = self.image_op(pixmap, method)
-            self.setOutput(0, self.value)
+                pixmap = node.getOutput(index)
+                method = self.content.dropdown.currentText()
+                self.value = self.image_op(pixmap, method)
+                self.setOutput(0, self.value)
             self.markDirty(False)
             self.markInvalid(False)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
+        if len(self.getOutputs(2)) > 0:
+            self.executeChild(output_index=2)
         return self.value
     def onMarkedDirty(self):
         self.value = None
@@ -307,7 +253,13 @@ class ImageOpNode(CalcNode):
             bg_threshold = self.content.midas_bg.value()
 
             tensor = detector.predict(image)
+            if self.getInput(1) != None:
+                node, index = self.getInput(1)
 
+                # print("RETURN", node, index)
+
+                data = node.getOutput(index)
+                print(data)
 
             device = "cuda"
             translation_x = 0
@@ -360,11 +312,25 @@ class ImageOpNode(CalcNode):
             image = HWC3(pose)
             image = Image.fromarray(image)
             del detector
-
-        # Convert the PIL Image object to a QPixmap object
-        pixmap = pil_image_to_pixmap(image)
-
+        elif method == 'semseg':
+            image = image.convert('RGB')
+            image = np.array(image)
+            #print(image.shape)
+            detector = SemSegModel()
+            print(detector)
+            image, masks = detector.predict(image)
+            data = {
+                ("images", "list") : masks
+            }
+            self.setOutput(1, data)
+            #pose, _ = detector(image, True)
+            #image = HWC3(pose)
+            #image = Image.fromarray(np_image)
+        if image != None:
+            # Convert the PIL Image object to a QPixmap object
+            pixmap = pil_image_to_pixmap(image)
         return pixmap
+
 
 
 

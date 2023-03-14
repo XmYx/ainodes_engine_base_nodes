@@ -72,24 +72,6 @@ class InpaintWidget(QDMNodeContentWidget):
         self.setLayout(layout)
 
 
-    def serialize(self):
-        res = super().serialize()
-        res['seed'] = self.seed.text()
-        res['steps'] = self.steps.value()
-        res['guidance_scale'] = self.guidance_scale.value()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            self.seed.setText(data['seed'])
-            self.steps.setValue(data['steps'])
-            self.guidance_scale.setValue(data['guidance_scale'])
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
-
 
 @register_node(OP_NODE_INPAINT)
 class InpaintNode(CalcNode):

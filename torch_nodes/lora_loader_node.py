@@ -29,19 +29,6 @@ class LoraLoaderWidget(QDMNodeContentWidget):
         self.setSizePolicy(CenterExpandingSizePolicy(self))
         self.setLayout(layout)
 
-    def serialize(self):
-        res = super().serialize()
-        res["model"] = self.dropdown.currentText()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            self.dropdown.setCurrentText(data["model"])
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
     def __init__(self, parent=None):
         super().__init__(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)

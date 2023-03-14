@@ -55,20 +55,6 @@ class VideoOutputWidget(QDMNodeContentWidget):
 
         self.setLayout(layout)
 
-    def serialize(self):
-        res = super().serialize()
-        res['fps'] = self.fps.value()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            self.fps.setValue(int(data['fps']))
-            #self.image.setPixmap(value)
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 
 
 @register_node(OP_NODE_VIDEO_SAVE)
@@ -80,8 +66,6 @@ class VideoOutputNode(CalcNode):
     category = "video"
     input_socket_name = ["EXEC", "IMAGE"]
     output_socket_name = ["EXEC", "IMAGE"]
-
-
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])
         self.filename = ""

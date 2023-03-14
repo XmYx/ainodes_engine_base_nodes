@@ -32,20 +32,6 @@ class T2ILoaderWidget(QDMNodeContentWidget):
         if "loaded_t2i" not in gs.models:
             gs.models["loaded_t2i"] = None
 
-    def serialize(self):
-        res = super().serialize()
-        res['t2i'] = self.t2i.currentText()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            #value = data['value']
-            self.t2i.setCurrentText(data['t2i'])
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
     def __init__(self, parent=None):
         super().__init__(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)

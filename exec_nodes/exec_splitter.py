@@ -10,24 +10,10 @@ OP_NODE_EXEC_SPLITTER = get_next_opcode()
 
 class ExecSplitterWidget(QDMNodeContentWidget):
     def initUI(self):
-        #self.button = QtWidgets.QPushButton("Run")
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(15,15,15,25)
-        #layout.addWidget(self.button)
         self.setLayout(layout)
 
-
-    def serialize(self):
-        res = super().serialize()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 
 
 @register_node(OP_NODE_EXEC_SPLITTER)

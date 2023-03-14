@@ -13,40 +13,20 @@ OP_NODE_IMAGE_BLEND = get_next_opcode()
 
 class BlendWidget(QDMNodeContentWidget):
     def initUI(self):
-        # Create a label to display the image
+        self.create_widgets()
+        self.create_layouts()
+        self.setLayout(self.main_layout)
+
+    def create_widgets(self):
         self.text_label = QtWidgets.QLabel("Image Operator:")
+        self.blend = self.create_double_spin_box("Blend:", 0.00, 1.00, 0.01, 0.00)
+        self.composite_method = self.create_combo_box(pixmap_composite_method_list, "Composite Method:")
 
-        self.blend = QtWidgets.QDoubleSpinBox()
-        self.blend.setMinimum(0.00)
-        self.blend.setSingleStep(0.01)
-        self.blend.setMaximum(1.00)
-        self.blend.setValue(0.00)
-
-        self.composite_method = QtWidgets.QComboBox()
-        self.composite_method.addItems(pixmap_composite_method_list)
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
-        layout.addWidget(self.composite_method)
-        layout.addWidget(self.blend)
-
-        self.setLayout(layout)
-
-
-    def serialize(self):
-        res = super().serialize()
-        res['blend'] = self.blend.value()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            self.blend.setValue(int(data['h']))
-            #self.image.setPixmap(value)
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
+    def create_layouts(self):
+        self.main_layout = QtWidgets.QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.addWidget(self.composite_method)
+        self.main_layout.addWidget(self.blend)
 
 
 @register_node(OP_NODE_IMAGE_BLEND)
@@ -90,6 +70,16 @@ class BlendNode(CalcNode):
                 blend = self.content.blend.value()
                 value = self.image_op(pixmap1, pixmap2, blend)
                 print(f"BLEND NODE: Using both inputs with a blend value: {blend}")
+            elif method == "composite":
+                # Create a new RGBA image with the same dimensions as the RGB image
+                image1 = pixmap_to_pil_image(pixmap1)
+                image2 = pixmap_to_pil_image(pixmap2)
+
+                result_image = Image.new("RGBA", image1.size, (0, 0, 0, 0))
+
+                # Use the mask image to composite the RGB image onto the result image
+                image = Image.composite(image1, result_image, image2)
+                value = pil_image_to_pixmap(image)
             elif method in pixmap_composite_method_list:
                 value = self.composite_pixmaps(pixmap1, pixmap2, method)
                 #print(self.value)

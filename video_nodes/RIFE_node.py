@@ -58,26 +58,6 @@ class RIFEWidget(QDMNodeContentWidget):
         self.setLayout(layout)
 
 
-    def serialize(self):
-        res = super().serialize()
-        res['exp'] = self.exp.value()
-        res['ratio'] = self.ratio.value()
-        res['rthreshold'] = self.rthreshold.value()
-        res['rmaxcycles'] = self.rmaxcycles.value()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            self.exp.setValue(int(data['exp']))
-            self.ratio.setValue(float(data['ratio']))
-            self.rthreshold.setValue(float(data['rthreshold']))
-            self.rmaxcycles.setValue(int(data['rmaxcycles']))
-            #self.image.setPixmap(value)
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 
 
 @register_node(OP_NODE_RIFE)

@@ -39,21 +39,6 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         self.setSizePolicy(CenterExpandingSizePolicy(self))
         self.setLayout(layout)
 
-    def serialize(self):
-        res = super().serialize()
-        res["model"] = self.dropdown.currentText()
-        res["config"] = self.config_dropdown.currentText()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            self.dropdown.setCurrentText(data["model"])
-            self.config_dropdown.setCurrentText(data["config"])
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
     def __init__(self, parent=None):
         super().__init__(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)

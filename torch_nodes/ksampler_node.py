@@ -1,3 +1,4 @@
+import inspect
 import secrets
 import threading
 
@@ -18,6 +19,8 @@ from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
+#from PyQt5.Qsci import QsciScintilla, QsciLexerPython
+
 OP_NODE_K_SAMPLER = get_next_opcode()
 
 SCHEDULERS = ["karras", "normal", "simple", "ddim_uniform"]
@@ -27,111 +30,44 @@ SAMPLERS = ["euler", "euler_ancestral", "heun", "dpm_2", "dpm_2_ancestral",
 
 class KSamplerWidget(QDMNodeContentWidget):
     def initUI(self):
-        self.schedulers_layout = QtWidgets.QHBoxLayout()
-        self.schedulers_label = QtWidgets.QLabel("Scheduler:")
-        self.schedulers = QtWidgets.QComboBox()
-        self.schedulers.addItems(SCHEDULERS)
-        self.schedulers_layout.addWidget(self.schedulers_label)
-        self.schedulers_layout.addWidget(self.schedulers)
+        self.create_widgets()
+        self.create_layouts()
+        self.setLayout(self.main_layout)
 
-        self.sampler_layout = QtWidgets.QHBoxLayout()
-        self.sampler_label = QtWidgets.QLabel("Sampler:")
-        self.sampler = QtWidgets.QComboBox()
-        self.sampler.addItems(SAMPLERS)
-        self.sampler_layout.addWidget(self.sampler_label)
-        self.sampler_layout.addWidget(self.sampler)
-
-        self.seed_layout = QtWidgets.QHBoxLayout()
-        self.seed_label = QtWidgets.QLabel("Seed:")
-        self.seed = QtWidgets.QLineEdit()
-        self.seed_layout.addWidget(self.seed_label)
-        self.seed_layout.addWidget(self.seed)
-
-        self.steps_layout = QtWidgets.QHBoxLayout()
-        self.steps_label = QtWidgets.QLabel("Steps:")
-        self.steps = QtWidgets.QSpinBox()
-        self.steps.setMinimum(1)
-        self.steps.setMaximum(10000)
-        self.steps.setValue(10)
-        self.steps_layout.addWidget(self.steps_label)
-        self.steps_layout.addWidget(self.steps)
-
-        self.start_step_layout = QtWidgets.QHBoxLayout()
-        self.start_step_label = QtWidgets.QLabel("Start Step:")
-        self.start_step = QtWidgets.QSpinBox()
-        self.start_step.setMinimum(0)
-        self.start_step.setMaximum(1000)
-        self.start_step.setValue(0)
-        self.start_step_layout.addWidget(self.start_step_label)
-        self.start_step_layout.addWidget(self.start_step)
-
-        self.last_step_layout = QtWidgets.QHBoxLayout()
-        self.last_step_label = QtWidgets.QLabel("Last Step:")
-        self.last_step = QtWidgets.QSpinBox()
-        self.last_step.setMinimum(1)
-        self.last_step.setMaximum(1000)
-        self.last_step.setValue(5)
-        self.last_step_layout.addWidget(self.last_step_label)
-        self.last_step_layout.addWidget(self.last_step)
-
-        self.stop_early_layout = QtWidgets.QVBoxLayout()
-        self.stop_early = QtWidgets.QCheckBox("Stop Sampling Early")
-        self.stop_early_label = QtWidgets.QLabel()
-
-        self.force_denoise = QtWidgets.QCheckBox("Force full denoise")
-        self.force_denoise.setChecked(True)
-        self.disable_noise = QtWidgets.QCheckBox("Disable noise generation")
-        self.denoise = QtWidgets.QDoubleSpinBox()
-        self.denoise.setMinimum(0.00)
-        self.denoise.setMaximum(2.00)
-        self.denoise.setSingleStep(0.01)
-        self.denoise.setValue(1.00)
-        self.stop_early_layout.addWidget(self.stop_early)
-        self.stop_early_layout.addWidget(self.force_denoise)
-        self.stop_early_layout.addWidget(self.disable_noise)
-        self.stop_early_layout.addWidget(self.denoise)
-
-
-        palette = QtGui.QPalette()
-        palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
-        palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
-
-        self.stop_early.setPalette(palette)
-        self.force_denoise.setPalette(palette)
-        self.disable_noise.setPalette(palette)
-
-        self.guidance_scale_layout = QtWidgets.QHBoxLayout()
-        self.guidance_scale_label = QtWidgets.QLabel("Guidance Scale:")
-        self.guidance_scale = QtWidgets.QDoubleSpinBox()
-        self.guidance_scale.setMinimum(1.01)
-        self.guidance_scale.setMaximum(100.00)
-        self.guidance_scale.setSingleStep(0.01)
-        self.guidance_scale.setValue(7.50)
-        self.guidance_scale_layout.addWidget(self.guidance_scale_label)
-        self.guidance_scale_layout.addWidget(self.guidance_scale)
-
-        self.button_layout = QtWidgets.QHBoxLayout()
+    def create_widgets(self):
+        self.schedulers = self.create_combo_box(SCHEDULERS, "Scheduler:")
+        self.sampler = self.create_combo_box(SAMPLERS, "Sampler:")
+        self.seed = self.create_line_edit("Seed:")
+        self.steps = self.create_spin_box("Steps:", 1, 10000, 10)
+        self.start_step = self.create_spin_box("Start Step:", 0, 1000, 0)
+        self.last_step = self.create_spin_box("Last Step:", 1, 1000, 5)
+        self.stop_early = self.create_check_box("Stop Sampling Early")
+        self.force_denoise = self.create_check_box("Force full denoise", checked=True)
+        self.disable_noise = self.create_check_box("Disable noise generation")
+        self.denoise = self.create_double_spin_box("Denoise:", 0.00, 2.00, 0.01, 1.00)
+        self.guidance_scale = self.create_double_spin_box("Guidance Scale:", 1.01, 100.00, 0.01, 7.50)
         self.button = QtWidgets.QPushButton("Run")
         self.fix_seed_button = QtWidgets.QPushButton("Fix Seed")
-        self.button_layout.addWidget(self.button)
-        self.button_layout.addWidget(self.fix_seed_button)
 
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(15,15,15,25)
-        layout.addLayout(self.schedulers_layout)
-        layout.addLayout(self.sampler_layout)
-        layout.addLayout(self.seed_layout)
-        layout.addLayout(self.steps_layout)
-        layout.addLayout(self.start_step_layout)
-        layout.addLayout(self.last_step_layout)
-        layout.addLayout(self.stop_early_layout)
-        layout.addLayout(self.guidance_scale_layout)
-        layout.addLayout(self.button_layout)
+    def create_layouts(self):
+        self.main_layout = QtWidgets.QVBoxLayout(self)
+        self.main_layout.setContentsMargins(15, 15, 15, 25)
+        self.main_layout.addLayout(self.schedulers.layout)
+        self.main_layout.addLayout(self.sampler.layout)
+        self.main_layout.addLayout(self.seed.layout)
+        self.main_layout.addLayout(self.steps.layout)
+        self.main_layout.addLayout(self.start_step.layout)
+        self.main_layout.addLayout(self.last_step.layout)
+        stop_early_layout = QtWidgets.QVBoxLayout()
+        stop_early_layout.addWidget(self.stop_early)
+        stop_early_layout.addWidget(self.force_denoise)
+        stop_early_layout.addWidget(self.disable_noise)
+        stop_early_layout.addWidget(self.denoise)
+        self.main_layout.addLayout(stop_early_layout)
+        self.main_layout.addLayout(self.guidance_scale.layout)
+        self.main_layout.addLayout(self.create_button_layout([self.button, self.fix_seed_button]))
 
-        self.setLayout(layout)
-
-
-    def serialize(self):
+    """def serialize(self):
         res = super().serialize()
         res['scheduler'] = self.schedulers.currentText()
         res['sampler'] = self.sampler.currentText()
@@ -151,7 +87,7 @@ class KSamplerWidget(QDMNodeContentWidget):
             return True & res
         except Exception as e:
             dumpException(e)
-        return res
+        return res"""
 
 
 @register_node(OP_NODE_K_SAMPLER)

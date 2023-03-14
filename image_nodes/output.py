@@ -7,14 +7,14 @@ from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
 from qtpy import QtWidgets, QtGui, QtCore
 
-from ..ainodes_backend import pixmap_to_pil_image
+from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import CalcNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
-
+from PIL import Image
 
 OP_NODE_IMG_PREVIEW = get_next_opcode()
 
@@ -33,11 +33,15 @@ class ImageOutputWidget(QDMNodeContentWidget):
         self.checkbox.setPalette(palette)
 
         self.button = QtWidgets.QPushButton("Save Image")
+        self.next_button = QtWidgets.QPushButton("Show Next")
+        button_layout = QtWidgets.QHBoxLayout()
+        button_layout.addWidget(self.button)
+        button_layout.addWidget(self.next_button)
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(15, 30, 15, 35)
         layout.addWidget(self.image)
         layout.addWidget(self.checkbox)
-        layout.addWidget(self.button)
+        layout.addLayout(button_layout)
         self.setLayout(layout)
 
 
@@ -67,25 +71,72 @@ class ImagePreviewWidget(CalcNode):
 
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[5,1], outputs=[5,1])
+        super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
         #self.eval()
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.button.clicked.connect(self.save_image)
+        self.content.next_button.clicked.connect(self.show_next_image)
 
     def initInnerClasses(self):
         self.content = ImageOutputWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.output_socket_name = ["EXEC", "IMAGE"]
-        self.input_socket_name = ["EXEC", "IMAGE"]
+        self.output_socket_name = ["EXEC", "DATA", "IMAGE"]
+        self.input_socket_name = ["EXEC", "DATA", "IMAGE"]
         self.grNode.height = 200
-        #self.content.mark_dirty_signal.connect(self.markDirty)
-        #self.content.image.changeEvent.connect(self.onInputChanged)
+        self.images = []
+        self.index = 0
 
 
     def evalImplementation(self, index=0):
         thread0 = threading.Thread(target=self.evalImplementation_thread)
         thread0.start()
 
+
+    def show_next_image(self):
+        length = len(self.images)
+        if self.index >= length:
+            self.index = 0
+        if length > 0:
+            img = self.images[self.index]
+            print(img)
+
+            # Create a new RGBA image with the same dimensions as the greyscale image
+            mask_image = Image.new("RGBA", img.size, (0, 0, 0, 0))
+
+            # Get the pixel data from the greyscale image
+            pixels = img.load()
+
+            # Loop over all the pixels in the image
+            for x in range(img.width):
+                for y in range(img.height):
+                    # Get the pixel value
+                    value = pixels[x, y]
+
+                    # Set the RGBA value of the corresponding pixel in the mask image
+                    mask_image.putpixel((x, y), (255, 255, 255, value))
+
+
+            pixmap = pil_image_to_pixmap(mask_image)
+            """mask_pixmap = QtGui.QPixmap(pixmap.size())
+
+            # Use a QPainter object to paint the alpha values onto the new pixmap
+            painter = QtGui.QPainter(mask_pixmap)
+
+            image = pixmap.toImage()
+            for x in range(pixmap.width()):
+                for y in range(pixmap.height()):
+                    color = image.pixelColor(x, y)
+                    intensity = color.red()  # assumes the image is in grayscale
+                    alpha = 255 - intensity
+                    painter.setPen(QtGui.QColor(0, 0, 0, alpha))
+                    painter.drawPoint(x, y)
+            painter.end()
+            mask_image = mask_pixmap.toImage().convertToFormat(QtGui.QImage.Format_ARGB32_Premultiplied)
+            mask_pixmap = QtGui.QPixmap.fromImage(mask_image)"""
+            self.content.image.setPixmap(pixmap)
+            self.setOutput(0, pixmap)
+            self.index += 1
+            self.resize()
     def evalImplementation_thread(self, index=0):
         #self.markDirty(True)
         if self.getInput(0) is not None:
@@ -103,24 +154,28 @@ class ImagePreviewWidget(CalcNode):
                 return
             #print("Preview Node Value", val)
             self.content.image.setPixmap(val)
-
+            self.resize()
             self.setOutput(0, val)
             self.markInvalid(False)
             self.markDirty(False)
-            self.grNode.setToolTip("")
-            self.grNode.height = val.height() + 155
-            self.grNode.width = val.width() + 32
-            self.content.image.setMinimumHeight(self.content.image.pixmap().size().height())
-            self.content.image.setMinimumWidth(self.content.image.pixmap().size().width())
-            self.content.setGeometry(0,0,self.content.image.pixmap().size().width(), self.content.image.pixmap().size().height())
-            for socket in self.outputs + self.inputs:
-                socket.setSocketPosition()
-            self.updateConnectedEdges()
             #print("Reloaded")
             if self.content.checkbox.isChecked() == True:
                 self.save_image()
-            if len(self.getOutputs(1)) > 0:
-                self.executeChild(output_index=1)
+            if len(self.getOutputs(2)) > 0:
+                self.executeChild(output_index=2)
+        elif self.getInput(1) is not None:
+            data_node, other_index = self.getInput(1)
+            data = data_node.getOutput(other_index)
+            print(data)
+            self.images = []
+            for key, value in data.items():
+                if key[1] == 'list':
+                    if key[0] == 'images':
+                        for image in value:
+                            self.images.append(image)
+                            # Create a new QPixmap object with the same size as the original image
+                            print(key[0], image)
+            val = None
         else:
             val = self.value
         return val
@@ -142,3 +197,16 @@ class ImagePreviewWidget(CalcNode):
         #self.eval()
     def eval(self):
         self.content.eval_signal.emit()
+
+    def resize(self):
+        self.grNode.setToolTip("")
+        self.grNode.height = self.content.image.pixmap().size().height() + 155
+        self.grNode.width = self.content.image.pixmap().size().width() + 32
+        self.content.image.setMinimumHeight(self.content.image.pixmap().size().height())
+        self.content.image.setMinimumWidth(self.content.image.pixmap().size().width())
+        self.content.setGeometry(0, 0, self.content.image.pixmap().size().width(),
+                                 self.content.image.pixmap().size().height())
+        for socket in self.outputs + self.inputs:
+            socket.setSocketPosition()
+        self.updateConnectedEdges()
+

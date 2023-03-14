@@ -58,26 +58,10 @@ class ConditioningSetAreaWidget(QDMNodeContentWidget):
         layout.addWidget(self.strength)
         self.setLayout(layout)
 
-    def serialize(self):
-        res = super().serialize()
-        #res['value'] = self.edit.text()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            value = data['value']
-            #self.image.setPixmap(value)
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 
 
 class ConditioningCombineWidget(QDMNodeContentWidget):
     def initUI(self):
-        # Create a label to display the image
-        #self.text_label = QtWidgets.QLabel("Diffusers:")
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(15,15,15,20)
@@ -85,20 +69,6 @@ class ConditioningCombineWidget(QDMNodeContentWidget):
         self.setLayout(layout)
 
 
-    def serialize(self):
-        res = super().serialize()
-        #res['value'] = self.edit.text()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            #value = data['value']
-            #self.image.setPixmap(value)
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 
 
 @register_node(OP_NODE_CONDITIONING_COMBINE)
@@ -112,9 +82,6 @@ class ConditioningCombineNode(CalcNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[3,3,1], outputs=[3,1])
-        #self.eval()
-        #self.content.eval_signal.connect(self.evalImplementation)
-        # Create a worker object
     def initInnerClasses(self):
         self.content = ConditioningCombineWidget(self)
         self.grNode = CalcGraphicsNode(self)
@@ -123,11 +90,8 @@ class ConditioningCombineNode(CalcNode):
         #self.content.setMinimumHeight(200)
         #self.content.setMinimumWidth(320)
         self.busy = False
-        #self.content.button.clicked.connect(self.exec)
         self.input_socket_name = ["EXEC", "COND", "COND2"]
         self.output_socket_name = ["EXEC", "COND"]
-
-        #self.content.image.changeEvent.connect(self.onInputChanged)
 
     def evalImplementation(self, index=0):
         self.value = self.combine_conditioning()
@@ -185,8 +149,6 @@ class ConditioningAreaNode(CalcNode):
     def __init__(self, scene):
         super().__init__(scene, inputs=[3,1], outputs=[3,1])
         self.eval()
-        #self.content.eval_signal.connect(self.evalImplementation)
-        # Create a worker object
     def initInnerClasses(self):
         self.content = ConditioningSetAreaWidget(self)
         self.grNode = CalcGraphicsNode(self)
@@ -199,8 +161,6 @@ class ConditioningAreaNode(CalcNode):
         self.input_socket_name = ["EXEC", "COND"]
         self.output_socket_name = ["EXEC", "COND"]
 
-        #self.content.image.changeEvent.connect(self.onInputChanged)
-
     def evalImplementation(self, index=0):
         try:
             cond = self.append_conditioning()
@@ -210,13 +170,9 @@ class ConditioningAreaNode(CalcNode):
             if len(self.getOutputs(1)) > 0:
                 self.executeChild(output_index=1)
             return cond
-
         except:
             print("COND AREA NODE: Failed, please make sure that the conditioning is valid.")
             self.markDirty(True)
-            return None
-            if len(self.getOutputs(1)) > 0:
-                self.executeChild(output_index=1)
             return None
 
     def eval(self):
@@ -224,32 +180,6 @@ class ConditioningAreaNode(CalcNode):
         self.evalImplementation()
     def onMarkedDirty(self):
         self.value = None
-    def combine_conditioning(self, progress_callback=None):
-        try:
-            cond_1_node, index = self.getInput(1)
-            conditioning1 = cond_1_node.getOutput(index)
-            print("cond1", conditioning1.shape)
-            cond_2_node, index = self.getInput(0)
-            conditioning2 = cond_2_node.getOutput(index)
-            print("cond2", conditioning2.shape)
-
-            c = conditioning1 + conditioning2
-            print(c.shape)
-            return c
-        except:
-            return None
-    @QtCore.Slot(object)
-    def onWorkerFinished(self, result):
-        # Update the node value and mark it as dirty
-        self.value = result
-        self.scene.queue.task_finished.disconnect(self.onWorkerFinished)
-        self.setOutput(0, result)
-        self.markDirty(False)
-        self.markInvalid(False)
-        self.busy = False
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
-        return
     def onInputChanged(self, socket=None):
         pass
 
@@ -257,7 +187,7 @@ class ConditioningAreaNode(CalcNode):
         self.markDirty(True)
         self.markInvalid(True)
         self.value = None
-        self.content.eval_signal.emit(0)
+        self.evalImplementation(0)
 
     def append_conditioning(self, progress_callback=None, min_sigma=0.0, max_sigma=99.0):
         cond_node, index = self.getInput(0)
@@ -277,29 +207,3 @@ class ConditioningAreaNode(CalcNode):
             c.append(n)
         return c
 
-
-class ConditioningSetArea:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {"required": {"conditioning": ("CONDITIONING", ),
-                              "width": ("INT", {"default": 64, "min": 64, "max": 4096, "step": 64}),
-                              "height": ("INT", {"default": 64, "min": 64, "max": 4096, "step": 64}),
-                              "x": ("INT", {"default": 0, "min": 0, "max": 4096, "step": 64}),
-                              "y": ("INT", {"default": 0, "min": 0, "max": 4096, "step": 64}),
-                              "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
-                             }}
-    RETURN_TYPES = ("CONDITIONING",)
-    FUNCTION = "append"
-
-    CATEGORY = "conditioning"
-
-    def append(self, conditioning, width, height, x, y, strength, min_sigma=0.0, max_sigma=99.0):
-        c = []
-        for t in conditioning:
-            n = [t[0], t[1].copy()]
-            n[1]['area'] = (height // 8, width // 8, y // 8, x // 8)
-            n[1]['strength'] = strength
-            n[1]['min_sigma'] = min_sigma
-            n[1]['max_sigma'] = max_sigma
-            c.append(n)
-        return c

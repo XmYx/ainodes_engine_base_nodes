@@ -52,17 +52,6 @@ class VideoInputWidget(QDMNodeContentWidget):
 
         self.setLayout(layout)
 
-    def serialize(self):
-        res = super().serialize()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
     def advance_frame(self):
         pixmap = self.video.get_frame()
         self.label.setPixmap(pixmap)
@@ -92,8 +81,6 @@ class VideoInputWidget(QDMNodeContentWidget):
         self.node.setOutput(0, pixmap)
         self.current_frame = frame
         self.label.setPixmap(pixmap)
-        #self.label.setText(f"Frame: {self.current_frame}")
-        #self.node.eval()
 
 
 @register_node(OP_NODE_VIDEO_INPUT)

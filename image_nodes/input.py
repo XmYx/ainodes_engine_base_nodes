@@ -43,14 +43,12 @@ class ImageInputWidget(QDMNodeContentWidget):
 
     def serialize(self):
         res = super().serialize()
-        #if hasattr(self, 'fileName'):
         res['filename'] = self.fileName
         return res
 
     def deserialize(self, data, hashmap={}, restore_id=False):
         res = super().deserialize(data, hashmap)
         try:
-            #value = data['value']
             self.fileName = data['filename']
             if self.firstRun_done == None:
                 if self.fileName != None:

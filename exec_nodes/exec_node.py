@@ -17,36 +17,21 @@ SAMPLERS = ["euler", "euler_ancestral", "heun", "dpm_2", "dpm_2_ancestral",
 
 class ExecWidget(QDMNodeContentWidget):
     def initUI(self):
+        self.create_widgets()
+        self.create_layouts()
+        self.setLayout(self.main_layout)
+
+    def create_widgets(self):
         self.run_button = QtWidgets.QPushButton("Run")
         self.stop_button = QtWidgets.QPushButton("Stop")
-        palette = QtGui.QPalette()
-        palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
-        palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
+        self.checkbox = self.create_check_box("Run in thread")
 
-
-        self.checkbox = QtWidgets.QCheckBox("Run in thread")
-        self.checkbox.setPalette(palette)
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(15,15,15,25)
-        layout.addWidget(self.run_button)
-        layout.addWidget(self.stop_button)
-        layout.addWidget(self.checkbox)
-        self.setLayout(layout)
-
-
-    def serialize(self):
-        res = super().serialize()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
-
+    def create_layouts(self):
+        self.main_layout = QtWidgets.QVBoxLayout(self)
+        self.main_layout.setContentsMargins(15, 15, 15, 25)
+        self.main_layout.addWidget(self.run_button)
+        self.main_layout.addWidget(self.stop_button)
+        self.main_layout.addWidget(self.checkbox)
 
 @register_node(OP_NODE_EXEC)
 class ExecNode(CalcNode):

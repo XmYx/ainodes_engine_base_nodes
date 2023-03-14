@@ -6,7 +6,7 @@ from qtpy.QtCore import QBuffer
 from PIL.ImageQt import ImageQt
 
 
-pixmap_composite_method_list = ['blend', 'source_over', 'destination_over', 'clear',
+pixmap_composite_method_list = ['blend', 'composite', 'source_over', 'destination_over', 'clear',
                                'destination', 'source_in', 'destination_in', 'source_out',
                                'destination_out', 'source_atop', 'destination_atop', 'xor',
                                'overlay', 'screen', 'soft_light', 'hard_light', 'color_dodge',

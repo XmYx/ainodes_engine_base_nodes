@@ -31,20 +31,6 @@ class ControlnetLoaderWidget(QDMNodeContentWidget):
         if "loaded_controlnet" not in gs.models:
             gs.models["loaded_controlnet"] = None
 
-    def serialize(self):
-        res = super().serialize()
-        res['cn'] = self.control_net_name.currentText()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            #value = data['value']
-            self.control_net_name.setCurrentText(data['cn'])
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
     def __init__(self, parent=None):
         super().__init__(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
