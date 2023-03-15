@@ -1,7 +1,5 @@
 import datetime
 import os
-import threading
-import time
 
 from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
@@ -12,7 +10,6 @@ from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
 
 from PIL import Image
 
@@ -25,13 +22,10 @@ class ImageOutputWidget(QDMNodeContentWidget):
         self.image.setAlignment(Qt.AlignRight)
         self.image.setObjectName(self.node.content_label_objname)
         self.checkbox = QtWidgets.QCheckBox("Autosave")
-
         palette = QtGui.QPalette()
         palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
         palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
-
         self.checkbox.setPalette(palette)
-
         self.button = QtWidgets.QPushButton("Save Image")
         self.next_button = QtWidgets.QPushButton("Show Next")
         button_layout = QtWidgets.QHBoxLayout()
@@ -44,23 +38,6 @@ class ImageOutputWidget(QDMNodeContentWidget):
         layout.addLayout(button_layout)
         self.setLayout(layout)
 
-
-    def serialize(self):
-        res = super().serialize()
-        #res['value'] = self.edit.text()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            #value = data['value']
-            #self.image.setPixmap(value)
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res
-
-
 @register_node(OP_NODE_IMG_PREVIEW)
 class ImagePreviewWidget(AiNode):
     icon = "icons/out.png"
@@ -72,26 +49,17 @@ class ImagePreviewWidget(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
-        #self.eval()
-        #self.content.eval_signal.connect(self.evalImplementation)
         self.content.button.clicked.connect(self.save_image)
         self.content.next_button.clicked.connect(self.show_next_image)
 
     def initInnerClasses(self):
         self.content = ImageOutputWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.output_socket_name = ["EXEC", "DATA", "IMAGE"]
-        self.input_socket_name = ["EXEC", "DATA", "IMAGE"]
         self.grNode.height = 200
+        self.grNode.width = 320
         self.images = []
         self.index = 0
         self.content.preview_signal.connect(self.show_image)
-
-
-    """def evalImplementation(self, index=0):
-        thread0 = threading.Thread(target=self.evalImplementation_thread)
-        thread0.start()"""
-
 
     def show_next_image(self):
         length = len(self.images)
@@ -118,28 +86,11 @@ class ImagePreviewWidget(AiNode):
 
 
             pixmap = pil_image_to_pixmap(mask_image)
-            """mask_pixmap = QtGui.QPixmap(pixmap.size())
-
-            # Use a QPainter object to paint the alpha values onto the new pixmap
-            painter = QtGui.QPainter(mask_pixmap)
-
-            image = pixmap.toImage()
-            for x in range(pixmap.width()):
-                for y in range(pixmap.height()):
-                    color = image.pixelColor(x, y)
-                    intensity = color.red()  # assumes the image is in grayscale
-                    alpha = 255 - intensity
-                    painter.setPen(QtGui.QColor(0, 0, 0, alpha))
-                    painter.drawPoint(x, y)
-            painter.end()
-            mask_image = mask_pixmap.toImage().convertToFormat(QtGui.QImage.Format_ARGB32_Premultiplied)
-            mask_pixmap = QtGui.QPixmap.fromImage(mask_image)"""
             self.content.image.setPixmap(pixmap)
             self.setOutput(0, pixmap)
             self.index += 1
             self.resize()
     def evalImplementation(self, index=0):
-        #self.markDirty(True)
         if self.getInput(0) is not None:
             input_node, other_index = self.getInput(0)
             if not input_node:
@@ -153,14 +104,10 @@ class ImagePreviewWidget(AiNode):
                 self.grNode.setToolTip("Input is NaN")
                 self.markInvalid()
                 return
-            #print("Preview Node Value", val)
             self.content.preview_signal.emit(val)
-            #self.content.image.setPixmap(val)
-
             self.setOutput(0, val)
             self.markInvalid(False)
             self.markDirty(False)
-            #print("Reloaded")
             if self.content.checkbox.isChecked() == True:
                 self.save_image()
             if len(self.getOutputs(2)) > 0:
@@ -168,7 +115,6 @@ class ImagePreviewWidget(AiNode):
         elif self.getInput(1) is not None:
             data_node, other_index = self.getInput(1)
             data = data_node.getOutput(other_index)
-            print(data)
             self.images = []
             for key, value in data.items():
                 if key[1] == 'list':
@@ -198,13 +144,9 @@ class ImagePreviewWidget(AiNode):
         except Exception as e:
             print(f"IMAGE PREVIEW NODE: Image could not be saved because: {e}")
     def onInputChanged(self, socket=None):
-        #super().onInputChanged(socket=socket)
-        self.markDirty(True)
-        self.markInvalid(True)
-        #self.eval()
+        pass
     def eval(self):
         self.evalImplementation(0)
-        #self.content.eval_signal.emit()
 
     def resize(self):
         self.grNode.setToolTip("")

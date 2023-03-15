@@ -40,6 +40,7 @@ class KSamplerWidget(QDMNodeContentWidget):
         self.stop_early = self.create_check_box("Stop Sampling Early")
         self.force_denoise = self.create_check_box("Force full denoise", checked=True)
         self.disable_noise = self.create_check_box("Disable noise generation")
+        self.iterate_seed = self.create_check_box("Iterate seed")
         self.denoise = self.create_double_spin_box("Denoise:", 0.00, 2.00, 0.01, 1.00)
         self.guidance_scale = self.create_double_spin_box("Guidance Scale:", 1.01, 100.00, 0.01, 7.50)
         self.button = QtWidgets.QPushButton("Run")
@@ -63,7 +64,7 @@ class KSamplerNode(AiNode):
     def initInnerClasses(self):
         self.content = KSamplerWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 500
+        self.grNode.height = 520
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(256)
@@ -107,6 +108,8 @@ class KSamplerNode(AiNode):
             self.seed = int(self.seed)
         except:
             self.seed = secrets.randbelow(99999999)
+        if self.content.iterate_seed.isChecked() == True:
+            self.seed += 1
         try:
             last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
             sample = common_ksampler(device="cuda",

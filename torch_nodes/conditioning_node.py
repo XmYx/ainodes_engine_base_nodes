@@ -1,3 +1,5 @@
+import threading
+
 from qtpy import QtWidgets, QtCore
 
 from ..torch_nodes.torch_loader import TorchLoaderNode
@@ -53,19 +55,35 @@ class ConditioningNode(AiNode):
         self.output_socket_name = ["EXEC", "COND"]
 
         #self.content.image.changeEvent.connect(self.onInputChanged)
-
     def evalImplementation(self, index=0):
-        print(f"CONDITIONING NODE: Applying conditioning with prompt: {self.content.prompt.toPlainText()}")
-        result = self.get_conditioning()
-        self.setOutput(0, result)
-        # print(result)
-        self.markDirty(False)
-        self.markInvalid(False)
-        self.busy = False
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
-        self.busy = True
-        return result
+        if self.busy == False:
+            self.busy = True
+            thread0 = threading.Thread(target=self.evalImplementation_thread)
+            thread0.start()
+            return None
+        else:
+            self.markDirty(False)
+            self.markInvalid(False)
+            return None
+
+    def evalImplementation_thread(self, index=0):
+        try:
+            self.markDirty(True)
+            print(f"CONDITIONING NODE: Applying conditioning with prompt: {self.content.prompt.toPlainText()}")
+            result = self.get_conditioning()
+            self.setOutput(0, result)
+            # print(result)
+
+            self.markDirty(False)
+            self.markInvalid(False)
+
+            if len(self.getOutputs(1)) > 0:
+                self.executeChild(output_index=1)
+            self.busy = False
+            return None
+        except:
+            self.busy = False
+            return None
 
     def onMarkedDirty(self):
         self.value = None
