@@ -5,7 +5,7 @@ tensorflow==2.8.0
 tensorboard==2.8.0
 --extra-index-url https://download.pytorch.org/whl/cu117
 torch==1.13.1+cu117
-torchvision==0.14.1
+torchvision==0.14.1+cu117
 tb_nightly==2.12.0a20230126
 transformers==4.27.0
 diffusers==0.14.0
