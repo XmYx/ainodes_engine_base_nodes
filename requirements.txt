@@ -37,6 +37,7 @@ basicsr
 ffmpeg-python
 #wavio
 pyqtgraph
-tensorflow==2.7.4
+tensorflow
 #Deforum
 pandas==1.5.3
+#openai
