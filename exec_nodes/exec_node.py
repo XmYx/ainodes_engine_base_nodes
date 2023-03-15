@@ -31,7 +31,7 @@ class ExecWidget(QDMNodeContentWidget):
         self.main_layout.setContentsMargins(15, 15, 15, 25)
         self.main_layout.addWidget(self.run_button)
         self.main_layout.addWidget(self.stop_button)
-        self.main_layout.addWidget(self.checkbox)
+        #self.main_layout.addWidget(self.checkbox)
 
 @register_node(OP_NODE_EXEC)
 class ExecNode(CalcNode):

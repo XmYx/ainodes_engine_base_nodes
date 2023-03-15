@@ -17,18 +17,14 @@ class DataWidget(QDMNodeContentWidget):
             "Warp3D":[("translation_x", "int"),("translation_y", "int"),("translation_z", "int"),("rotation_3d_x", "int"),("rotation_3d_y", "int"),("rotation_3d_z", "int")],
             "Debug":[("debug", "text")]
         }
-
         self.add_button = QtWidgets.QPushButton("Add more")
         self.print_button = QtWidgets.QPushButton("Print")
         self.print_button.clicked.connect(self.get_widget_values)
-
         self.node_types = QtWidgets.QComboBox()
         self.node_types.addItems(self.node_types_list)
         self.node_types.currentIndexChanged.connect(self.update_data_types)
-
         self.data_types = QtWidgets.QComboBox()
         self.update_data_types()
-
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(15,15,15,25)
         layout.addWidget(self.add_button)
@@ -131,11 +127,6 @@ class DataNode(CalcNode):
         self.content.setMinimumHeight(160)
         self.input_socket_name = ["EXEC", "DATA"]
         self.output_socket_name = ["EXEC", "DATA"]
-
-
-        #self.content.setMinimumHeight(400)
-        #self.content.setMinimumWidth(256)
-        #self.content.image.changeEvent.connect(self.onInputChanged)
     @QtCore.Slot()
     def resize(self):
         y = 300
@@ -145,8 +136,6 @@ class DataNode(CalcNode):
                 for j in range(item.count()):
                     y += 15
         self.grNode.height = y + 20
-        #self.grNode.width = 256
-        #self.content.setMinimumWidth(256)
         self.content.setGeometry(0,0,240,y)
         size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         self.content.setSizePolicy(size_policy)
@@ -167,16 +156,10 @@ class DataNode(CalcNode):
             data = None
 
         values = self.content.get_widget_values()
-        #print("WIDGET DATA:", values)
-        #for key, value in values.items():
-       #     print("DICT:", key[0], key[1], value)
-
         if data != None:
             data = merge_dicts(data, values)
         else:
             data = values
-
-        #print("DATA:", data)
         self.setOutput(0, data)
         if len(self.getOutputs(1)) > 0:
             self.executeChild(1)
@@ -190,9 +173,6 @@ class DataNode(CalcNode):
     def start(self):
         self.interrupt = False
         self.evalImplementation(0)
-
-
-
 
 def merge_dicts(dict1, dict2):
     result_dict = dict1.copy()

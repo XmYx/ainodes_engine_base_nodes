@@ -69,7 +69,7 @@ class TorchLoaderNode(CalcNode):
         self.grNode.width = 340
         self.grNode.height = 160
         self.content.setMinimumHeight(140)
-        self.content.setMinimumWidth(340    )
+        self.content.setMinimumWidth(340)
 
     def evalImplementation(self, index=0):
         #print(gs.models)
@@ -79,9 +79,6 @@ class TorchLoaderNode(CalcNode):
         print(gs.current["sd_model"])
         if model_name not in gs.loaded_models["loaded"]:
             if model_name != "" and "inpaint" not in model_name:
-
-
-
                 if gs.current["sd_model"] != model_name:
                     for i in gs.loaded_models["loaded"]:
                         if i == gs.current["sd_model"]:

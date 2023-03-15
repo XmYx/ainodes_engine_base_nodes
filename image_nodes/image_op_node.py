@@ -17,6 +17,7 @@ from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend.deforum.deforum_anim_warp import anim_frame_warp_3d
 from ..ainodes_backend.semseg.semseg_inference import SemSegModel
 
+from ainodes_frontend import singleton as gs
 OP_NODE_IMAGE_OPS = get_next_opcode()
 
 image_ops_methods = [
@@ -247,11 +248,12 @@ class ImageOpNode(CalcNode):
             del detector
         elif method == 'depth_transform':
             image = np.array(image)
-            detector = MidasDetector()
-            detector.model.cpu()
-            detector.model = None
+            if "deforum_midas" not in gs.models:
+                gs.models["deforum_midas"] = MidasDetector()
+                gs.models["deforum_midas"].model.cpu()
+                gs.models["deforum_midas"].model = None
+                gs.models["deforum_midas"].load_midas()
 
-            detector.load_midas()
             a = self.content.midas_a.value()
             bg_threshold = self.content.midas_bg.value()
             device = "cuda"
@@ -263,7 +265,7 @@ class ImageOpNode(CalcNode):
                     "rotation_3d_y" : 0,
                     "rotation_3d_z" : 0,
                     }
-            tensor = detector.predict(image)
+            tensor = gs.models["deforum_midas"].predict(image)
             if self.getInput(1) != None:
                 node, index = self.getInput(1)
                 data = node.getOutput(index)
@@ -273,9 +275,9 @@ class ImageOpNode(CalcNode):
                         args[key[1]] = value
             np_image = anim_frame_warp_3d(device, image, tensor, args["translation_x"], args["translation_y"], args["translation_z"], args["rotation_3d_x"], args["rotation_3d_y"], args["rotation_3d_z"])
             image = Image.fromarray(np_image)
-            detector.deforum_midas.cpu()
-            detector.deforum_midas = None
-            del detector
+
+
+
 
         elif method == 'normal':
             image = np.array(image)

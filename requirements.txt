@@ -39,7 +39,7 @@ ffmpeg-python
 #wavio
 pyqtgraph
 
-tf-nightly
+tensorflow
 
 #Deforum
 pandas

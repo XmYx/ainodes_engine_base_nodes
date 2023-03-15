@@ -55,12 +55,6 @@ class ConditioningNode(CalcNode):
         #self.content.image.changeEvent.connect(self.onInputChanged)
 
     def evalImplementation(self, index=0):
-        # Start the worker thread
-        #self.worker = Worker(self.get_conditioning)
-        # Connect the worker's finished signal to a slot that updates the node value
-        #self.worker.signals.result.connect(self.onWorkerFinished)
-        #self.scene.queue.add_task(self.get_conditioning)
-        #self.scene.queue.task_finished.connect(self.onWorkerFinished)
         print(f"CONDITIONING NODE: Applying conditioning with prompt: {self.content.prompt.toPlainText()}")
         result = self.get_conditioning()
         self.setOutput(0, result)
@@ -71,7 +65,6 @@ class ConditioningNode(CalcNode):
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
         self.busy = True
-        #self.scene.threadpool.start(self.worker)
         return result
 
     def onMarkedDirty(self):
@@ -80,16 +73,15 @@ class ConditioningNode(CalcNode):
         #print("Getting Conditioning on ", id(self))
         prompt = self.content.prompt.toPlainText()
 
-        if gs.loaded_models["loaded"] == []:
+        """if gs.loaded_models["loaded"] == []:
             for node in self.scene.nodes:
                 if isinstance(node, TorchLoaderNode):
                     node.evalImplementation()
-                    #print("Node found")
+                    #print("Node found")"""
 
         c = gs.models["sd"].model.cond_stage_model.encode([prompt])
         uc = {}
         return [[c, uc]]
-    @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         # Update the node value and mark it as dirty
         self.value = result

@@ -1,3 +1,4 @@
+import copy
 import time
 
 import numpy as np
@@ -97,27 +98,30 @@ class FILMNode(CalcNode):
             self.markDirty(False)
             self.markInvalid(False)
         elif pixmap1 != None:
-            try:
-                image = pixmap_to_pil_image(pixmap1)
-                np_image = np.array(image)
-                self.FILM_temp.append(np_image)
-                if len(self.FILM_temp) == 2:
-                    frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
-                    print(f"FILM NODE:  {len(frames)}")
-                    for frame in frames:
-                        image = Image.fromarray(frame)
-                        pixmap = pil_image_to_pixmap(image)
-                        self.setOutput(0, pixmap)
-                        if len(self.getOutputs(1)) > 0:
-                            self.executeChild(output_index=1)
-                        time.sleep(0.05)
-                    self.FILM_temp = [self.FILM_temp[1]]
+            #try:
+            image = pixmap_to_pil_image(pixmap1)
+            np_image = np.array(image)
+            self.FILM_temp.append(np_image)
+            if len(self.FILM_temp) == 2:
+                frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
+                print(f"FILM NODE:  {len(frames)}")
+                #frames = frames[1:-1]
+                last = frames.pop()
+                print(f"FILM NODE:  {len(frames)}")
+                for frame in frames:
+                    image = Image.fromarray(copy.deepcopy(frame))
+                    pixmap = pil_image_to_pixmap(image)
+                    self.setOutput(0, pixmap)
+                    if len(self.getOutputs(1)) > 0:
+                        self.executeChild(output_index=1)
+                    time.sleep(0.05)
+                self.FILM_temp = [self.FILM_temp[1]]
                 print(f"FILM NODE: Using only First input")
-            except:
-                if len(self.getOutputs(2)) > 0:
-                    self.executeChild(output_index=2)
+            #except:
+                #if len(self.getOutputs(2)) > 0:
+                #    self.executeChild(output_index=2)
 
-                pass
+            #    pass
         elif pixmap1 != None:
             try:
                 self.setOutput(0, pixmap1)

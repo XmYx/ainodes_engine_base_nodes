@@ -19,7 +19,7 @@ from PIL import Image
 OP_NODE_IMG_PREVIEW = get_next_opcode()
 
 class ImageOutputWidget(QDMNodeContentWidget):
-    eval_signal = QtCore.Signal()
+    preview_signal = QtCore.Signal(object)
     def initUI(self):
         self.image = QLabel(self)
         self.image.setAlignment(Qt.AlignRight)
@@ -73,7 +73,7 @@ class ImagePreviewWidget(CalcNode):
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
         #self.eval()
-        self.content.eval_signal.connect(self.evalImplementation)
+        #self.content.eval_signal.connect(self.evalImplementation)
         self.content.button.clicked.connect(self.save_image)
         self.content.next_button.clicked.connect(self.show_next_image)
 
@@ -85,11 +85,12 @@ class ImagePreviewWidget(CalcNode):
         self.grNode.height = 200
         self.images = []
         self.index = 0
+        self.content.preview_signal.connect(self.show_image)
 
 
-    def evalImplementation(self, index=0):
+    """def evalImplementation(self, index=0):
         thread0 = threading.Thread(target=self.evalImplementation_thread)
-        thread0.start()
+        thread0.start()"""
 
 
     def show_next_image(self):
@@ -137,7 +138,7 @@ class ImagePreviewWidget(CalcNode):
             self.setOutput(0, pixmap)
             self.index += 1
             self.resize()
-    def evalImplementation_thread(self, index=0):
+    def evalImplementation(self, index=0):
         #self.markDirty(True)
         if self.getInput(0) is not None:
             input_node, other_index = self.getInput(0)
@@ -153,7 +154,8 @@ class ImagePreviewWidget(CalcNode):
                 self.markInvalid()
                 return
             #print("Preview Node Value", val)
-            self.content.image.setPixmap(val)
+            self.content.preview_signal.emit(val)
+            #self.content.image.setPixmap(val)
             self.resize()
             self.setOutput(0, val)
             self.markInvalid(False)
@@ -179,6 +181,10 @@ class ImagePreviewWidget(CalcNode):
         else:
             val = self.value
         return val
+    @QtCore.Slot(object)
+    def show_image(self, image):
+        self.content.image.setPixmap(image)
+
     def save_image(self):
         try:
             pixmap = self.content.image.pixmap()
@@ -196,7 +202,8 @@ class ImagePreviewWidget(CalcNode):
         self.markInvalid(True)
         #self.eval()
     def eval(self):
-        self.content.eval_signal.emit()
+        self.evalImplementation(0)
+        #self.content.eval_signal.emit()
 
     def resize(self):
         self.grNode.setToolTip("")

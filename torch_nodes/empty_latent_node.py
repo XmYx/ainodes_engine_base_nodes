@@ -19,6 +19,9 @@ OP_NODE_LATENT_COMPOSITE = get_next_opcode()
 class LatentWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image
+
+
+
         self.width = QtWidgets.QSpinBox()
         self.width.setMinimum(64)
         self.width.setMaximum(4096)
@@ -33,7 +36,6 @@ class LatentWidget(QDMNodeContentWidget):
         palette = QtGui.QPalette()
         palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
         palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
-
 
         self.rescale_latent = QtWidgets.QCheckBox("Latent Rescale")
         self.rescale_latent.setPalette(palette)
