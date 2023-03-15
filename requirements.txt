@@ -1,4 +1,5 @@
 scikit-image>=0.19
+ffmpeg-python==0.2.0
 transformers
 diffusers
 einops
@@ -34,7 +35,7 @@ basicsr
 #sounddevice
 #soundfile
 #pydub
-ffmpeg-python
+
 #wavio
 pyqtgraph
 tensorflow

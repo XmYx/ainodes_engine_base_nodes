@@ -19,38 +19,13 @@ OP_NODE_LATENT_COMPOSITE = get_next_opcode()
 class LatentWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image
+        self.create_widgets()
+        self.create_main_layout()
 
-
-
-        self.width = QtWidgets.QSpinBox()
-        self.width.setMinimum(64)
-        self.width.setMaximum(4096)
-        self.width.setValue(512)
-        self.width.setSingleStep(64)
-
-        self.height = QtWidgets.QSpinBox()
-        self.height.setMinimum(64)
-        self.height.setMaximum(4096)
-        self.height.setValue(512)
-        self.height.setSingleStep(64)
-        palette = QtGui.QPalette()
-        palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
-        palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
-
-        self.rescale_latent = QtWidgets.QCheckBox("Latent Rescale")
-        self.rescale_latent.setPalette(palette)
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(15,15,15,20)
-        layout.setSpacing(10)
-        layout.addWidget(self.width)
-        layout.addWidget(self.height)
-        layout.addWidget(self.rescale_latent)
-
-        self.setLayout(layout)
-
-
-
+    def create_widgets(self):
+        self.width = self.create_spin_box("Width", 64, 4096, 512, 64)
+        self.height = self.create_spin_box("Height", 64, 4096, 512, 64)
+        self.rescale_latent = self.create_check_box("Latent Rescale")
 @register_node(OP_NODE_LATENT)
 class LatentNode(AiNode):
     icon = "icons/in.png"
