@@ -56,9 +56,8 @@ class ColorMatch(AiNode):
 
             matched_image = maintain_colors(np_image_2, np_image_1, 'Match Frame 0 HSV')
             matched_image = cv2.cvtColor(matched_image, cv2.COLOR_BGR2RGB)
-            print(matched_image.shape)
+
             pil_image = Image.fromarray(matched_image)
-            print(pil_image)
             pixmap = pil_image_to_pixmap(pil_image)
 
             self.setOutput(0, pixmap)

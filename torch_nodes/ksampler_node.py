@@ -26,6 +26,7 @@ SAMPLERS = ["euler", "euler_ancestral", "heun", "dpm_2", "dpm_2_ancestral",
             "dpmpp_2m", "ddim", "uni_pc", "uni_pc_bh2"]
 
 class KSamplerWidget(QDMNodeContentWidget):
+    seed_signal = QtCore.Signal()
     def initUI(self):
         self.create_widgets()
         self.create_main_layout()
@@ -70,6 +71,7 @@ class KSamplerNode(AiNode):
         self.content.setMinimumHeight(256)
         self.seed = ""
         self.content.fix_seed_button.clicked.connect(self.setSeed)
+        self.content.seed_signal.connect(self.setSeed)
     def evalImplementation(self, index=0):
         self.markDirty(True)
         if self.value is None:
@@ -109,6 +111,7 @@ class KSamplerNode(AiNode):
         except:
             self.seed = secrets.randbelow(99999999)
         if self.content.iterate_seed.isChecked() == True:
+            self.content.seed_signal.emit()
             self.seed += 1
         try:
             last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
@@ -158,6 +161,7 @@ class KSamplerNode(AiNode):
         if len(self.getOutputs(2)) > 0:
             self.executeChild(output_index=2)
         return
+    @QtCore.Slot()
     def setSeed(self):
         self.content.seed.setText(str(self.seed))
     def onInputChanged(self, socket=None):
