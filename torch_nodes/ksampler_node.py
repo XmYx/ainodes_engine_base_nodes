@@ -15,11 +15,8 @@ from qtpy.QtGui import QPixmap
 
 from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
-
-#from PyQt5.Qsci import QsciScintilla, QsciLexerPython
 
 OP_NODE_K_SAMPLER = get_next_opcode()
 
@@ -31,8 +28,7 @@ SAMPLERS = ["euler", "euler_ancestral", "heun", "dpm_2", "dpm_2_ancestral",
 class KSamplerWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
-        self.create_layouts()
-        self.setLayout(self.main_layout)
+        self.create_main_layout()
 
     def create_widgets(self):
         self.schedulers = self.create_combo_box(SCHEDULERS, "Scheduler:")
@@ -48,59 +44,21 @@ class KSamplerWidget(QDMNodeContentWidget):
         self.guidance_scale = self.create_double_spin_box("Guidance Scale:", 1.01, 100.00, 0.01, 7.50)
         self.button = QtWidgets.QPushButton("Run")
         self.fix_seed_button = QtWidgets.QPushButton("Fix Seed")
-
-    def create_layouts(self):
-        self.main_layout = QtWidgets.QVBoxLayout(self)
-        self.main_layout.setContentsMargins(15, 15, 15, 25)
-        self.main_layout.addLayout(self.schedulers.layout)
-        self.main_layout.addLayout(self.sampler.layout)
-        self.main_layout.addLayout(self.seed.layout)
-        self.main_layout.addLayout(self.steps.layout)
-        self.main_layout.addLayout(self.start_step.layout)
-        self.main_layout.addLayout(self.last_step.layout)
-        stop_early_layout = QtWidgets.QVBoxLayout()
-        stop_early_layout.addWidget(self.stop_early)
-        stop_early_layout.addWidget(self.force_denoise)
-        stop_early_layout.addWidget(self.disable_noise)
-        stop_early_layout.addWidget(self.denoise)
-        self.main_layout.addLayout(stop_early_layout)
-        self.main_layout.addLayout(self.guidance_scale.layout)
-        self.main_layout.addLayout(self.create_button_layout([self.button, self.fix_seed_button]))
-
-    """def serialize(self):
-        res = super().serialize()
-        res['scheduler'] = self.schedulers.currentText()
-        res['sampler'] = self.sampler.currentText()
-        res['seed'] = self.seed.text()
-        res['steps'] = self.steps.value()
-        res['guidance_scale'] = self.guidance_scale.value()
-        return res
-
-    def deserialize(self, data, hashmap={}):
-        res = super().deserialize(data, hashmap)
-        try:
-            self.schedulers.setCurrentText(data['scheduler'])
-            self.sampler.setCurrentText(data['sampler'])
-            self.seed.setText(data['seed'])
-            self.steps.setValue(data['steps'])
-            self.guidance_scale.setValue(data['guidance_scale'])
-            return True & res
-        except Exception as e:
-            dumpException(e)
-        return res"""
+        self.create_button_layout([self.button, self.fix_seed_button])
 
 
 @register_node(OP_NODE_K_SAMPLER)
-class KSamplerNode(CalcNode):
+class KSamplerNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_K_SAMPLER
     op_title = "K Sampler"
     content_label_objname = "K_sampling_node"
     category = "sampling"
-    def __init__(self, scene):
+    def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[2,3,3,1], outputs=[5,2,1])
         self.content.button.clicked.connect(self.evalImplementation)
         self.busy = False
+
         # Create a worker object
     def initInnerClasses(self):
         self.content = KSamplerWidget(self)
@@ -109,14 +67,9 @@ class KSamplerNode(CalcNode):
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(256)
-        self.input_socket_name = ["EXEC", "COND", "N COND", "LATENT"]
-        self.output_socket_name = ["EXEC", "LATENT", "IMAGE"]
         self.seed = ""
         self.content.fix_seed_button.clicked.connect(self.setSeed)
-
     def evalImplementation(self, index=0):
-
-
         self.markDirty(True)
         if self.value is None:
             # Start the worker thread

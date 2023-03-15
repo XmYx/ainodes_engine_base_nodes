@@ -5,7 +5,7 @@ from qtpy.QtWidgets import QLabel, QFileDialog, QVBoxLayout
 from qtpy.QtGui import QPixmap
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
@@ -71,7 +71,7 @@ class ImageInputWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_IMG_INPUT)
-class ImageInputNode(CalcNode):
+class ImageInputNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_IMG_INPUT
     op_title = "Input"

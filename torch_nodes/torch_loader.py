@@ -5,7 +5,7 @@ from ..ainodes_backend.model_loader import ModelLoader
 from ..ainodes_backend import torch_gc
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 from ainodes_frontend import singleton as gs
@@ -51,7 +51,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
         #self.parent.setAlignment(Qt.AlignCenter)
 
 @register_node(OP_NODE_TORCH_LOADER)
-class TorchLoaderNode(CalcNode):
+class TorchLoaderNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_TORCH_LOADER
     op_title = "Torch Loader"

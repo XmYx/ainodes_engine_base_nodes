@@ -9,7 +9,7 @@ from ainodes_frontend import singleton as gs
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 
 OP_NODE_CN_APPLY = get_next_opcode()
 class CNApplyWidget(QDMNodeContentWidget):
@@ -36,7 +36,7 @@ class CNApplyWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_CN_APPLY)
-class CNApplyNode(CalcNode):
+class CNApplyNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_CN_APPLY
     op_title = "Apply ControlNet"

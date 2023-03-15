@@ -3,7 +3,7 @@ from PIL import Image
 from qtpy import QtWidgets, QtCore, QtGui
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap, \
@@ -30,7 +30,7 @@ class BlendWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_IMAGE_BLEND)
-class BlendNode(CalcNode):
+class BlendNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_IMAGE_BLEND
     op_title = "Image Blend"

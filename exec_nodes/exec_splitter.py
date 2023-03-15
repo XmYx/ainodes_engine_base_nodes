@@ -2,7 +2,7 @@
 from qtpy import QtWidgets
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
@@ -17,7 +17,7 @@ class ExecSplitterWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_EXEC_SPLITTER)
-class ExecSplitterNode(CalcNode):
+class ExecSplitterNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_EXEC_SPLITTER
     op_title = "Execute Splitter"

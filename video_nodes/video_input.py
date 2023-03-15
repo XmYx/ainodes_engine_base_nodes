@@ -7,7 +7,7 @@ from qtpy.QtCore import Qt
 from ..ainodes_backend import pil_image_to_pixmap
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
@@ -84,7 +84,7 @@ class VideoInputWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_VIDEO_INPUT)
-class VideoInputNode(CalcNode):
+class VideoInputNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_VIDEO_INPUT
     op_title = "Video Input"

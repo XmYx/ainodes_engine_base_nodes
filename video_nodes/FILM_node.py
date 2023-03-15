@@ -7,7 +7,7 @@ from PIL import Image
 from qtpy import QtWidgets, QtCore, QtGui
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap, \
@@ -21,28 +21,17 @@ from ainodes_frontend import singleton as gs
 class FILMWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image
-        self.text_label = QtWidgets.QLabel("Image Operator:")
-
-        self.film = QtWidgets.QSpinBox()
-        self.film.setMinimum(1)
-        self.film.setSingleStep(1)
-        self.film.setMaximum(4096)
-        self.film.setValue(25)
-
-        self.composite_method = QtWidgets.QComboBox()
-        self.composite_method.addItems(pixmap_composite_method_list)
-
+        self.text_label = QtWidgets.QLabel("FILM Interpolation:")
+        self.film = self.create_spin_box("FRAMES", 1, 4096, 10, 1)
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
-        layout.addWidget(self.composite_method)
+        layout.setContentsMargins(15,15,15,15)
         layout.addWidget(self.film)
-
         self.setLayout(layout)
 
 
 
 @register_node(OP_NODE_FILM)
-class FILMNode(CalcNode):
+class FILMNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_FILM
     op_title = "FILM"
@@ -100,7 +89,7 @@ class FILMNode(CalcNode):
         elif pixmap1 != None:
             #try:
             image = pixmap_to_pil_image(pixmap1)
-            np_image = np.array(image)
+            np_image = np.array(image.convert("RGB"))
             self.FILM_temp.append(np_image)
             if len(self.FILM_temp) == 2:
                 frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
@@ -139,3 +128,6 @@ class FILMNode(CalcNode):
     def eval(self):
         self.markDirty(True)
         self.evalImplementation()
+
+
+

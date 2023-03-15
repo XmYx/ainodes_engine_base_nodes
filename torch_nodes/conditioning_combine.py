@@ -2,7 +2,7 @@ import torch
 from qtpy import QtWidgets, QtCore
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
@@ -72,7 +72,7 @@ class ConditioningCombineWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_CONDITIONING_COMBINE)
-class ConditioningCombineNode(CalcNode):
+class ConditioningCombineNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_CONDITIONING_COMBINE
     op_title = "Combine Conditioning"
@@ -139,7 +139,7 @@ class ConditioningCombineNode(CalcNode):
     def combine(self, conditioning_1, conditioning_2):
         return [conditioning_1 + conditioning_2]
 @register_node(OP_NODE_CONDITIONING_SET_AREA)
-class ConditioningAreaNode(CalcNode):
+class ConditioningAreaNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_CONDITIONING_SET_AREA
     op_title = "Set Conditioning Area"

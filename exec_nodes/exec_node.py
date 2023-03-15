@@ -4,7 +4,7 @@ import threading
 from qtpy import QtWidgets, QtGui
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
@@ -34,7 +34,7 @@ class ExecWidget(QDMNodeContentWidget):
         #self.main_layout.addWidget(self.checkbox)
 
 @register_node(OP_NODE_EXEC)
-class ExecNode(CalcNode):
+class ExecNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_EXEC
     op_title = "Execute"

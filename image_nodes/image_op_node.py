@@ -11,7 +11,7 @@ from ..ainodes_backend.cnet_preprocessors import OpenposeDetector
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend.deforum.deforum_anim_warp import anim_frame_warp_3d
@@ -135,7 +135,7 @@ class ImageOpsWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_IMAGE_OPS)
-class ImageOpNode(CalcNode):
+class ImageOpNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_IMAGE_OPS
     op_title = "Image Operators"

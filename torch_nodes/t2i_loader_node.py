@@ -6,7 +6,7 @@ from ..ainodes_backend import torch_gc, load_controlnet
 
 from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend.t2i import load_t2i_adapter
@@ -44,7 +44,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
         #self.parent.setAlignment(Qt.AlignCenter)
 
 @register_node(OP_NODE_T2I_LOADER)
-class T2ILoaderNode(CalcNode):
+class T2ILoaderNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_T2I_LOADER
     op_title = "T2I Loader"

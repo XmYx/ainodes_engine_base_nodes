@@ -10,7 +10,7 @@ from qtpy import QtWidgets, QtGui, QtCore
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
@@ -62,7 +62,7 @@ class ImageOutputWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_IMG_PREVIEW)
-class ImagePreviewWidget(CalcNode):
+class ImagePreviewWidget(AiNode):
     icon = "icons/out.png"
     op_code = OP_NODE_IMG_PREVIEW
     op_title = "Image Preview"
@@ -156,7 +156,7 @@ class ImagePreviewWidget(CalcNode):
             #print("Preview Node Value", val)
             self.content.preview_signal.emit(val)
             #self.content.image.setPixmap(val)
-            self.resize()
+
             self.setOutput(0, val)
             self.markInvalid(False)
             self.markDirty(False)
@@ -184,6 +184,7 @@ class ImagePreviewWidget(CalcNode):
     @QtCore.Slot(object)
     def show_image(self, image):
         self.content.image.setPixmap(image)
+        self.resize()
 
     def save_image(self):
         try:

@@ -11,7 +11,7 @@ from qtpy.QtWidgets import QPushButton, QVBoxLayout
 from ..ainodes_backend import pixmap_to_pil_image
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
@@ -58,7 +58,7 @@ class VideoOutputWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_VIDEO_SAVE)
-class VideoOutputNode(CalcNode):
+class VideoOutputNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_VIDEO_SAVE
     op_title = "Video Save"

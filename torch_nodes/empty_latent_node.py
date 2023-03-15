@@ -9,7 +9,7 @@ from ..ainodes_backend import pixmap_to_pil_image
 
 from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 from einops import repeat
@@ -52,7 +52,7 @@ class LatentWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_LATENT)
-class LatentNode(CalcNode):
+class LatentNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_LATENT
     op_title = "Empty Latent Image"
@@ -60,6 +60,7 @@ class LatentNode(CalcNode):
     category = "sampling"
 
     def __init__(self, scene):
+
         super().__init__(scene, inputs=[2,5,1], outputs=[2,1])
         #self.eval()
         #self.content.eval_signal.connect(self.eval)
@@ -189,7 +190,7 @@ class LatentCompositeWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_LATENT_COMPOSITE)
-class LatentCompositeNode(CalcNode):
+class LatentCompositeNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_LATENT_COMPOSITE
     op_title = "Composite Latent Images"

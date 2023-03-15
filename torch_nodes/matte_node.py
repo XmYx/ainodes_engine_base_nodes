@@ -7,7 +7,7 @@ from ..ainodes_backend.matte.matte import MatteInference
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 from ainodes_frontend import singleton as gs
@@ -27,7 +27,7 @@ class MatteWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_MATTE)
-class MatteNode(CalcNode):
+class MatteNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_MATTE
     op_title = "Matting"

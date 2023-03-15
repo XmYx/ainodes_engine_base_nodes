@@ -1,7 +1,7 @@
 #from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
 from qtpy import QtWidgets, QtCore
 from ainodes_frontend.base import register_node, get_next_opcode
-from ainodes_frontend.base import CalcNode, CalcGraphicsNode
+from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
@@ -106,7 +106,7 @@ class DataWidget(QDMNodeContentWidget):
 
 
 @register_node(OP_NODE_DATA)
-class DataNode(CalcNode):
+class DataNode(AiNode):
     icon = "icons/in.png"
     op_code = OP_NODE_DATA
     op_title = "Data"
