@@ -61,7 +61,7 @@ class ControlnetLoaderNode(AiNode):
         self.grNode = CalcGraphicsNode(self)
 
         self.content.control_net_name.currentIndexChanged.connect(self.resize)
-        self.resize()
+        #self.resize()
         self.grNode.width = 280
         self.grNode.height = 100
     def resize(self):
