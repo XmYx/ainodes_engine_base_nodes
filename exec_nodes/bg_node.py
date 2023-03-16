@@ -19,7 +19,6 @@ class BGNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[], outputs=[])
-        #self.content.button.clicked.connect(self.evalImplementation)
         self.busy = False
         # Create a worker object
     def initInnerClasses(self):
@@ -47,7 +46,6 @@ class BGNode(AiNode):
             self.grNode._brush_background = deserialized_brush
             self.grNode.width = (data['width'])
             self.grNode.height = (data['height'])
-            #self.grNode._min_size = self.grNode.width, self.grNode.height
             self.grNode._sizer.set_pos([self.grNode.width, self.grNode.height])
             return True & res
         except Exception as e:

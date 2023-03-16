@@ -14,51 +14,16 @@ OP_NODE_CONDITIONING_SET_AREA = get_next_opcode()
 
 class ConditioningSetAreaWidget(QDMNodeContentWidget):
     def initUI(self):
+        self.create_widgets()
+        self.create_main_layout()
         # Create a label to display the image
         #self.text_label = QtWidgets.QLabel("Diffusers:")
-        self.prompt = QtWidgets.QTextEdit()
-
-        self.width = QtWidgets.QSpinBox()
-        self.width.setMinimum(64)
-        self.width.setMaximum(4096)
-        self.width.setValue(64)
-        self.width.setSingleStep(64)
-
-        self.height = QtWidgets.QSpinBox()
-        self.height.setMinimum(64)
-        self.height.setMaximum(4096)
-        self.height.setValue(64)
-        self.height.setSingleStep(64)
-
-        self.x_spinbox = QtWidgets.QSpinBox()
-        self.x_spinbox.setMinimum(0)
-        self.x_spinbox.setMaximum(4096)
-        self.x_spinbox.setValue(0)
-        self.x_spinbox.setSingleStep(64)
-
-        self.y_spinbox = QtWidgets.QSpinBox()
-        self.y_spinbox.setMinimum(0)
-        self.y_spinbox.setMaximum(4096)
-        self.y_spinbox.setValue(0)
-        self.y_spinbox.setSingleStep(64)
-
-        self.strength = QtWidgets.QDoubleSpinBox()
-        self.strength.setMinimum(0.01)
-        self.strength.setMaximum(10.00)
-        self.strength.setValue(1.00)
-        self.strength.setSingleStep(0.01)
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(15,15,15,20)
-        layout.setSpacing(10)
-        layout.addWidget(self.width)
-        layout.addWidget(self.height)
-        layout.addWidget(self.x_spinbox)
-        layout.addWidget(self.y_spinbox)
-        layout.addWidget(self.strength)
-        self.setLayout(layout)
-
-
+    def create_widgets(self):
+        self.width = self.create_spin_box("Width", 64, 4096, 512, 64)
+        self.height = self.create_spin_box("Height", 64, 4096, 512, 64)
+        self.x_spinbox = self.create_spin_box("X", 64, 4096, 512, 64)
+        self.y_spinbox = self.create_spin_box("Y", 64, 4096, 512, 64)
+        self.strength = self.create_double_spin_box("strength", 0.01, 10.00, 0.01, 1.00)
 
 class ConditioningCombineWidget(QDMNodeContentWidget):
     def initUI(self):

@@ -56,8 +56,7 @@ image_ops_valid_methods = [
 class ImageOpsWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
-        self.create_layouts()
-        self.setLayout(self.main_layout)
+        self.create_main_layout()
         self.dropdown.currentIndexChanged.connect(self.dropdownChanged)
         self.height_value.valueChanged.connect(self.calculate_image_ratio)
         self.width_value.valueChanged.connect(self.calculate_image_ratio)
@@ -66,12 +65,11 @@ class ImageOpsWidget(QDMNodeContentWidget):
     def create_widgets(self):
         self.text_label = QtWidgets.QLabel("Image Operator:")
         self.dropdown = self.create_combo_box(image_ops_methods, "Image Operator:")
-        self.dropdown.currentIndexChanged.connect(self.dropdownChanged)
 
         self.width_value = self.create_spin_box("Width:", 64, 4096, 512, 64)
         self.height_value = self.create_spin_box("Height:", 64, 4096, 512, 64)
 
-        self.resize_ratio_label = QtWidgets.QLabel("Resize Ratio")
+        self.resize_ratio_label = self.create_label("Resize Ratio")
 
         self.canny_low = self.create_spin_box("Canny Low:", 0, 255, 100, 1)
         self.canny_high = self.create_spin_box("Canny High:", 0, 255, 100, 1)
@@ -79,17 +77,6 @@ class ImageOpsWidget(QDMNodeContentWidget):
         self.midas_a = self.create_double_spin_box("Midas A:", 0.00, 100.00, 0.01, np.pi * 2.0)
         self.midas_bg = self.create_double_spin_box("Midas Bg:", 0.00, 100.00, 1.00, 0.01)
 
-    def create_layouts(self):
-        self.main_layout = QtWidgets.QVBoxLayout(self)
-        self.main_layout.setContentsMargins(15, 15, 15, 15)
-        self.main_layout.addLayout(self.dropdown.layout)
-        self.main_layout.addLayout(self.width_value.layout)
-        self.main_layout.addLayout(self.height_value.layout)
-        self.main_layout.addWidget(self.resize_ratio_label)
-        self.main_layout.addLayout(self.canny_low.layout)
-        self.main_layout.addLayout(self.canny_high.layout)
-        self.main_layout.addLayout(self.midas_a.layout)
-        self.main_layout.addLayout(self.midas_bg.layout)
 
     def dropdownChanged(self, event=None):
         value = self.dropdown.currentText()
@@ -164,14 +151,9 @@ class ImageOpNode(AiNode):
         #self.content.image.changeEvent.connect(self.onInputChanged)
     @QtCore.Slot(int)
     def evalImplementation(self, index=0):
-        #if self.getInput(index) != None:
-        #self.markInvalid()
-        #self.markDescendantsDirty()
         if self.getInput(index) != None:
             node, index = self.getInput(index)
             if node != None:
-            #print("RETURN", node, index)
-
                 pixmap = node.getOutput(index)
                 method = self.content.dropdown.currentText()
                 self.value = self.image_op(pixmap, method)

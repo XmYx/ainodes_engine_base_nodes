@@ -16,11 +16,9 @@ class ImageInputWidget(QDMNodeContentWidget):
     parent_resize_signal = QtCore.Signal()
     def initUI(self):
 
-        # Create a label to display the image
         self.image = QLabel(self)
         self.image.setObjectName(self.node.content_label_objname)
         self.firstRun_done = None
-        # Create a layout to place the label and button
         layout = QVBoxLayout(self)
         layout.setContentsMargins(25, 25, 25, 25)
         layout.addWidget(self.image)
@@ -91,13 +89,11 @@ class ImageInputNode(AiNode):
         self.content.setMinimumWidth(self.content.image.pixmap().size().width())
         self.grNode.height = self.content.image.pixmap().size().height() + 96
         self.grNode.width = self.content.image.pixmap().size().width() + 64
-
         for socket in self.outputs + self.inputs:
             socket.setSocketPosition()
         self.updateConnectedEdges()
 
     def init_image(self):
-        #self.content.update()
         if self.content.fileName == None:
             self.content.fileName = self.openFileDialog()
         if self.content.fileName != None:
@@ -110,18 +106,11 @@ class ImageInputNode(AiNode):
 
     def onMarkedDirty(self):
         self.content.fileName = None
-        #self.eval()
 
     def initInnerClasses(self):
         self.content = ImageInputWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        #self.init_image()
         self.content.parent_resize_signal.connect(self.resize)
-
-
-        #self.content.parent_resize_signal.emit()
-
-        #self.content.image.changeEvent.connect(self.onInputChanged)
 
     def evalImplementation(self, index=0):
         self.init_image()

@@ -34,21 +34,25 @@ class ExecNode(AiNode):
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(160)
+        return
     def evalImplementation(self, index=0):
         self.markDirty(True)
-        self.markInvalid(True)
-        if not self.interrupt:
-            self.executeChild(0)
+        self.markInvalid(False)
+        self.markDirty(False)
+        self.executeChild(0)
         return None
     def onMarkedDirty(self):
         self.value = None
+        return
 
     def stop(self):
         self.interrupt = True
+        self.markDirty(True)
         return
     def start(self):
         self.interrupt = False
         self.evalImplementation(0)
+        return
 
 
 

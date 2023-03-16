@@ -63,8 +63,7 @@ class ColorMatch(AiNode):
             self.setOutput(0, pixmap)
             self.markDirty(False)
 
-            if len(self.getOutputs(1)) > 0:
-                self.executeChild(output_index=1)
+            self.executeChild(output_index=1)
             return None
         else:
             self.markDirty(True)

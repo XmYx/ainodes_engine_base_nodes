@@ -14,19 +14,12 @@ from ainodes_frontend import singleton as gs
 OP_NODE_CONDITIONING = get_next_opcode()
 class ConditioningWidget(QDMNodeContentWidget):
     def initUI(self):
-        self.prompt = QtWidgets.QTextEdit()
-        self.steps = QtWidgets.QSpinBox()
-        self.steps.setMinimum(1)
-        self.steps.setMaximum(1000)
-        self.steps.setValue(25)
+        self.create_widgets()
+        self.create_main_layout()
+    def create_widgets(self):
+        self.prompt = self.create_text_edit("Prompt")
         self.button = QtWidgets.QPushButton("Get Conditioning")
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(15,15,15,20)
-        layout.setSpacing(10)
-        layout.addWidget(self.prompt)
-        layout.addWidget(self.button)
-        self.setLayout(layout)
-
+        self.create_button_layout([self.button])
 
 @register_node(OP_NODE_CONDITIONING)
 class ConditioningNode(AiNode):
@@ -35,7 +28,6 @@ class ConditioningNode(AiNode):
     op_title = "Conditioning"
     content_label_objname = "cond_node"
     category = "sampling"
-
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[3,1])

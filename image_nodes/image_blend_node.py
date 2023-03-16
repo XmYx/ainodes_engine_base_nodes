@@ -98,8 +98,7 @@ class BlendNode(AiNode):
                 print(f"BLEND NODE: Using only Second input")
             except:
                 pass
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
+        self.executeChild(output_index=1)
         return None
     def onMarkedDirty(self):
         self.value = None

@@ -146,23 +146,16 @@ class DataNode(AiNode):
     def evalImplementation(self, index=0):
         self.resize()
         self.markDirty(True)
-        self.markInvalid(True)
-
-        try:
-            data_node, index = self.getInput(0)
-            data = data_node.getOutput(index)
-        except Exception as e:
-            print(e)
-            data = None
-
+        data = self.getInputData(0)
         values = self.content.get_widget_values()
         if data != None:
             data = merge_dicts(data, values)
         else:
             data = values
         self.setOutput(0, data)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(1)
+        self.executeChild(1)
+        self.markDirty(False)
+        self.markInvalid(False)
         return None
     def onMarkedDirty(self):
         self.value = None
