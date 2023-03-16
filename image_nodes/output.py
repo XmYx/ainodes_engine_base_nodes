@@ -10,7 +10,7 @@ from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-
+from ainodes_frontend import singleton as gs
 from PIL import Image
 
 OP_NODE_IMG_PREVIEW = get_next_opcode()
@@ -137,8 +137,8 @@ class ImagePreviewWidget(AiNode):
             pixmap = self.content.image.pixmap()
             image = pixmap_to_pil_image(pixmap)
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            os.makedirs("output/stills", exist_ok=True)
-            filename = f"output/stills/{timestamp}.png"
+            os.makedirs(os.path.join(gs.output, "stills"), exist_ok=True)
+            filename = f"{gs.output}/{timestamp}.png"
             image.save(filename)
             print(f"IMAGE PREVIEW NODE: File saved at {filename}")
         except Exception as e:

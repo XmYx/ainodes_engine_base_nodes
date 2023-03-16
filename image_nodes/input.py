@@ -1,6 +1,6 @@
 from PIL import Image
 from PIL.ImageQt import ImageQt
-from qtpy import QtCore
+from qtpy import QtCore, QtWidgets
 from qtpy.QtWidgets import QLabel, QFileDialog, QVBoxLayout
 from qtpy.QtGui import QPixmap
 
@@ -18,12 +18,12 @@ class ImageInputWidget(QDMNodeContentWidget):
 
         self.image = QLabel(self)
         self.image.setObjectName(self.node.content_label_objname)
-        self.firstRun_done = None
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(25, 25, 25, 25)
-        layout.addWidget(self.image)
-        self.setLayout(layout)
+        self.open_button = QtWidgets.QPushButton("Open New Image")
+        self.create_button_layout([self.open_button])
 
+        self.firstRun_done = None
+
+        self.create_main_layout()
     def openFileDialog(self):
         # Open the file dialog to select a PNG file
         options = QFileDialog.Options()
@@ -70,7 +70,7 @@ class ImageInputWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_IMG_INPUT)
 class ImageInputNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/input_image.png"
     op_code = OP_NODE_IMG_INPUT
     op_title = "Input"
     content_label_objname = "image_input_node"
@@ -83,15 +83,22 @@ class ImageInputNode(AiNode):
         #self.eval()
         self.content.eval_signal.connect(self.eval)
         #print(self.content.firstRun_done)
+
+    def initInnerClasses(self):
+        self.content = ImageInputWidget(self)
+        self.grNode = CalcGraphicsNode(self)
+        self.grNode.height = 220
+        self.content.parent_resize_signal.connect(self.resize)
+        self.content.open_button.clicked.connect(self.content.openFileDialog)
+
+
     @QtCore.Slot()
     def resize(self):
         self.content.setMinimumHeight(self.content.image.pixmap().size().height())
         self.content.setMinimumWidth(self.content.image.pixmap().size().width())
         self.grNode.height = self.content.image.pixmap().size().height() + 96
         self.grNode.width = self.content.image.pixmap().size().width() + 64
-        for socket in self.outputs + self.inputs:
-            socket.setSocketPosition()
-        self.updateConnectedEdges()
+        self.update_all_sockets()
 
     def init_image(self):
         if self.content.fileName == None:
@@ -110,7 +117,6 @@ class ImageInputNode(AiNode):
     def initInnerClasses(self):
         self.content = ImageInputWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.content.parent_resize_signal.connect(self.resize)
 
     def evalImplementation(self, index=0):
         self.init_image()

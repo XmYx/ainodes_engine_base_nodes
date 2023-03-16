@@ -85,7 +85,7 @@ class VideoInputWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_VIDEO_INPUT)
 class VideoInputNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/in.png"
     op_code = OP_NODE_VIDEO_INPUT
     op_title = "Video Input"
     content_label_objname = "video_input_node"

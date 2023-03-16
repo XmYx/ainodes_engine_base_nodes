@@ -62,7 +62,7 @@ class RIFEWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_RIFE)
 class RIFENode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/interpolation.png"
     op_code = OP_NODE_RIFE
     op_title = "RIFE"
     content_label_objname = "rife_node"

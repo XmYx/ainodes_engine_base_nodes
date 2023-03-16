@@ -47,11 +47,11 @@ class KSamplerWidget(QDMNodeContentWidget):
         self.button = QtWidgets.QPushButton("Run")
         self.fix_seed_button = QtWidgets.QPushButton("Fix Seed")
         self.create_button_layout([self.button, self.fix_seed_button])
-        self.progress_bar = self.create_progress_bar("progress", 0, 100, 50)
+        self.progress_bar = self.create_progress_bar("progress", 0, 100, 0)
 
 @register_node(OP_NODE_K_SAMPLER)
 class KSamplerNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/in.png"
     op_code = OP_NODE_K_SAMPLER
     op_title = "K Sampler"
     content_label_objname = "K_sampling_node"

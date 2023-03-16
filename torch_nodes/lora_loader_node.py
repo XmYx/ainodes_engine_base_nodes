@@ -7,6 +7,7 @@ from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
+from ainodes_frontend import singleton as gs
 
 OP_NODE_LORA_LOADER = get_next_opcode()
 class LoraLoaderWidget(QDMNodeContentWidget):
@@ -15,7 +16,7 @@ class LoraLoaderWidget(QDMNodeContentWidget):
         # Create the dropdown widget
         self.dropdown = QtWidgets.QComboBox(self)
         # Populate the dropdown with .ckpt and .safetensors files in the checkpoints folder
-        lora_folder = "models/loras"
+        lora_folder = gs.loras
         lora_files = [f for f in os.listdir(lora_folder) if f.endswith(('.safetensors', '.ckpt', '.pt', '.bin', '.pth'))]
         if lora_files == []:
             self.dropdown.addItem("Please place a lora in models/loras")
@@ -42,7 +43,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_LORA_LOADER)
 class TorchLoaderNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/lora.png"
     op_code = OP_NODE_LORA_LOADER
     op_title = "Lora Loader"
     content_label_objname = "lora_loader_node"
@@ -74,7 +75,7 @@ class TorchLoaderNode(AiNode):
         pass
 
     def load_lora_to_ckpt(self, lora_name):
-        lora_path = os.path.join("models/loras", lora_name)
+        lora_path = os.path.join(gs.loras, lora_name)
         strength_model = 1.0
         strength_clip = 1.0
         load_lora_for_models(lora_path, strength_model, strength_clip)

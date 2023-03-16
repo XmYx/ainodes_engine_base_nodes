@@ -59,7 +59,7 @@ class VideoOutputWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_VIDEO_SAVE)
 class VideoOutputNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/in.png"
     op_code = OP_NODE_VIDEO_SAVE
     op_title = "Video Save"
     content_label_objname = "video_output_node"

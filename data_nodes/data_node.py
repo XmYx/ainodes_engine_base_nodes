@@ -107,7 +107,7 @@ class DataWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_DATA)
 class DataNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/dot.png"
     op_code = OP_NODE_DATA
     op_title = "Data"
     content_label_objname = "data_node"

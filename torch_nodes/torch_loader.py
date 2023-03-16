@@ -19,7 +19,7 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         self.create_main_layout()
 
     def create_widgets(self):
-        checkpoint_folder = "models/checkpoints"
+        checkpoint_folder = gs.checkpoints
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith((".ckpt", ".safetensors"))]
         if checkpoint_files == []:
             self.dropdown.addItem("Please place a model in models/checkpoints")
@@ -46,7 +46,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_TORCH_LOADER)
 class TorchLoaderNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/torch.png"
     op_code = OP_NODE_TORCH_LOADER
     op_title = "Torch Loader"
     content_label_objname = "torch_loader_node"

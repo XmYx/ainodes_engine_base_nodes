@@ -123,7 +123,7 @@ class ImageOpsWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_IMAGE_OPS)
 class ImageOpNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/image_op.png"
     op_code = OP_NODE_IMAGE_OPS
     op_title = "Image Operators"
     content_label_objname = "image_op_node"

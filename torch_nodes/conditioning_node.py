@@ -23,7 +23,7 @@ class ConditioningWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_CONDITIONING)
 class ConditioningNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/cond.png"
     op_code = OP_NODE_CONDITIONING
     op_title = "Conditioning"
     content_label_objname = "cond_node"

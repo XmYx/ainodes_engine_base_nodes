@@ -19,7 +19,7 @@ class ControlnetLoaderWidget(QDMNodeContentWidget):
         self.control_net_name = QtWidgets.QComboBox(self)
         #self.dropdown.currentIndexChanged.connect(self.on_dropdown_changed)
         # Populate the dropdown with .ckpt and .safetensors files in the checkpoints folder
-        checkpoint_folder = "models/controlnet"
+        checkpoint_folder = gs.controlnet
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', ".safetensors"))]
         self.control_net_name.addItems(checkpoint_files)
         # Add the dropdown widget to the layout
@@ -44,7 +44,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_CONTROLNET_LOADER)
 class ControlnetLoaderNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/in.png"
     op_code = OP_NODE_CONTROLNET_LOADER
     op_title = "ControlNet Loader"
     content_label_objname = "controlnet_loader_node"
@@ -59,9 +59,22 @@ class ControlnetLoaderNode(AiNode):
     def initInnerClasses(self):
         self.content = ControlnetLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
+
+        self.content.control_net_name.currentIndexChanged.connect(self.resize)
+        self.resize()
         self.grNode.width = 280
         self.grNode.height = 100
-
+    def resize(self):
+        text = self.content.control_net_name.currentText()
+        font_metrics = self.content.control_net_name.fontMetrics()
+        text_width = font_metrics.horizontalAdvance(text)
+        # Add some extra width for padding and the dropdown arrow
+        extra_width = 100
+        new_width = text_width + extra_width
+        self.grNode.width = new_width + 20 if new_width > 300 else 320
+        new_width = new_width if new_width > 280 else 280
+        self.content.setMinimumWidth(new_width)
+        self.update_all_sockets()
     def evalImplementation(self, index=0):
         #self.executeChild()
         model_name = self.content.control_net_name.currentText()
@@ -96,7 +109,7 @@ class ControlnetLoaderNode(AiNode):
 
     def load_controlnet(self):
         #if "controlnet" not in gs.models:
-        controlnet_dir = "models/controlnet"
+        controlnet_dir = gs.controlnet
         controlnet_path = os.path.join(controlnet_dir, self.content.control_net_name.currentText())
         if "controlnet" in gs.models:
             try:

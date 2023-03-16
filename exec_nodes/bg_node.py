@@ -11,7 +11,7 @@ OP_NODE_BG = get_next_opcode()
 
 @register_node(OP_NODE_BG)
 class BGNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/bg.png"
     op_code = OP_NODE_BG
     op_title = "Bg Node"
     content_label_objname = "bg_node"
@@ -46,7 +46,7 @@ class BGNode(AiNode):
             self.grNode._brush_background = deserialized_brush
             self.grNode.width = (data['width'])
             self.grNode.height = (data['height'])
-            self.grNode._sizer.set_pos([self.grNode.width, self.grNode.height])
+            self.grNode._sizer.set_pos(self.grNode.width, self.grNode.height)
             return True & res
         except Exception as e:
             dumpException(e)

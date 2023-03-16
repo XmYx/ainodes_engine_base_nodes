@@ -28,7 +28,7 @@ class MatteWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_MATTE)
 class MatteNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/bg.png"
     op_code = OP_NODE_MATTE
     op_title = "Matting"
     content_label_objname = "image_matte_node"

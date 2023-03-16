@@ -28,7 +28,7 @@ class LatentWidget(QDMNodeContentWidget):
         self.rescale_latent = self.create_check_box("Latent Rescale")
 @register_node(OP_NODE_LATENT)
 class LatentNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/latent.png"
     op_code = OP_NODE_LATENT
     op_title = "Empty Latent Image"
     content_label_objname = "empty_latent_node"
@@ -166,7 +166,7 @@ class LatentCompositeWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_LATENT_COMPOSITE)
 class LatentCompositeNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/in.png"
     op_code = OP_NODE_LATENT_COMPOSITE
     op_title = "Composite Latent Images"
     content_label_objname = "latent_comp_node"

@@ -20,7 +20,7 @@ class T2ILoaderWidget(QDMNodeContentWidget):
         self.t2i = QtWidgets.QComboBox(self)
         #self.dropdown.currentIndexChanged.connect(self.on_dropdown_changed)
         # Populate the dropdown with .ckpt and .safetensors files in the checkpoints folder
-        checkpoint_folder = "models/t2i_adapter"
+        checkpoint_folder = gs.t2i_adapter
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', ".safetensors"))]
         self.t2i.addItems(checkpoint_files)
         # Add the dropdown widget to the layout
@@ -45,7 +45,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_T2I_LOADER)
 class T2ILoaderNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/in.png"
     op_code = OP_NODE_T2I_LOADER
     op_title = "T2I Loader"
     content_label_objname = "t2i_loader_node"
@@ -97,7 +97,7 @@ class T2ILoaderNode(AiNode):
 
     def load_t2i(self):
         #if "controlnet" not in gs.models:
-        t2i_dir = "models/t2i_adapter"
+        t2i_dir = gs.t2i_adapter
         t2i_path = os.path.join(t2i_dir, self.content.t2i.currentText())
         if "t2i" in gs.models:
             try:

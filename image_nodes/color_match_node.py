@@ -21,7 +21,7 @@ OP_NODE_COLORMATCH = get_next_opcode()
 
 @register_node(OP_NODE_COLORMATCH)
 class ColorMatch(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/color_match_c.png"
     op_code = OP_NODE_COLORMATCH
     op_title = "Color Match"
     content_label_objname = "colormatch_node"

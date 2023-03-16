@@ -5,7 +5,7 @@ OP_NODE_EXEC_SPLITTER = get_next_opcode()
 
 @register_node(OP_NODE_EXEC_SPLITTER)
 class ExecSplitterNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/exec_split.png"
     op_code = OP_NODE_EXEC_SPLITTER
     op_title = "Execute Splitter"
     content_label_objname = "exec_splitter_node"

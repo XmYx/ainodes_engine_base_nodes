@@ -75,7 +75,7 @@ class InpaintWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_INPAINT)
 class InpaintNode(AiNode):
-    icon = "icons/in.png"
+    icon = "ainodes_frontend/icons/in.png"
     op_code = OP_NODE_INPAINT
     op_title = "InPaint Alpha"
     content_label_objname = "inpaint_sampling_node"
