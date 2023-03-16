@@ -210,7 +210,7 @@ def transform_image_3d(device, prev_img_cv2, depth_tensor, rot_mat, translate):
     # adapted and optimized version of transform_image_3d from Disco Diffusion https://github.com/alembics/disco-diffusion
     w, h = prev_img_cv2.shape[1], prev_img_cv2.shape[0]
 
-    aspect_ratio = float(w)/float(h)
+    aspect_ratio = 1
     near, far, fov_deg = 1000, 10000, 90
     persp_cam_old = p3d.FoVPerspectiveCameras(near, far, aspect_ratio, fov=fov_deg, degrees=True, device=device)
     persp_cam_new = p3d.FoVPerspectiveCameras(near, far, aspect_ratio, fov=fov_deg, degrees=True, R=rot_mat, T=torch.tensor([translate]), device=device)
