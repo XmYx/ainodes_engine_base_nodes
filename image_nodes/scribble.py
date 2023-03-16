@@ -18,7 +18,7 @@ class DrawingWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.image = QtGui.QImage(512, 512, QtGui.QImage.Format_RGB32)
-        self.image.fill(Qt.white)
+        self.image.fill(Qt.black)
         self.drawing = False
         self.last_point = None
         self.brush_size = 10
@@ -33,17 +33,18 @@ class DrawingWidget(QtWidgets.QWidget):
         painter = QtGui.QPainter(self)
         painter.drawImage(0, 0, self.image)
 
-    def createBrushCursor(self):
+    def createBrushCursor(self, color=None):
         cursor_pixmap = QtGui.QPixmap(self.brush_size * 2 + 2, self.brush_size * 2 + 2)
         cursor_pixmap.fill(Qt.transparent)
         cursor_painter = QtGui.QPainter(cursor_pixmap)
-
+        if color == None:
+            color = Qt.white
         # Draw the outer circle
-        cursor_painter.setPen(QtGui.QPen(Qt.black, 1, Qt.SolidLine))
+        cursor_painter.setPen(QtGui.QPen(color, 1, Qt.SolidLine))
         cursor_painter.drawEllipse(1, 1, self.brush_size * 2 - 1, self.brush_size * 2 - 1)
 
         # Fill the inner circle
-        cursor_painter.setBrush(Qt.black)
+        cursor_painter.setBrush(color)
         cursor_painter.setPen(QtGui.QPen(Qt.transparent))
         cursor_painter.drawEllipse(2, 2, self.brush_size * 2 - 2, self.brush_size * 2 - 2)
 
@@ -58,15 +59,16 @@ class DrawingWidget(QtWidgets.QWidget):
         if self.drawing and self.last_point is not None:
             painter = QtGui.QPainter(self.image)
             pen = QtGui.QPen()
+            if event.modifiers() & Qt.ShiftModifier:
+                pen.setColor(Qt.black)
+            else:
+                pen.setColor(Qt.white)
 
             pen.setWidth(self.brush_size)
             pen.setCapStyle(Qt.RoundCap)
             pen.setJoinStyle(Qt.RoundJoin)
 
-            if event.modifiers() & Qt.ShiftModifier:
-                pen.setColor(Qt.white)
-            else:
-                pen.setColor(Qt.black)
+
 
             painter.setPen(pen)
             painter.drawLine(self.last_point, event.pos())
@@ -75,10 +77,7 @@ class DrawingWidget(QtWidgets.QWidget):
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.drawing = False
-            self.last_point = None
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton or event.button() == Qt.RightButton:
+            self.setCursor(self.createBrushCursor(Qt.white))
             self.drawing = False
             self.last_point = None
     def dec_brush(self):

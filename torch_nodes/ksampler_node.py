@@ -112,7 +112,6 @@ class KSamplerNode(AiNode):
             self.content.seed_signal.emit()
             self.seed += 1
         try:
-
             sample = common_ksampler(device="cuda",
                                      seed=self.seed,
                                      steps=self.content.steps.value(),
@@ -144,7 +143,8 @@ class KSamplerNode(AiNode):
             sample = None
             torch_gc()
             self.onWorkerFinished([pixmap, return_sample])
-        except:
+        except Exception as e:
+            print(e)
             self.busy = False
             if len(self.getOutputs(2)) > 0:
                 self.executeChild(output_index=2)

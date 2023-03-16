@@ -76,6 +76,7 @@ class ConditioningCombineNode(AiNode):
             conditioning1 = cond_1_node.getOutput(index)
             cond_2_node, index = self.getInput(0)
             conditioning2 = cond_2_node.getOutput(index)
+            #c = self.combine(conditioning1, conditioning2)
             c = conditioning1 + conditioning2
             print("COND COMBINE NODE: Conditionings combined.")
             return c
@@ -127,18 +128,18 @@ class ConditioningAreaNode(AiNode):
         self.output_socket_name = ["EXEC", "COND"]
 
     def evalImplementation(self, index=0):
-        try:
-            cond = self.append_conditioning()
-            self.setOutput(0, cond)
-            print("COND AREA NODE: Conditionings Area Set.")
-            self.markDirty(False)
-            if len(self.getOutputs(1)) > 0:
-                self.executeChild(output_index=1)
-            return cond
-        except:
-            print("COND AREA NODE: Failed, please make sure that the conditioning is valid.")
-            self.markDirty(True)
-            return None
+        #try:
+        cond = self.append_conditioning()
+        self.setOutput(0, cond)
+        print("COND AREA NODE: Conditionings Area Set.")
+        self.markDirty(False)
+        if len(self.getOutputs(1)) > 0:
+            self.executeChild(output_index=1)
+        return cond
+        #except:
+        #    print("COND AREA NODE: Failed, please make sure that the conditioning is valid.")
+        #    self.markDirty(True)
+        #    return None
 
     def eval(self):
         self.markDirty(True)

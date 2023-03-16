@@ -9,9 +9,6 @@ from .torch_gc import torch_gc
 def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, callback=None):
     latent_image = latent
     noise_mask = None
-
-    print(latent_image.shape[2])
-
     if disable_noise:
         noise = torch.zeros(latent_image.size(), dtype=latent_image.dtype, layout=latent_image.layout, device="cpu")
     else:
@@ -40,7 +37,6 @@ def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive,
             t = torch.cat([t] * noise.shape[0])
         t = t.to(device)
         if 'control' in p[1]:
-            #print("Applying CN's")
             control_nets += [p[1]['control']]
         positive_copy += [[t] + p[1:]]
     for n in negative:
