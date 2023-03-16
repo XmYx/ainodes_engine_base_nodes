@@ -1,4 +1,6 @@
 #taken from https://github.com/TencentARC/T2I-Adapter
+from typing import Optional
+
 import torch
 import torch.nn as nn
 import safetensors.torch
@@ -396,7 +398,25 @@ def resize_image_to(tensor, target_latent_tensor, batched_number):
     else:
         return torch.cat([tensor] * batched_number, dim=0)
 
-def common_upscale(samples, width, height, upscale_method, crop):
+def common_upscale(samples: torch.Tensor, width: int, height: int,
+                   upscale_method: str = 'bilinear',
+                   crop: Optional[str] = 'center') -> torch.Tensor:
+    """
+    Upscales the input tensor samples according to the specified width, height, and upscale method.
+    Additionally, it can perform a center crop before the upscale if specified.
+
+    Args:
+        samples (torch.Tensor): Input tensor with shape (batch_size, channels, old_height, old_width).
+        width (int): Target width for the upscale.
+        height (int): Target height for the upscale.
+        upscale_method (str, optional): Upscale method to use. Choose from {'nearest', 'bilinear', 'bicubic', 'trilinear'}.
+                                        Defaults to 'bilinear'.
+        crop (Optional[str], optional): Crop method to use. Choose from {'center', 'none'}. Defaults to 'center'.
+
+    Returns:
+        torch.Tensor: Upscaled tensor with shape (batch_size, channels, height, width).
+    """
+
     if crop == "center":
         old_width = samples.shape[3]
         old_height = samples.shape[2]
