@@ -74,7 +74,6 @@ class ScribbleWidget(QDMNodeContentWidget):
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(15, 30, 15, 35)
         layout.addWidget(self.image)
-        layout.addLayout(button_layout)
 
         self.setLayout(layout)
 
@@ -83,7 +82,7 @@ class ImageListNode(AiNode):
     icon = "icons/out.png"
     op_code = OP_NODE_IMG_LIST
     op_title = "Image List"
-    content_label_objname = "image_scribble_node"
+    content_label_objname = "image_list_node"
     category = "image"
 
 
@@ -104,9 +103,8 @@ class ImageListNode(AiNode):
     @QtCore.Slot(object)
     def set_pixmap(self, pixmap):
         self.pixmap = pixmap
-        self.evalImplementation()
-    def evalImplementation(self, index=0):
 
+    def evalImplementation(self, index=0):
         pixmap = self.pixmap
         self.markDirty(False)
         self.setOutput(0, pixmap)

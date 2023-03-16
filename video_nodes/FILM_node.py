@@ -95,7 +95,7 @@ class FILMNode(AiNode):
                 frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
                 print(f"FILM NODE:  {len(frames)}")
                 #frames = frames[1:-1]
-                last = frames.pop()
+                #last = frames.pop()
                 print(f"FILM NODE:  {len(frames)}")
                 for frame in frames:
                     image = Image.fromarray(copy.deepcopy(frame))
