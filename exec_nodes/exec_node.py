@@ -21,6 +21,16 @@ class ExecNode(AiNode):
     op_title = "Execute"
     content_label_objname = "exec_node"
     category = "exec"
+    help_text = "Execution Node\n\n" \
+                "Execution chain is essential\n" \
+                "in aiNodes. You control the flow\n" \
+                "You control the magic. Each value\n" \
+                "is created and stored at execution\n" \
+                "once a node is validated, you don't\n" \
+                "have to run it again in order to get\n" \
+                "it's value, just simply connect the\n" \
+                "relevant data line. Only execute, if you\n" \
+                "want, or have to get a new value."
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[1])

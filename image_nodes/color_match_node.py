@@ -26,6 +26,9 @@ class ColorMatch(AiNode):
     op_title = "Color Match"
     content_label_objname = "colormatch_node"
     category = "image"
+    help_text = "Deforum ColorMatch Node\n\n" \
+                "" \
+                "Please refer to Deforum guide"
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[5,5,1], outputs=[5,1])
         self.busy = False

@@ -10,6 +10,12 @@ class ExecSplitterNode(AiNode):
     op_title = "Execute Splitter"
     content_label_objname = "exec_splitter_node"
     category = "exec"
+    help_text = "Execution Splitter Node\n\n" \
+                "You can split your processes into\n" \
+                "as many branches as you want\n" \
+                "given you have the CPU/GPU\n" \
+                "resources."
+
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[1,1])

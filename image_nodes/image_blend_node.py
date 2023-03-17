@@ -36,7 +36,8 @@ class BlendNode(AiNode):
     op_title = "Image Blend"
     content_label_objname = "image_blend_node"
     category = "image"
-
+    help_text = "Image Blend / Composite node\n\n" \
+                ""
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,5,1], outputs=[5,1])

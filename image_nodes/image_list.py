@@ -77,6 +77,7 @@ class ScribbleWidget(QDMNodeContentWidget):
         layout.addWidget(self.image)
 
         self.setLayout(layout)
+        #self.toggleHelp()
 
 @register_node(OP_NODE_IMG_LIST)
 class ImageListNode(AiNode):
@@ -101,6 +102,7 @@ class ImageListNode(AiNode):
         self.images = []
         self.index = 0
         self.content.image.pixmap_selected.connect(self.set_pixmap)
+
     @QtCore.Slot(object)
     def set_pixmap(self, pixmap):
         self.pixmap = pixmap
@@ -113,22 +115,17 @@ class ImageListNode(AiNode):
         else:
             self.content.image.list_widget.setCurrentRow(current_row + 1)
     def evalImplementation(self, index=0):
-
-
-
+        self.grNode.toggleHelp()
         pixmap = self.pixmap
         self.markDirty(False)
         self.setOutput(0, pixmap)
         self.executeChild(2)
         self.select_next_item()
-
     def onMarkedDirty(self):
-        #
         pass
     def onMarkedInvalid(self):
         self.content.image.image.fill(Qt.black)
     def onInputChanged(self, socket=None):
-
         pass
     def eval(self):
         self.evalImplementation(0)

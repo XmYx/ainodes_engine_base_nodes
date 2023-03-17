@@ -112,7 +112,10 @@ class DataNode(AiNode):
     op_title = "Data"
     content_label_objname = "data_node"
     category = "data"
-
+    help_text = "Data Node\n" \
+                "Currently, it can be used to create\n" \
+                "Deforum Warp values, just connect the data\n" \
+                "line, and press Eval on the node to set the value"
     def __init__(self, scene):
         super().__init__(scene, inputs=[6,1], outputs=[6,1])
         self.interrupt = False

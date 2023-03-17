@@ -107,7 +107,10 @@ class KSamplerNode(AiNode):
         try:
             self.seed = int(self.seed)
         except:
-            self.seed = secrets.randbelow(99999999)
+            self.seed = secrets.randbelow(9999999999999999999)
+            mod = secrets.randbelow(100)
+            if mod <= 50:
+                self.seed = -self.seed
         if self.content.iterate_seed.isChecked() == True:
             self.content.seed_signal.emit()
             self.seed += 1
