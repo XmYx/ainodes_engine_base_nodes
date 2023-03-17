@@ -108,8 +108,6 @@ class ImagePreviewWidget(AiNode):
             self.setOutput(0, val)
             self.markInvalid(False)
             self.markDirty(False)
-            if self.content.checkbox.isChecked() == True:
-                self.save_image()
             if len(self.getOutputs(2)) > 0:
                 self.executeChild(output_index=2)
         elif self.getInput(1) is not None:
@@ -131,12 +129,14 @@ class ImagePreviewWidget(AiNode):
     def show_image(self, image):
         self.content.image.setPixmap(image)
         self.resize()
+        if self.content.checkbox.isChecked() == True:
+            self.save_image(image)
 
-    def save_image(self):
+    def save_image(self, image):
         try:
-            pixmap = self.content.image.pixmap()
+            pixmap = image
             image = pixmap_to_pil_image(pixmap)
-            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
             os.makedirs(os.path.join(gs.output, "stills"), exist_ok=True)
             filename = f"{gs.output}/{timestamp}.png"
             image.save(filename)

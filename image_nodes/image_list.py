@@ -28,6 +28,7 @@ class ImageListWidget(QWidget):
         self.list_widget = QListWidget()
         self.list_widget.setIconSize(QtCore.QSize(256, 256))
         self.list_widget.itemClicked.connect(self.on_item_clicked)
+        self.list_widget.currentItemChanged.connect(self.on_item_clicked)
         self.list_widget.setViewMode(QtWidgets.QListView.IconMode)
 
         self.load_button = QPushButton("Load Images")
@@ -51,7 +52,7 @@ class ImageListWidget(QWidget):
                         item.setData(Qt.UserRole, pixmap)
                         self.list_widget.addItem(item)
 
-    def on_item_clicked(self, item):
+    def on_item_clicked(self, item, prev_item=None):
         pixmap = item.data(Qt.UserRole)
         self.pixmap_selected.emit(pixmap)
 
@@ -104,11 +105,22 @@ class ImageListNode(AiNode):
     def set_pixmap(self, pixmap):
         self.pixmap = pixmap
 
+    def select_next_item(self):
+        current_row = self.content.image.list_widget.currentRow()
+        num_items = self.content.image.list_widget.count()
+        if current_row == num_items - 1:
+            self.content.image.list_widget.setCurrentRow(0)
+        else:
+            self.content.image.list_widget.setCurrentRow(current_row + 1)
     def evalImplementation(self, index=0):
+
+
+
         pixmap = self.pixmap
         self.markDirty(False)
         self.setOutput(0, pixmap)
         self.executeChild(2)
+        self.select_next_item()
 
     def onMarkedDirty(self):
         #

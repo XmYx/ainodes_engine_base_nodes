@@ -1,3 +1,5 @@
+import time
+
 import cv2
 from PIL import Image
 from qtpy import QtWidgets
@@ -110,6 +112,7 @@ class VideoInputNode(AiNode):
         self.content.stop_button.clicked.connect(self.content.video.reset)
         self.markInvalid(True)
     def evalImplementation(self, index=0):
+        time.sleep(0.1)
         skip = self.content.skip_frames.value()
         pixmap = self.content.video.get_frame(skip=skip)
         if pixmap != None:
@@ -117,10 +120,8 @@ class VideoInputNode(AiNode):
             self.markDirty(False)
             self.markInvalid(False)
             self.content.label.setPixmap(pixmap)
-
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
-
         return pixmap
 
     def resize(self):
