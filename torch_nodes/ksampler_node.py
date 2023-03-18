@@ -1,4 +1,5 @@
 import inspect
+import random
 import secrets
 import threading
 
@@ -107,10 +108,7 @@ class KSamplerNode(AiNode):
         try:
             self.seed = int(self.seed)
         except:
-            self.seed = secrets.randbelow(9999999999999999999)
-            mod = secrets.randbelow(100)
-            if mod <= 50:
-                self.seed = -self.seed
+            self.seed = get_fixed_seed('')
         if self.content.iterate_seed.isChecked() == True:
             self.content.seed_signal.emit()
             self.seed += 1
@@ -153,9 +151,17 @@ class KSamplerNode(AiNode):
                 self.executeChild(output_index=2)
         return [pixmap, return_sample]
     def decode_sample(self, sample):
-        x_samples = gs.models["sd"].model.decode_first_stage(sample.half())
-        x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
-        x_sample = 255. * rearrange(x_samples[0].cpu().numpy(), 'c h w -> h w c')
+        if gs.loaded_vae == 'default':
+            x_samples = gs.models["sd"].model.decode_first_stage(sample.half())
+            x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
+            x_sample = 255. * rearrange(x_samples[0].cpu().numpy(), 'c h w -> h w c')
+        else:
+            x_sample = gs.models["sd"].first_stage_model.decode(sample)
+            #x_sample = torch.clamp((x_sample + 1.0) / 2.0, min=0.0, max=1.0)
+            x_sample = 255. * x_sample[0].detach().numpy()
+            #x_sample = 255. * rearrange(x_sample.detach().numpy(), 'c h w -> h w c')
+
+            print("XSAMPLE:", x_sample.shape)
         return x_sample
 
     def callback(self, tensors):
@@ -189,3 +195,8 @@ class KSamplerNode(AiNode):
     def onInputChanged(self, socket=None):
         pass
 
+def get_fixed_seed(seed):
+    if seed is None or seed == '':
+        sign = random.choice([-1, 1])
+        value = secrets.randbelow(999999999999999999)
+        return sign * value

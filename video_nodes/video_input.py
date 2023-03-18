@@ -120,8 +120,8 @@ class VideoInputNode(AiNode):
             self.markDirty(False)
             self.markInvalid(False)
             self.content.label.setPixmap(pixmap)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
+            if len(self.getOutputs(1)) > 0:
+                self.executeChild(output_index=1)
         return pixmap
 
     def resize(self):

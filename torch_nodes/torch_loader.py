@@ -20,18 +20,27 @@ class TorchLoaderWidget(QDMNodeContentWidget):
 
     def create_widgets(self):
         checkpoint_folder = gs.checkpoints
-        checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith((".ckpt", ".safetensors"))]
+        checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
+        self.dropdown = self.create_combo_box(checkpoint_files, "Models")
         if checkpoint_files == []:
             self.dropdown.addItem("Please place a model in models/checkpoints")
             print(f"TORCH LOADER NODE: No model file found at {os.getcwd()}/models/checkpoints,")
             print(f"TORCH LOADER NODE: please download your favorite ckpt before Evaluating this node.")
-        self.dropdown = self.create_combo_box(checkpoint_files, "Models")
+
 
         config_folder = "models/configs"
         config_files = [f for f in os.listdir(config_folder) if f.endswith((".yaml"))]
         config_files = sorted(config_files, key=str.lower)
         self.config_dropdown = self.create_combo_box(config_files, "Configs")
         self.config_dropdown.setCurrentText("v1-inference_fp16.yaml")
+
+        vae_folder = "models/vae"
+        vae_files = [f for f in os.listdir(vae_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
+        vae_files = sorted(vae_files, key=str.lower)
+        self.vae_dropdown = self.create_combo_box(vae_files, "Vae")
+        self.vae_dropdown.addItem("default")
+        self.vae_dropdown.setCurrentText("default")
+
 
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
     def __init__(self, parent=None):
@@ -123,6 +132,16 @@ class TorchLoaderNode(AiNode):
                     self.setOutput(0, model_name)
                     self.markDirty(False)
                     self.markInvalid(False)
+                if self.content.vae_dropdown.currentText() != 'default':
+                    model = self.content.vae_dropdown.currentText()
+                    self.loader.load_vae(model)
+                    gs.loaded_vae = model
+                else:
+                    gs.loaded_vae = 'default'
+            elif gs.loaded_vae != self.content.vae_dropdown.currentText():
+                model = self.content.vae_dropdown.currentText()
+                self.loader.load_vae(model)
+                gs.loaded_vae = model
             else:
                 self.markDirty(False)
                 self.markInvalid(False)

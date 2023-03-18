@@ -42,7 +42,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
         #self.parent.setAlignment(Qt.AlignCenter)
 
 @register_node(OP_NODE_LORA_LOADER)
-class TorchLoaderNode(AiNode):
+class LoraLoaderNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/lora.png"
     op_code = OP_NODE_LORA_LOADER
     op_title = "Lora Loader"
