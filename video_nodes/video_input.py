@@ -17,43 +17,21 @@ from ainodes_frontend.node_engine.utils import dumpException
 OP_NODE_VIDEO_INPUT = get_next_opcode()
 class VideoInputWidget(QDMNodeContentWidget):
     def initUI(self):
+        self.create_widgets()
+        self.create_main_layout()
+    def create_widgets(self):
         self.video = VideoPlayer()
         self.current_frame = 0
-
-        self.label = QLabel()
+        self.label = self.create_label("")
         self.label.setAlignment(Qt.AlignCenter)
-
-        self.skip_frames = QtWidgets.QSpinBox()
-        self.skip_frames.setMinimum(1)
-        self.skip_frames.setMaximum(4096)
-        self.skip_frames.setValue(1)
-
+        self.skip_frames = self.create_spin_box("Skip Frames", 0, 4096, 0, 1)
         self.load_button = QPushButton("Load Video", self)
         self.load_button.clicked.connect(self.loadVideo)
-
         self.play_button = QPushButton("Play", self)
         self.play_button.clicked.connect(self.playVideo)
-
-        #self.pause_button = QPushButton("Pause", self)
-        #self.pause_button.clicked.connect(self.pauseVideo)
-
         self.stop_button = QPushButton("Stop", self)
         #self.stop_button.clicked.connect(self.stopVideo)
-
-        layout = QVBoxLayout()
-        layout.addWidget(self.label)
-        #layout.addWidget(self.movie)
-        layout.addWidget(self.load_button)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(self.skip_frames)
-        buttons_layout.addWidget(self.play_button)
-        #buttons_layout.addWidget(self.pause_button)
-        buttons_layout.addWidget(self.stop_button)
-        layout.addLayout(buttons_layout)
-
-        self.setLayout(layout)
-
+        self.create_button_layout([self.load_button, self.play_button])
     def advance_frame(self):
         pixmap = self.video.get_frame()
         self.label.setPixmap(pixmap)

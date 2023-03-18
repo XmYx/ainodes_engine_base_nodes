@@ -19,43 +19,14 @@ from ainodes_frontend import singleton as gs
 
 class RIFEWidget(QDMNodeContentWidget):
     def initUI(self):
-        # Create a label to display the image
-        self.text_label = QtWidgets.QLabel("Image Operator:")
-
-        self.exp = QtWidgets.QSpinBox()
-        self.exp.setMinimum(1)
-        self.exp.setSingleStep(1)
-        self.exp.setMaximum(100)
-        self.exp.setValue(5)
-
-        self.ratio = QtWidgets.QDoubleSpinBox()
-        self.ratio.setMinimum(0.00)
-        self.ratio.setSingleStep(0.01)
-        self.ratio.setMaximum(1.00)
-        self.ratio.setValue(0.00)
-
-        self.rthreshold = QtWidgets.QDoubleSpinBox()
-        self.rthreshold.setMinimum(0.00)
-        self.rthreshold.setSingleStep(0.01)
-        self.rthreshold.setMaximum(100.00)
-        self.rthreshold.setValue(0.02)
-
-        self.rmaxcycles = QtWidgets.QSpinBox()
-        self.rmaxcycles.setMinimum(1)
-        self.rmaxcycles.setSingleStep(1)
-        self.rmaxcycles.setMaximum(4096)
-        self.rmaxcycles.setValue(8)
-
-
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
-        layout.addWidget(self.exp)
-        layout.addWidget(self.ratio)
-        layout.addWidget(self.rthreshold)
-        layout.addWidget(self.rmaxcycles)
-
-        self.setLayout(layout)
+        self.create_widgets()
+        self.create_main_layout()
+    def create_widgets(self):
+        self.text_label = self.create_label("Image Operators")
+        self.exp = self.create_spin_box("exp", 1, 1000, 5, 1)
+        self.ratio = self.create_double_spin_box("ratio", 0.00, 1.00, 0.01, 0.00)
+        self.rthreshold = self.create_double_spin_box("rthreshold", 0.00, 100.00, 0.01, 0.02)
+        self.rmaxcycles = self.create_spin_box("rmaxcycles", 1, 4096, 8, 1)
 
 
 

@@ -1,14 +1,16 @@
 opencv-contrib-python==4.7.0.72
 scikit-image>=0.19
 ffmpeg-python==0.1.7
-tensorflow==2.8.0
 tensorboard==2.8.0
---extra-index-url https://download.pytorch.org/whl/cu117
-torch==1.13.1+cu117
-torchvision==0.14.1+cu117
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch==2.0.0+cu118
+torchvision==0.15.1+cu118
+tensorflow==2.8.0
 tb_nightly==2.12.0a20230126
 transformers==4.27.0
-diffusers==0.14.0
+diffusers[torch]==0.11.1
+imageio[ffmpeg]
+##diffusers==0.14.0
 einops==0.6.0
 omegaconf==2.3.0
 accelerate==0.17.1
@@ -17,7 +19,6 @@ transformers==4.27.0
 safetensors==0.3.0
 pytorch_lightning==2.0.0
 aiohttp==3.8.4
-xformers==0.0.16
 scipy==1.9.1
 torchdiffeq==0.2.3
 torchsde==0.2.5
@@ -30,4 +31,7 @@ rich==13.3.2
 basicsr==1.3.4.9
 pandas==1.5.3
 fvcore
-
+#bitsandbytes
+lark==1.1.5
+fonts
+font-roboto

@@ -41,12 +41,13 @@ class MatteNode(AiNode):
         #self.content.eval_signal.connect(self.eval)
 
     def initInnerClasses(self):
-        self.content = MatteWidget(self)
+        #self.content = MatteWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.output_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
         self.input_socket_name = ["EXEC", "IMAGE"]
 
         self.grNode.height = 200
+        self.grNode.width = 280
     @QtCore.Slot(int)
     def evalImplementation(self, index=0):
         if self.getInput(0) != None:

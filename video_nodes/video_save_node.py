@@ -194,4 +194,4 @@ class GifRecorder:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 video_writer.write(frame)
             video_writer.release()
-        self.frames = []
+        #self.frames = []

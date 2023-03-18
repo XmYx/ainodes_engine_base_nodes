@@ -14,26 +14,14 @@ from ainodes_frontend.base import AiNode, CalcGraphicsNode
 OP_NODE_CN_APPLY = get_next_opcode()
 class CNApplyWidget(QDMNodeContentWidget):
     def initUI(self):
-        self.strength = QtWidgets.QDoubleSpinBox()
-        self.strength.setMinimum(0.01)
-        self.strength.setMaximum(100.00)
-        self.strength.setSingleStep(0.01)
-        self.strength.setValue(1.00)
-
-        self.control_net_selector = QtWidgets.QComboBox()
-        self.control_net_selector.addItems(["controlnet", "t2i"])
-
+        self.create_widgets()
+        self.create_main_layout()
+        self.main_layout.setContentsMargins(15, 15, 15, 25)
+    def create_widgets(self):
+        self.strength = self.create_double_spin_box("Strength", 0.01, 100.00, 0.01, 1.00)
+        self.control_net_selector = self.create_combo_box(["controlnet", "t2i"], "Control Style")
         self.button = QtWidgets.QPushButton("Run")
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(15,15,15,25)
-        #layout.addWidget(self.text_label)
-        layout.addWidget(self.strength)
-        layout.addWidget(self.control_net_selector)
-        layout.addWidget(self.button)
-        self.setLayout(layout)
-
-
-
+        self.create_button_layout([self.button])
 
 @register_node(OP_NODE_CN_APPLY)
 class CNApplyNode(AiNode):
@@ -57,29 +45,14 @@ class CNApplyNode(AiNode):
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(256)
-        self.input_socket_name = ["EXEC", "COND", "IMAGE"]
-        self.output_socket_name = ["EXEC", "COND"]
-
-        #self.content.setMinimumHeight(400)
-        #self.content.setMinimumWidth(256)
-        #self.content.image.changeEvent.connect(self.onInputChanged)
-
     def evalImplementation(self, index=0):
         self.markDirty(True)
         self.markInvalid(True)
         self.busy = False
         if self.value is None:
-            """"# Start the worker thread
-            self.worker = Worker(self.apply_control_net)
-            # Connect the worker's finished signal to a slot that updates the node value
-            self.worker.signals.result.connect(self.onWorkerFinished)
-            #self.scene.queue.add_task(self.apply_control_net)
-            #self.scene.queue.task_finished.connect(self.onWorkerFinished)
-            self.busy = True"""
             result = self.apply_control_net()
             self.setOutput(0, result)
             self.busy = False
-            # self.scene.queue.task_finished.disconnect(self.onWorkerFinished)
             if len(self.getOutputs(1)) > 0:
                 self.executeChild(1)
 
@@ -88,8 +61,6 @@ class CNApplyNode(AiNode):
         else:
             self.markDirty(False)
             self.markInvalid(False)
-            #self.markDescendantsDirty()
-            #self.evalChildren()
             return self.value
 
     def onMarkedDirty(self):
@@ -135,62 +106,13 @@ class CNApplyNode(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         # Update the node value and mark it as dirty
-        #self.value = result
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result)
         self.busy = False
-        #self.scene.queue.task_finished.disconnect(self.onWorkerFinished)
         if len(self.getOutputs(1)) > 0:
             self.executeChild(1)
         return
-        #self.markDescendantsDirty()
-        #self.evalChildren()
 
     def onInputChanged(self, socket=None):
         pass
-        #self.eval()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class ControlNetApply:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {"required": {"conditioning": ("CONDITIONING", ),
-                             "control_net": ("CONTROL_NET", ),
-                             "image": ("IMAGE", ),
-                             "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01})
-                             }}
-    RETURN_TYPES = ("CONDITIONING",)
-    FUNCTION = "apply_controlnet"
-
-    CATEGORY = "conditioning"
-
-    def apply_controlnet(self, conditioning, control_net, image, strength):
-        c = []
-        control_hint = image.movedim(-1,1)
-        print(control_hint.shape)
-        for t in conditioning:
-            n = [t[0], t[1].copy()]
-            c_net = control_net.copy().set_cond_hint(control_hint, strength)
-            if 'control' in t[1]:
-                c_net.set_previous_controlnet(t[1]['control'])
-            n[1]['control'] = c_net
-            c.append(n)
-        return (c, )

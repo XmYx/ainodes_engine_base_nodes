@@ -12,24 +12,16 @@ from ainodes_frontend import singleton as gs
 OP_NODE_LORA_LOADER = get_next_opcode()
 class LoraLoaderWidget(QDMNodeContentWidget):
     def initUI(self):
-        # Create a label to display the image
-        # Create the dropdown widget
-        self.dropdown = QtWidgets.QComboBox(self)
-        # Populate the dropdown with .ckpt and .safetensors files in the checkpoints folder
+        self.create_widgets()
+        self.create_main_layout()
+    def create_widgets(self):
         lora_folder = gs.loras
         lora_files = [f for f in os.listdir(lora_folder) if f.endswith(('.safetensors', '.ckpt', '.pt', '.bin', '.pth'))]
         if lora_files == []:
             self.dropdown.addItem("Please place a lora in models/loras")
             print(f"LORA LOADER NODE: No model file found at {os.getcwd()}/models/loras,")
             print(f"LORA LOADER NODE: please download your favorite ckpt before Evaluating this node.")
-        self.dropdown.addItems(lora_files)
-        # Add the dropdown widget to the layout
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.dropdown)
-        self.setLayout(layout)
-        self.setSizePolicy(CenterExpandingSizePolicy(self))
-        self.setLayout(layout)
-
+        self.dropdown = self.create_combo_box(lora_files, "Lora")
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
     def __init__(self, parent=None):
         super().__init__(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -59,6 +51,7 @@ class LoraLoaderNode(AiNode):
         self.grNode = CalcGraphicsNode(self)
         self.grNode.width = 340
         self.grNode.height = 160
+        self.content.setMinimumWidth(320)
 
     def evalImplementation(self, index=0):
         file = self.content.dropdown.currentText()

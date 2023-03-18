@@ -2,33 +2,24 @@ import os
 
 from qtpy import QtWidgets
 
-from ..ainodes_backend import torch_gc, load_controlnet
+from ..ainodes_backend import torch_gc
 
 from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend.t2i import load_t2i_adapter
 
 OP_NODE_T2I_LOADER = get_next_opcode()
 
 class T2ILoaderWidget(QDMNodeContentWidget):
     def initUI(self):
-        # Create a label to display the image
-        # Create the dropdown widget
-        self.t2i = QtWidgets.QComboBox(self)
-        #self.dropdown.currentIndexChanged.connect(self.on_dropdown_changed)
-        # Populate the dropdown with .ckpt and .safetensors files in the checkpoints folder
+        self.create_widgets()
+        self.create_main_layout()
+    def create_widgets(self):
         checkpoint_folder = gs.t2i_adapter
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', ".safetensors"))]
-        self.t2i.addItems(checkpoint_files)
-        # Add the dropdown widget to the layout
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.t2i)
-        self.setLayout(layout)
-        self.setSizePolicy(CenterExpandingSizePolicy(self))
-        self.setLayout(layout)
+        self.t2i = self.create_combo_box(checkpoint_files, "t2i")
         if "loaded_t2i" not in gs.models:
             gs.models["loaded_t2i"] = None
 
@@ -53,9 +44,6 @@ class T2ILoaderNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[1])
-
-        #self.content.eval_signal.connect(self.eval)
-        #self.loader = ModelLoader()
 
     def initInnerClasses(self):
         self.content = T2ILoaderWidget(self)

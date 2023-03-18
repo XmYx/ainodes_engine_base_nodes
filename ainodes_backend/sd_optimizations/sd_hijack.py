@@ -38,6 +38,9 @@ def apply_optimizations():
         print("Applying scaled dot product cross attention optimization.")
         ldm.modules.attention.CrossAttention.forward = sd_hijack_optimizations.scaled_dot_product_attention_forward
         ldm.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.sdp_attnblock_forward
+
+
+
         optimization_method = 'sdp'
 
     #print('hijack util')

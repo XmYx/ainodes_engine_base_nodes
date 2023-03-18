@@ -14,20 +14,13 @@ OP_NODE_CONTROLNET_LOADER = get_next_opcode()
 
 class ControlnetLoaderWidget(QDMNodeContentWidget):
     def initUI(self):
-        # Create a label to display the image
-        # Create the dropdown widget
-        self.control_net_name = QtWidgets.QComboBox(self)
-        #self.dropdown.currentIndexChanged.connect(self.on_dropdown_changed)
-        # Populate the dropdown with .ckpt and .safetensors files in the checkpoints folder
+        self.create_widgets()
+        self.create_main_layout()
+
+    def create_widgets(self):
         checkpoint_folder = gs.controlnet
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', ".safetensors"))]
-        self.control_net_name.addItems(checkpoint_files)
-        # Add the dropdown widget to the layout
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.control_net_name)
-        self.setLayout(layout)
-        self.setSizePolicy(CenterExpandingSizePolicy(self))
-        self.setLayout(layout)
+        self.control_net_name = self.create_combo_box(checkpoint_files, "ControlNet")
         if "loaded_controlnet" not in gs.models:
             gs.models["loaded_controlnet"] = None
 
@@ -53,17 +46,15 @@ class ControlnetLoaderNode(AiNode):
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[1])
 
-        #self.content.eval_signal.connect(self.eval)
-        #self.loader = ModelLoader()
-
     def initInnerClasses(self):
         self.content = ControlnetLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
 
         self.content.control_net_name.currentIndexChanged.connect(self.resize)
-        #self.resize()
         self.grNode.width = 280
         self.grNode.height = 100
+        self.content.setMinimumWidth(260)
+
     def resize(self):
         text = self.content.control_net_name.currentText()
         font_metrics = self.content.control_net_name.fontMetrics()
@@ -76,7 +67,6 @@ class ControlnetLoaderNode(AiNode):
         self.content.setMinimumWidth(new_width)
         self.update_all_sockets()
     def evalImplementation(self, index=0):
-        #self.executeChild()
         model_name = self.content.control_net_name.currentText()
         if gs.models["loaded_controlnet"] != model_name:
             self.markInvalid()

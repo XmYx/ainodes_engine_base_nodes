@@ -114,7 +114,6 @@ class ConditioningAreaNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[3,1], outputs=[3,1])
-        self.eval()
     def initInnerClasses(self):
         self.content = ConditioningSetAreaWidget(self)
         self.grNode = CalcGraphicsNode(self)
@@ -133,8 +132,7 @@ class ConditioningAreaNode(AiNode):
         self.setOutput(0, cond)
         print("COND AREA NODE: Conditionings Area Set.")
         self.markDirty(False)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
+        self.executeChild(output_index=1)
         return cond
         #except:
         #    print("COND AREA NODE: Failed, please make sure that the conditioning is valid.")
