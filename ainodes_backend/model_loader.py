@@ -12,6 +12,7 @@ import os
 from omegaconf import OmegaConf
 from torch.nn.functional import silu
 
+from ldm.models.autoencoder import AutoencoderKL
 from .lora_loader import ModelPatcher
 from .torch_gc import torch_gc
 from ldm.util import instantiate_from_config
@@ -274,6 +275,15 @@ class ModelLoader(torch.nn.Module):
             del model
             return
 
+    def load_vae(self, file):
+        path = os.path.join('models/vae', file)
+        print("Loading", path)
+        #gs.models["sd"].first_stage_model.cpu()
+        gs.models["sd"].first_stage_model = None
+        gs.models["sd"].first_stage_model = VAE(ckpt_path=path)
+        print("VAE Loaded", file)
+
+
 # Decodes the image without passing through the upscaler. The resulting image will be the same size as the latent
 # Thanks to Kevin Turner (https://github.com/keturn) we have a shortcut to look at the decoded image!
 def make_linear_decode(model_version, device='cuda:0'):
@@ -296,3 +306,64 @@ def make_linear_decode(model_version, device='cuda:0'):
         return latent_image
 
     return linear_decode
+
+
+class VAE:
+    def __init__(self, ckpt_path=None, scale_factor=0.18215, device="cuda", config=None):
+        if config is None:
+            #default SD1.x/SD2.x VAE parameters
+            ddconfig = {'double_z': True, 'z_channels': 4, 'resolution': 256, 'in_channels': 3, 'out_ch': 3, 'ch': 128, 'ch_mult': [1, 2, 4, 4], 'num_res_blocks': 2, 'attn_resolutions': [], 'dropout': 0.0}
+            self.first_stage_model = AutoencoderKL(ddconfig, {'target': 'torch.nn.Identity'}, 4, monitor="val/rec_loss", ckpt_path=ckpt_path)
+        else:
+            self.first_stage_model = AutoencoderKL(**(config['params']), ckpt_path=ckpt_path)
+        self.first_stage_model = self.first_stage_model.eval()
+        self.scale_factor = scale_factor
+        self.device = device
+
+    def decode(self, samples):
+        #model_management.unload_model()
+        self.first_stage_model = self.first_stage_model.to(self.device)
+        samples = samples.to(self.device)
+        pixel_samples = self.first_stage_model.decode(1. / self.scale_factor * samples)
+        pixel_samples = torch.clamp((pixel_samples + 1.0) / 2.0, min=0.0, max=1.0)
+        #self.first_stage_model = self.first_stage_model.cpu()
+        pixel_samples = pixel_samples.cpu().movedim(1,-1)
+        return pixel_samples
+
+    def decode_tiled(self, samples, tile_x=64, tile_y=64, overlap = 8):
+        #model_management.unload_model()
+        output = torch.empty((samples.shape[0], 3, samples.shape[2] * 8, samples.shape[3] * 8), device="cpu")
+        self.first_stage_model = self.first_stage_model.to(self.device)
+        for b in range(samples.shape[0]):
+            s = samples[b:b+1]
+            out = torch.zeros((s.shape[0], 3, s.shape[2] * 8, s.shape[3] * 8), device="cpu")
+            out_div = torch.zeros((s.shape[0], 3, s.shape[2] * 8, s.shape[3] * 8), device="cpu")
+            for y in range(0, s.shape[2], tile_y - overlap):
+                for x in range(0, s.shape[3], tile_x - overlap):
+                    s_in = s[:,:,y:y+tile_y,x:x+tile_x]
+
+                    pixel_samples = self.first_stage_model.decode(1. / self.scale_factor * s_in.to(self.device))
+                    pixel_samples = torch.clamp((pixel_samples + 1.0) / 2.0, min=0.0, max=1.0)
+                    ps = pixel_samples.cpu()
+                    mask = torch.ones_like(ps)
+                    feather = overlap * 8
+                    for t in range(feather):
+                            mask[:,:,t:1+t,:] *= ((1.0/feather) * (t + 1))
+                            mask[:,:,mask.shape[2] -1 -t: mask.shape[2]-t,:] *= ((1.0/feather) * (t + 1))
+                            mask[:,:,:,t:1+t] *= ((1.0/feather) * (t + 1))
+                            mask[:,:,:,mask.shape[3]- 1 - t: mask.shape[3]- t] *= ((1.0/feather) * (t + 1))
+                    out[:,:,y*8:(y+tile_y)*8,x*8:(x+tile_x)*8] += ps * mask
+                    out_div[:,:,y*8:(y+tile_y)*8,x*8:(x+tile_x)*8] += mask
+
+            output[b:b+1] = out/out_div
+        #self.first_stage_model = self.first_stage_model.cpu()
+        return output.movedim(1,-1)
+
+    def encode(self, pixel_samples):
+        #model_management.unload_model()
+        #self.first_stage_model = self.first_stage_model.to(self.device)
+        pixel_samples = pixel_samples.movedim(-1,1).to(self.device)
+        samples = self.first_stage_model.encode(2. * pixel_samples - 1.).sample() * self.scale_factor
+        #self.first_stage_model = self.first_stage_model.cpu()
+        samples = samples.cpu()
+        return samples
