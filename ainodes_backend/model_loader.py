@@ -6,6 +6,7 @@ stable diffusion pytorch model loader
 www.github.com/XmYx/ainodes-engine
 miklos.mnagy@gmail.com
 """
+import copy
 import hashlib
 import os
 
@@ -16,7 +17,8 @@ from ldm.models.autoencoder import AutoencoderKL
 from .lora_loader import ModelPatcher
 from .torch_gc import torch_gc
 from ldm.util import instantiate_from_config
-from ainodes_frontend import singleton as gs
+from ainodes_frontend import singleton
+gs = singleton.Singleton.instance()
 
 import torch
 from torch import nn
@@ -35,146 +37,192 @@ class ModelLoader(torch.nn.Module):
 
         ldm.modules.diffusionmodules.model.nonlinearity = silu
 
-    def load_model(self, file=None, config=None, inpaint=False, verbose=False):
+    def load_model(self, file=None, config=None, model_index=0, custom_vae=None):
+        gs.force_inpaint = False
+
+        model_key = f"sd_{model_index}"
+        ckpt = f"models/checkpoints/{file}"
+        config = os.path.join('models/configs', config)
+
+        config = OmegaConf.load(config)
+        model_config_params = config['model']['params']
+        clip_config = model_config_params['cond_stage_config']
+        scale_factor = model_config_params['scale_factor']
+        vae_config = model_config_params['first_stage_config']
+
+        clip = None
+        vae = None
+
+        class WeightsLoader(torch.nn.Module):
+            pass
+
+        w = WeightsLoader()
+        load_state_dict_to = []
+        if custom_vae:
+            vae = VAE(scale_factor=scale_factor, config=vae_config)
+            w.first_stage_model = vae.first_stage_model
+            load_state_dict_to = [w]
+
+        """if output_clip:
+            clip = CLIP(config=clip_config, embedding_directory=embedding_directory)
+            w.cond_stage_model = clip.cond_stage_model
+            load_state_dict_to = [w]"""
+
+        model = instantiate_from_config(config.model)
+        sd = load_torch_file(ckpt)
+        model = load_model_weights(model, sd, verbose=False, load_state_dict_to=load_state_dict_to)
+
+        gs.models[model_key] = ModelPatcher(model)
+        if custom_vae:
+            gs.models[model_key].vae = vae
+            gs.models[model_key].vae.first_stage_model.half().cuda()
+        else:
+            gs.models[model_key].vae = model.first_stage_model
 
 
-        if file not in gs.loaded_models["loaded"]:
-            gs.loaded_models["loaded"].append(file)
-            ckpt = f"models/checkpoints/{file}"
-            gs.force_inpaint = False
-            ckpt_print = ckpt.replace('\\', '/')
-            #config, version = self.return_model_version(ckpt)
-            #if 'Inpaint' in version:
-            #    gs.force_inpaint = True
-            #    print("Forcing Inpaint")
+        gs.models[model_key].model.half().cuda()
+        gs.models[model_key].model.cond_stage_model.half().cuda()
 
-            config = os.path.join('models/configs', config)
-            self.prev_seamless = False
-            if verbose:
-                print(f"Loading model from {ckpt} with config {config}")
-            config = OmegaConf.load(config)
+    def load_model_old(self, file=None, config=None, inpaint=False, verbose=False, model_index=0):
 
-            # print(config.model['params'])
+        model_key = f"sd_{model_index}"
 
-            if 'num_heads' in config.model['params']['unet_config']['params']:
-                gs.model_version = '1.5'
-            elif 'num_head_channels' in config.model['params']['unet_config']['params']:
-                gs.model_version = '2.0'
-            if config.model['params']['conditioning_key'] == 'hybrid-adm':
-                gs.model_version = '2.0'
-            if 'parameterization' in config.model['params']:
-                gs.model_resolution = 768
-            else:
-                gs.model_resolution = 512
-            print(f'v {gs.model_version} found with resolution {gs.model_resolution}')
-            if verbose:
-                print('gs.model_version', gs.model_version)
-            checkpoint_file = ckpt
-            _, extension = os.path.splitext(checkpoint_file)
-            map_location = "cpu"
-            if extension.lower() == ".safetensors":
-                pl_sd = safetensors.torch.load_file(checkpoint_file, device=map_location)
-            else:
-                pl_sd = torch.load(checkpoint_file, map_location=map_location)
-            if "global_step" in pl_sd:
-                print(f"Global Step: {pl_sd['global_step']}")
-            sd = self.get_state_dict_from_checkpoint(pl_sd)
-            model = instantiate_from_config(config.model)
-            m, u = model.load_state_dict(sd, strict=False)
+        ckpt = f"models/checkpoints/{file}"
+        gs.force_inpaint = False
+        ckpt_print = ckpt.replace('\\', '/')
+        #config, version = self.return_model_version(ckpt)
+        #if 'Inpaint' in version:
+        #    gs.force_inpaint = True
+        #    print("Forcing Inpaint")
 
-            k = list(sd.keys())
-            for x in k:
-                # print(x)
-                if x.startswith("cond_stage_model.transformer.") and not x.startswith(
-                        "cond_stage_model.transformer.text_model."):
-                    y = x.replace("cond_stage_model.transformer.", "cond_stage_model.transformer.text_model.")
-                    sd[y] = sd.pop(x)
+        config = os.path.join('models/configs', config)
+        self.prev_seamless = False
+        if verbose:
+            print(f"Loading model from {ckpt} with config {config}")
+        config = OmegaConf.load(config)
 
-            if 'cond_stage_model.transformer.text_model.embeddings.position_ids' in sd:
-                ids = sd['cond_stage_model.transformer.text_model.embeddings.position_ids']
-                if ids.dtype == torch.float32:
-                    sd['cond_stage_model.transformer.text_model.embeddings.position_ids'] = ids.round()
+        # print(config.model['params'])
 
-            keys_to_replace = {
-                "cond_stage_model.model.positional_embedding": "cond_stage_model.transformer.text_model.embeddings.position_embedding.weight",
-                "cond_stage_model.model.token_embedding.weight": "cond_stage_model.transformer.text_model.embeddings.token_embedding.weight",
-                "cond_stage_model.model.ln_final.weight": "cond_stage_model.transformer.text_model.final_layer_norm.weight",
-                "cond_stage_model.model.ln_final.bias": "cond_stage_model.transformer.text_model.final_layer_norm.bias",
-            }
+        if 'num_heads' in config.model['params']['unet_config']['params']:
+            gs.model_version = '1.5'
+        elif 'num_head_channels' in config.model['params']['unet_config']['params']:
+            gs.model_version = '2.0'
+        if config.model['params']['conditioning_key'] == 'hybrid-adm':
+            gs.model_version = '2.0'
+        if 'parameterization' in config.model['params']:
+            gs.model_resolution = 768
+        else:
+            gs.model_resolution = 512
+        print(f'v {gs.model_version} found with resolution {gs.model_resolution}')
+        if verbose:
+            print('gs.model_version', gs.model_version)
+        checkpoint_file = ckpt
+        _, extension = os.path.splitext(checkpoint_file)
+        map_location = "cpu"
+        if extension.lower() == ".safetensors":
+            pl_sd = safetensors.torch.load_file(checkpoint_file, device=map_location)
+        else:
+            pl_sd = torch.load(checkpoint_file, map_location=map_location)
+        if "global_step" in pl_sd:
+            print(f"Global Step: {pl_sd['global_step']}")
+        pl_sd = copy.deepcopy(pl_sd)
+        sd = self.get_state_dict_from_checkpoint(pl_sd)
+        model = instantiate_from_config(config.model)
+        model = copy.deepcopy(model)
+        m, u = model.load_state_dict(sd, strict=False)
 
-            for x in keys_to_replace:
-                if x in sd:
-                    sd[keys_to_replace[x]] = sd.pop(x)
+        k = list(sd.keys())
+        for x in k:
+            # print(x)
+            if x.startswith("cond_stage_model.transformer.") and not x.startswith(
+                    "cond_stage_model.transformer.text_model."):
+                y = x.replace("cond_stage_model.transformer.", "cond_stage_model.transformer.text_model.")
+                sd[y] = sd.pop(x)
 
-            resblock_to_replace = {
-                "ln_1": "layer_norm1",
-                "ln_2": "layer_norm2",
-                "mlp.c_fc": "mlp.fc1",
-                "mlp.c_proj": "mlp.fc2",
-                "attn.out_proj": "self_attn.out_proj",
-            }
+        if 'cond_stage_model.transformer.text_model.embeddings.position_ids' in sd:
+            ids = sd['cond_stage_model.transformer.text_model.embeddings.position_ids']
+            if ids.dtype == torch.float32:
+                sd['cond_stage_model.transformer.text_model.embeddings.position_ids'] = ids.round()
 
-            for resblock in range(24):
-                for x in resblock_to_replace:
-                    for y in ["weight", "bias"]:
-                        k = "cond_stage_model.model.transformer.resblocks.{}.{}.{}".format(resblock, x, y)
-                        k_to = "cond_stage_model.transformer.text_model.encoder.layers.{}.{}.{}".format(resblock,
-                                                                                                        resblock_to_replace[
-                                                                                                            x], y)
-                        if k in sd:
-                            sd[k_to] = sd.pop(k)
+        keys_to_replace = {
+            "cond_stage_model.model.positional_embedding": "cond_stage_model.transformer.text_model.embeddings.position_embedding.weight",
+            "cond_stage_model.model.token_embedding.weight": "cond_stage_model.transformer.text_model.embeddings.token_embedding.weight",
+            "cond_stage_model.model.ln_final.weight": "cond_stage_model.transformer.text_model.final_layer_norm.weight",
+            "cond_stage_model.model.ln_final.bias": "cond_stage_model.transformer.text_model.final_layer_norm.bias",
+        }
 
+        for x in keys_to_replace:
+            if x in sd:
+                sd[keys_to_replace[x]] = sd.pop(x)
+
+        resblock_to_replace = {
+            "ln_1": "layer_norm1",
+            "ln_2": "layer_norm2",
+            "mlp.c_fc": "mlp.fc1",
+            "mlp.c_proj": "mlp.fc2",
+            "attn.out_proj": "self_attn.out_proj",
+        }
+
+        for resblock in range(24):
+            for x in resblock_to_replace:
                 for y in ["weight", "bias"]:
-                    k_from = "cond_stage_model.model.transformer.resblocks.{}.attn.in_proj_{}".format(resblock, y)
-                    if k_from in sd:
-                        weights = sd.pop(k_from)
-                        for x in range(3):
-                            p = ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"]
-                            k_to = "cond_stage_model.transformer.text_model.encoder.layers.{}.{}.{}".format(resblock,
-                                                                                                            p[x], y)
-                            sd[k_to] = weights[1024 * x:1024 * (x + 1)]
+                    k = "cond_stage_model.model.transformer.resblocks.{}.{}.{}".format(resblock, x, y)
+                    k_to = "cond_stage_model.transformer.text_model.encoder.layers.{}.{}.{}".format(resblock,
+                                                                                                    resblock_to_replace[
+                                                                                                        x], y)
+                    if k in sd:
+                        sd[k_to] = sd.pop(k)
 
-            for x in []:
-                x.load_state_dict(sd, strict=False)
+            for y in ["weight", "bias"]:
+                k_from = "cond_stage_model.model.transformer.resblocks.{}.attn.in_proj_{}".format(resblock, y)
+                if k_from in sd:
+                    weights = sd.pop(k_from)
+                    for x in range(3):
+                        p = ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"]
+                        k_to = "cond_stage_model.transformer.text_model.encoder.layers.{}.{}.{}".format(resblock,
+                                                                                                        p[x], y)
+                        sd[k_to] = weights[1024 * x:1024 * (x + 1)]
 
-            if len(m) > 0 and verbose:
-                print("missing keys:")
-                print(m)
-            if len(u) > 0 and verbose:
-                print("unexpected keys:")
-                print(u)
-            model.half()
+        for x in []:
+            x.load_state_dict(sd, strict=False)
 
-            model = ModelPatcher(model)
+        if len(m) > 0 and verbose:
+            print("missing keys:")
+            print(m)
+        if len(u) > 0 and verbose:
+            print("unexpected keys:")
+            print(u)
+        model.half()
 
-            value = "sd" if inpaint == False else "inpaint"
+        model = ModelPatcher(model)
 
-            gs.models[value] = model
-            #gs.models["sd"].cond_stage_model.device = self.device
-            for m in gs.models[value].model.modules():
-                if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
-                    m._orig_padding_mode = m.padding_mode
+        value = "sd" if inpaint == False else "inpaint"
 
-            autoencoder_version = self.get_autoencoder_version()
+        gs.models[model_key] = copy.deepcopy(model)
+        #gs.models["sd"].cond_stage_model.device = self.device
+        for m in gs.models[model_key].model.modules():
+            if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
+                m._orig_padding_mode = m.padding_mode
 
-            gs.models[value].linear_decode = make_linear_decode(autoencoder_version, self.device)
-            del pl_sd
-            del sd
-            del m, u
-            del model
-            torch_gc()
+        autoencoder_version = self.get_autoencoder_version()
 
-            #if gs.model_version == '1.5' and not 'Inpaint' in version:
-            #    self.run_post_load_model_generation_specifics()
+        gs.models[model_key].linear_decode = make_linear_decode(autoencoder_version, self.device)
+        del pl_sd
+        del sd
+        del m, u
+        del model
+        torch_gc()
 
-            gs.models[value].model.eval()
+        #if gs.model_version == '1.5' and not 'Inpaint' in version:
+        #    self.run_post_load_model_generation_specifics()
 
-            # todo make this 'cuda' a parameter
-            gs.models[value].model.to(self.device)
+        gs.models[model_key].model.eval()
 
-
-
+        # todo make this 'cuda' a parameter
+        gs.models[model_key].model.to(self.device)
         return ckpt
+
+
     def return_model_version(self, model):
         print('calculating sha to estimate the model version')
         with open(model, 'rb') as file:
@@ -225,7 +273,11 @@ class ModelLoader(torch.nn.Module):
 
         pl_sd.clear()
         pl_sd.update(sd)
-        sd = None
+        #sd = None
+
+        print("plsd", pl_sd)
+        print("sd", sd)
+
         return pl_sd
     def get_autoencoder_version(self):
         return "sd-v1"  # TODO this will be different for different models
@@ -275,12 +327,13 @@ class ModelLoader(torch.nn.Module):
             del model
             return
 
-    def load_vae(self, file):
+    def load_vae(self, file, model_index):
+        model_key = f"sd_{model_index}"
         path = os.path.join('models/vae', file)
         print("Loading", path)
         #gs.models["sd"].first_stage_model.cpu()
-        gs.models["sd"].first_stage_model = None
-        gs.models["sd"].first_stage_model = VAE(ckpt_path=path)
+        gs.models[model_key].first_stage_model = None
+        gs.models[model_key].first_stage_model = VAE(ckpt_path=path)
         print("VAE Loaded", file)
 
 
@@ -367,3 +420,82 @@ class VAE:
         #self.first_stage_model = self.first_stage_model.cpu()
         samples = samples.cpu()
         return samples
+
+
+
+def load_model_weights(model, sd, verbose=False, load_state_dict_to=[]):
+    m, u = model.load_state_dict(sd, strict=False)
+
+    k = list(sd.keys())
+    for x in k:
+        # print(x)
+        if x.startswith("cond_stage_model.transformer.") and not x.startswith("cond_stage_model.transformer.text_model."):
+            y = x.replace("cond_stage_model.transformer.", "cond_stage_model.transformer.text_model.")
+            sd[y] = sd.pop(x)
+
+    if 'cond_stage_model.transformer.text_model.embeddings.position_ids' in sd:
+        ids = sd['cond_stage_model.transformer.text_model.embeddings.position_ids']
+        if ids.dtype == torch.float32:
+            sd['cond_stage_model.transformer.text_model.embeddings.position_ids'] = ids.round()
+
+    keys_to_replace = {
+        "cond_stage_model.model.positional_embedding": "cond_stage_model.transformer.text_model.embeddings.position_embedding.weight",
+        "cond_stage_model.model.token_embedding.weight": "cond_stage_model.transformer.text_model.embeddings.token_embedding.weight",
+        "cond_stage_model.model.ln_final.weight": "cond_stage_model.transformer.text_model.final_layer_norm.weight",
+        "cond_stage_model.model.ln_final.bias": "cond_stage_model.transformer.text_model.final_layer_norm.bias",
+    }
+
+    for x in keys_to_replace:
+        if x in sd:
+            sd[keys_to_replace[x]] = sd.pop(x)
+
+    resblock_to_replace = {
+        "ln_1": "layer_norm1",
+        "ln_2": "layer_norm2",
+        "mlp.c_fc": "mlp.fc1",
+        "mlp.c_proj": "mlp.fc2",
+        "attn.out_proj": "self_attn.out_proj",
+    }
+
+    for resblock in range(24):
+        for x in resblock_to_replace:
+            for y in ["weight", "bias"]:
+                k = "cond_stage_model.model.transformer.resblocks.{}.{}.{}".format(resblock, x, y)
+                k_to = "cond_stage_model.transformer.text_model.encoder.layers.{}.{}.{}".format(resblock, resblock_to_replace[x], y)
+                if k in sd:
+                    sd[k_to] = sd.pop(k)
+
+        for y in ["weight", "bias"]:
+            k_from = "cond_stage_model.model.transformer.resblocks.{}.attn.in_proj_{}".format(resblock, y)
+            if k_from in sd:
+                weights = sd.pop(k_from)
+                for x in range(3):
+                    p = ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"]
+                    k_to = "cond_stage_model.transformer.text_model.encoder.layers.{}.{}.{}".format(resblock, p[x], y)
+                    sd[k_to] = weights[1024*x:1024*(x + 1)]
+
+    for x in load_state_dict_to:
+        x.load_state_dict(sd, strict=False)
+
+    if len(m) > 0 and verbose:
+        print("missing keys:")
+        print(m)
+    if len(u) > 0 and verbose:
+        print("unexpected keys:")
+        print(u)
+
+    model.eval()
+    return model
+def load_torch_file(ckpt):
+    if ckpt.lower().endswith(".safetensors"):
+        import safetensors.torch
+        sd = safetensors.torch.load_file(ckpt, device="cpu")
+    else:
+        pl_sd = torch.load(ckpt, map_location="cpu")
+        if "global_step" in pl_sd:
+            print(f"Global Step: {pl_sd['global_step']}")
+        if "state_dict" in pl_sd:
+            sd = pl_sd["state_dict"]
+        else:
+            sd = pl_sd
+    return sd

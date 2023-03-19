@@ -1,8 +1,8 @@
 import torch
 
 from .controlnet_loader import load_torch_file
-from ainodes_frontend import singleton as gs
-
+from ainodes_frontend import singleton
+gs = singleton.Singleton.instance()
 LORA_CLIP_MAP = {
     "mlp.fc1": "mlp_fc1",
     "mlp.fc2": "mlp_fc2",

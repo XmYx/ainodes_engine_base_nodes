@@ -10,7 +10,8 @@ from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend import singleton as gs
+from ainodes_frontend import singleton
+gs = singleton.Singleton.instance()
 from PIL import Image
 
 OP_NODE_IMG_LIST = get_next_opcode()

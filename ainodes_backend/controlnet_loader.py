@@ -3,8 +3,8 @@ import contextlib
 import torch
 
 from . import cldm
-from ainodes_frontend import singleton as gs
-
+from ainodes_frontend import singleton
+gs = singleton.Singleton.instance()
 
 def load_controlnet(ckpt_path, model=None):
     controlnet_data = load_torch_file(ckpt_path)

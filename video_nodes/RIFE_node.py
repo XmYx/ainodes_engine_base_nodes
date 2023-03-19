@@ -15,8 +15,8 @@ from ..ainodes_backend.RIFE.infer_rife import RIFEModel
 
 OP_NODE_RIFE = get_next_opcode()
 
-from ainodes_frontend import singleton as gs
-
+from ainodes_frontend import singleton
+gs = singleton.Singleton.instance()
 class RIFEWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()

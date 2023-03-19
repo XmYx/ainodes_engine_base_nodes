@@ -14,8 +14,9 @@ from PIL.ImageQt import ImageQt
 from qtpy import QtWidgets, QtCore, QtGui
 from qtpy.QtGui import QPixmap
 
-from ainodes_frontend import singleton as gs
-from ainodes_frontend.base import register_node, get_next_opcode
+from ainodes_frontend import singleton
+gs = singleton.Singleton.instance()
+from ainodes_frontend.base import register_node, get_next_opcode, Worker
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 
@@ -32,9 +33,11 @@ class KSamplerWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
         self.create_main_layout()
+
     def create_widgets(self):
         self.schedulers = self.create_combo_box(SCHEDULERS, "Scheduler:")
         self.sampler = self.create_combo_box(SAMPLERS, "Sampler:")
+        self.model_index = self.create_spin_box("Model Index", 0, 100, 0, 1)
         self.seed = self.create_line_edit("Seed:")
         self.steps = self.create_spin_box("Steps:", 1, 10000, 10)
         self.start_step = self.create_spin_box("Start Step:", 0, 1000, 0)
@@ -61,6 +64,7 @@ class KSamplerNode(AiNode):
         super().__init__(scene, inputs=[2,3,3,1], outputs=[5,2,1])
         self.content.button.clicked.connect(self.evalImplementation)
         self.busy = False
+        self.result = None
 
         # Create a worker object
     def initInnerClasses(self):
@@ -76,12 +80,19 @@ class KSamplerNode(AiNode):
         self.content.progress_signal.connect(self.setProgress)
         self.progress_value = 0
     def evalImplementation(self, index=0):
+        self.busy = False
         self.markDirty(True)
         if self.value is None:
             # Start the worker thread
             if self.busy == False:
                 self.busy = True
                 self.content.progress_signal.emit(0)
+
+                """worker = Worker(self.k_sampling)
+                worker.signals.result.connect(self.onWorkerFinished)
+                print(self.scene.parent.parent)
+                self.scene.parent.parent.threadpool.start(worker)"""
+
                 thread0 = threading.Thread(target=self.k_sampling)
                 thread0.start()
             return None
@@ -92,7 +103,8 @@ class KSamplerNode(AiNode):
 
     def onMarkedDirty(self):
         self.value = None
-    def k_sampling(self):
+    def k_sampling(self, progress_callback = None):
+        self.busy = False
         last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
         short_steps = last_step - self.content.start_step.value()
         steps = self.content.steps.value()
@@ -101,6 +113,11 @@ class KSamplerNode(AiNode):
         cond = self.getInputData(2)
         n_cond = self.getInputData(1)
         latent = self.getInputData(0)
+
+        model_index = self.content.model_index.value()
+        model_key = f"sd_{model_index}"
+
+
         if latent == None:
             latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
 
@@ -112,56 +129,72 @@ class KSamplerNode(AiNode):
         if self.content.iterate_seed.isChecked() == True:
             self.content.seed_signal.emit()
             self.seed += 1
-        try:
-            sample = common_ksampler(device="cuda",
-                                     seed=self.seed,
-                                     steps=self.content.steps.value(),
-                                     start_step=self.content.start_step.value(),
-                                     last_step=last_step,
-                                     cfg=self.content.guidance_scale.value(),
-                                     sampler_name=self.content.sampler.currentText(),
-                                     scheduler=self.content.schedulers.currentText(),
-                                     positive=cond,
-                                     negative=n_cond,
-                                     latent=latent,
-                                     disable_noise=self.content.disable_noise.isChecked(),
-                                     force_full_denoise=self.content.force_denoise.isChecked(),
-                                     denoise=self.content.denoise.value(),
-                                     callback=self.callback)
+        #try:
+        sample = common_ksampler(device="cuda",
+                                 seed=self.seed,
+                                 steps=self.content.steps.value(),
+                                 start_step=self.content.start_step.value(),
+                                 last_step=last_step,
+                                 cfg=self.content.guidance_scale.value(),
+                                 sampler_name=self.content.sampler.currentText(),
+                                 scheduler=self.content.schedulers.currentText(),
+                                 positive=cond,
+                                 negative=n_cond,
+                                 latent=latent,
+                                 disable_noise=self.content.disable_noise.isChecked(),
+                                 force_full_denoise=self.content.force_denoise.isChecked(),
+                                 denoise=self.content.denoise.value(),
+                                 callback=self.callback,
+                                 model_key=model_key)
 
 
-            return_sample = sample.cpu().half()
+        return_sample = sample.cpu().half()
 
-            x_sample = self.decode_sample(sample)
+        x_sample = self.decode_sample(sample)
 
 
-            image = Image.fromarray(x_sample.astype(np.uint8))
-            qimage = ImageQt(image)
-            pixmap = QPixmap().fromImage(qimage)
-            self.value = pixmap
-            del sample
-            x_samples = None
-            sample = None
-            torch_gc()
-            self.onWorkerFinished([pixmap, return_sample])
-        except Exception as e:
-            print(e)
-            self.busy = False
-            if len(self.getOutputs(2)) > 0:
-                self.executeChild(output_index=2)
-        return [pixmap, return_sample]
+        image = Image.fromarray(x_sample.astype(np.uint8))
+        qimage = ImageQt(image)
+        pixmap = QPixmap().fromImage(qimage)
+        self.value = pixmap
+        del sample
+        x_samples = None
+        sample = None
+        torch_gc()
+
+        result = [pixmap, return_sample]
+
+        self.onWorkerFinished(result)
+        """ except Exception as e:
+        print(e)
+        self.busy = False
+        if len(self.getOutputs(2)) > 0:
+            self.executeChild(output_index=2)"""
+        return result
     def decode_sample(self, sample):
-        if gs.loaded_vae == 'default':
-            x_samples = gs.models["sd"].model.decode_first_stage(sample.half())
+        model_index = self.content.model_index.value()
+        model_key = f"sd_{model_index}"
+
+        """if gs.loaded_vae == 'default':
+            x_samples = gs.models[model_key].model.decode_first_stage(sample.half())
             x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
             x_sample = 255. * rearrange(x_samples[0].cpu().numpy(), 'c h w -> h w c')
-        else:
-            x_sample = gs.models["sd"].first_stage_model.decode(sample)
-            #x_sample = torch.clamp((x_sample + 1.0) / 2.0, min=0.0, max=1.0)
-            x_sample = 255. * x_sample[0].detach().numpy()
-            #x_sample = 255. * rearrange(x_sample.detach().numpy(), 'c h w -> h w c')
+        else:"""
 
-            print("XSAMPLE:", x_sample.shape)
+        #x_sample = torch.clamp((x_sample + 1.0) / 2.0, min=0.0, max=1.0)
+        print("VAE", gs.loaded_vaes[model_key])
+        if 'default' in gs.loaded_vaes[model_key]:
+            x_samples = gs.models[model_key].model.decode_first_stage(sample.half())
+            x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
+            x_sample = 255. * rearrange(x_samples[0].cpu().numpy(), 'c h w -> h w c')
+
+        else:
+            x_sample = gs.models[model_key].vae.decode(sample.half())
+            x_sample = 255. * x_sample[0].detach().numpy()
+            #x_sample = 255. * x_sample[0].cpu().numpy()
+        #x_sample = 255. * rearrange(x_sample.detach().numpy(), 'c h w -> h w c')
+
+        #print("XSAMPLE:", x_sample.shape)
         return x_sample
 
     def callback(self, tensors):

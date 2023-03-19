@@ -1,16 +1,18 @@
 import os
 import threading
 
+from PySide6 import QtCore
 from qtpy import QtWidgets
 
 from ..ainodes_backend.model_loader import ModelLoader
 from ..ainodes_backend import torch_gc
 
-from ainodes_frontend.base import register_node, get_next_opcode
+from ainodes_frontend.base import register_node, get_next_opcode, Worker
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
-from ainodes_frontend import singleton as gs
+from ainodes_frontend import singleton
+gs = singleton.Singleton.instance()
 
 OP_NODE_TORCH_LOADER = get_next_opcode()
 class TorchLoaderWidget(QDMNodeContentWidget):
@@ -41,6 +43,8 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         self.vae_dropdown.addItem("default")
         self.vae_dropdown.setCurrentText("default")
 
+        self.model_index = self.create_spin_box("Model Index", 0, 100, 0, 1)
+
 
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
     def __init__(self, parent=None):
@@ -70,31 +74,69 @@ class TorchLoaderNode(AiNode):
         self.content = TorchLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.width = 340
-        self.grNode.height = 160
+        self.grNode.height = 200
         self.content.setMinimumHeight(140)
         self.content.setMinimumWidth(340)
         self.busy = False
     def evalImplementation(self, index=0):
+        print("MODEL LOADER")
+        self.busy = False
         self.markDirty(True)
-        if self.busy == False:
-            self.busy = True
-            thread0 = threading.Thread(target=self.evalImplementation_thread)
-            thread0.start()
-            return None
-        else:
-            self.markDirty(False)
-            self.markInvalid(False)
-            return None
+        thread0 = threading.Thread(target=self.evalImplementation_thread)
+        thread0.start()
+        return None
 
-    def evalImplementation_thread(self, index=0):
+    def evalImplementation_thread(self, progress_callback = None):
+
+        model_index = self.content.model_index.value()
+        model_name = self.content.dropdown.currentText()
+        config_name = self.content.config_dropdown.currentText()
+        vae_name = self.content.vae_dropdown.currentText()
+        model_key = f"sd_{model_index}"
+        model_id = f"{model_key}_{model_name}"
+        vae_id = f"{model_key}_{vae_name}"
+        if model_key in gs.models:
+            if gs.loaded_models[model_key] != model_id or gs.loaded_vaes[model_key] != vae_id:
+                gs.models[model_key].model.cpu()
+                gs.models[model_key] = None
+                del gs.models[model_key]
+                force_reload = True
+                gs.loaded_models[model_key] = None
+                del gs.loaded_models[model_key]
+
+        if model_key not in gs.models:
+            gs.loaded_models[model_key] = None
+            gs.loaded_vaes[model_key] = None
+            custom_vae = None if vae_name == 'default' else vae_name
+            self.loader.load_model(model_name, config_name, model_index, custom_vae)
+            gs.loaded_models[model_key] = model_id
+            gs.loaded_vaes[model_key] = vae_id
+        print("LOADER DONE")
+        return True
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, object):
+        self.executeChild(output_index=0)
+    def load_model(self, model_index):
+
+
+
+
+
+
         try:
+            print(gs.loaded_vae)
             model_name = self.content.dropdown.currentText()
             config_name = self.content.config_dropdown.currentText()
-            print("TORCH LOADER:", gs.loaded_models["loaded"])
+            print("TORCH LOADER:", gs.loaded_models[loaded_model_key])
             print(gs.current["sd_model"])
-            if model_name not in gs.loaded_models["loaded"]:
+            force_reload = False
+            if gs.loaded_vae != self.content.vae_dropdown.currentText():
+                force_reload = True
+
+
+            if model_name not in gs.loaded_models[loaded_model_key] or force_reload:
                 if model_name != "" and "inpaint" not in model_name:
-                    if gs.current["sd_model"] != model_name:
+                    if gs.current["sd_model"] != model_name or force_reload:
                         for i in gs.loaded_models["loaded"]:
                             if i == gs.current["sd_model"]:
                                 gs.loaded_models["loaded"].remove(i)
@@ -110,8 +152,9 @@ class TorchLoaderNode(AiNode):
                     inpaint = False
                     self.value = model_name
                     self.loader.load_model(model_name, config_name, inpaint)
-                elif model_name != "" and "inpaint" in model_name:
-                    if gs.current["inpaint_model"] != model_name:
+                    gs.loaded_vae = 'default'
+                elif model_name != "" and "inpaint" in model_name or force_reload:
+                    if gs.current["inpaint_model"] != model_name or force_reload:
                         for i in gs.loaded_models["loaded"]:
                             if i == gs.current["inpaint_model"]:
                                 gs.loaded_models["loaded"].remove(i)
@@ -132,21 +175,20 @@ class TorchLoaderNode(AiNode):
                     self.setOutput(0, model_name)
                     self.markDirty(False)
                     self.markInvalid(False)
+                    gs.loaded_vae = 'default'
                 if self.content.vae_dropdown.currentText() != 'default':
                     model = self.content.vae_dropdown.currentText()
                     self.loader.load_vae(model)
                     gs.loaded_vae = model
                 else:
                     gs.loaded_vae = 'default'
-            elif gs.loaded_vae != self.content.vae_dropdown.currentText():
-                model = self.content.vae_dropdown.currentText()
-                self.loader.load_vae(model)
-                gs.loaded_vae = model
             else:
                 self.markDirty(False)
                 self.markInvalid(False)
                 self.grNode.setToolTip("")
             self.busy = False
+            print(gs.loaded_vae)
+
         except:
             self.markDirty(True)
             self.markInvalid(False)

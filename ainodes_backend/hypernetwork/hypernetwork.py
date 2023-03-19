@@ -24,7 +24,7 @@ from ..textual_inversion.learn_schedule import LearnRateScheduler
 from ainodes_frontend import singleton
 from ldm.util import default, instantiate_from_config
 
-gs = singleton
+gs = singleton.Singleton.instance()
 
 
 

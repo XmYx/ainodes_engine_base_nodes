@@ -8,8 +8,8 @@ import contextlib
 #from . import model_management
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.modules.diffusionmodules.util import make_ddim_timesteps
-from ainodes_frontend import singleton as gs
-
+from ainodes_frontend import singleton
+gs = singleton.Singleton.instance()
 
 def get_free_memory(dev=None, torch_free_too=False):
     if dev is None:
@@ -357,14 +357,14 @@ class KSampler:
                 "lms", "dpm_fast", "dpm_adaptive", "dpmpp_2s_ancestral", "dpmpp_sde",
                 "dpmpp_2m", "ddim", "uni_pc", "uni_pc_bh2"]
 
-    def __init__(self, steps, device, sampler=None, scheduler=None, denoise=None):
+    def __init__(self, steps, device, sampler=None, scheduler=None, denoise=None, model_key="sd_0"):
         #self.model = model
-        self.model_denoise = CFGNoisePredictor(gs.models["sd"].model)
-        if gs.models["sd"].model.parameterization == "v":
+        self.model_denoise = CFGNoisePredictor(gs.models[model_key].model)
+        if gs.models[model_key].model.parameterization == "v":
             self.model_wrap = CompVisVDenoiser(self.model_denoise, quantize=True)
         else:
             self.model_wrap = k_diffusion_external.CompVisDenoiser(self.model_denoise, quantize=True)
-        self.model_wrap.parameterization = gs.models["sd"].model.parameterization
+        self.model_wrap.parameterization = gs.models[model_key].model.parameterization
         self.model_k = KSamplerX0Inpaint(self.model_wrap)
         self.device = device
         if scheduler not in self.SCHEDULERS:
@@ -411,7 +411,7 @@ class KSampler:
             self.sigmas = sigmas[-(steps + 1):]
 
 
-    def sample(self, noise, positive, negative, cfg, latent_image=None, start_step=None, last_step=None, force_full_denoise=False, denoise_mask=None, callback=None):
+    def sample(self, noise, positive, negative, cfg, latent_image=None, start_step=None, last_step=None, force_full_denoise=False, denoise_mask=None, callback=None, model_key="sd_0"):
         sigmas = self.sigmas
         sigma_min = self.sigma_min
 
@@ -440,7 +440,7 @@ class KSampler:
 
         apply_control_net_to_equal_area(positive, negative)
 
-        if gs.models["sd"].model.model.diffusion_model.dtype == torch.float16:
+        if gs.models[model_key].model.model.diffusion_model.dtype == torch.float16:
             precision_scope = torch.autocast
         else:
             precision_scope = contextlib.nullcontext
@@ -448,9 +448,9 @@ class KSampler:
         extra_args = {"cond":positive, "uncond":negative, "cond_scale": cfg}
 
         cond_concat = None
-        if hasattr(gs.models["sd"].model.model, 'concat_keys'):
+        if hasattr(gs.models[model_key].model.model, 'concat_keys'):
             cond_concat = []
-            for ck in gs.models["sd"].model.model.concat_keys:
+            for ck in gs.models[model_key].model.model.concat_keys:
                 if denoise_mask is not None:
                     if ck == "mask":
                         cond_concat.append(denoise_mask[:,:1])
@@ -480,7 +480,7 @@ class KSampler:
                 noise_mask = None
                 if denoise_mask is not None:
                     noise_mask = 1.0 - denoise_mask
-                sampler = DDIMSampler(gs.models["sd"].model)
+                sampler = DDIMSampler(gs.models[model_key].model)
                 sampler.make_schedule_timesteps(ddim_timesteps=timesteps, verbose=True)
                 z_enc = sampler.stochastic_encode(latent_image, torch.tensor([len(timesteps) - 1] * noise.shape[0]).to(self.device), noise=noise, max_denoise=max_denoise)
                 samples, _ = sampler.sample_custom(ddim_timesteps=timesteps,

@@ -17,7 +17,9 @@ from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend.deforum.deforum_anim_warp import anim_frame_warp_3d
 from ..ainodes_backend.semseg.semseg_inference import SemSegModel
 
-from ainodes_frontend import singleton as gs
+from ainodes_frontend import singleton
+gs = singleton.Singleton.instance()
+
 OP_NODE_IMAGE_OPS = get_next_opcode()
 
 image_ops_methods = [

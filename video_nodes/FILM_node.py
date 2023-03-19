@@ -16,8 +16,8 @@ from ..ainodes_backend.FILM.inference import FilmModel
 
 OP_NODE_FILM = get_next_opcode()
 
-from ainodes_frontend import singleton as gs
-
+from ainodes_frontend import singleton
+gs = singleton.Singleton.instance()
 class FILMWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image

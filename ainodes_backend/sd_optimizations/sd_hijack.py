@@ -20,7 +20,7 @@ diffusionmodules_model_AttnBlock_forward = ldm.modules.diffusionmodules.model.At
 
 from ainodes_frontend import singleton
 
-gs = singleton
+gs = singleton.Singleton.instance()
 gs.embeddings_path = ""
 
 

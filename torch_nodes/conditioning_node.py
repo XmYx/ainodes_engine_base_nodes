@@ -9,7 +9,8 @@ from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
-from ainodes_frontend import singleton as gs
+from ainodes_frontend import singleton
+gs = singleton.Singleton.instance()
 
 OP_NODE_CONDITIONING = get_next_opcode()
 class ConditioningWidget(QDMNodeContentWidget):
@@ -20,6 +21,7 @@ class ConditioningWidget(QDMNodeContentWidget):
         self.prompt = self.create_text_edit("Prompt")
         self.button = QtWidgets.QPushButton("Get Conditioning")
         self.create_button_layout([self.button])
+        self.model_index = self.create_spin_box("Model Index", 0, 100, 0, 1)
 
 @register_node(OP_NODE_CONDITIONING)
 class ConditioningNode(AiNode):
@@ -82,14 +84,15 @@ class ConditioningNode(AiNode):
     def get_conditioning(self, progress_callback=None):
         #print("Getting Conditioning on ", id(self))
         prompt = self.content.prompt.toPlainText()
-
+        model_index = self.content.model_index.value()
+        model_key = f"sd_{model_index}"
         """if gs.loaded_models["loaded"] == []:
             for node in self.scene.nodes:
                 if isinstance(node, TorchLoaderNode):
                     node.evalImplementation()
                     #print("Node found")"""
 
-        c = gs.models["sd"].model.cond_stage_model.encode([prompt])
+        c = gs.models[model_key].model.cond_stage_model.encode([prompt])
         uc = {}
         return [[c, uc]]
     def onWorkerFinished(self, result):
