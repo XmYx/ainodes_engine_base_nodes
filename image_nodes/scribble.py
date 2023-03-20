@@ -24,7 +24,18 @@ class DrawingWidget(QtWidgets.QWidget):
         self.brush_size = 10
         self.setCursor(self.createBrushCursor())
         self.dec_button = QtWidgets.QPushButton()
-
+        self.color = Qt.white
+        self.alt_color = Qt.black
+        self.setCursor(self.createBrushCursor(self.alt_color))
+    def switch_color(self):
+        if self.color == Qt.white:
+            self.color = Qt.black
+            self.alt_color = Qt.white
+        else:
+            self.color = Qt.white
+            self.alt_color = Qt.black
+        cursor = self.createBrushCursor(self.alt_color)
+        self.setCursor(cursor)
     def get_image(self):
         pixmap = QtGui.QPixmap.fromImage(self.image)
         return pixmap
@@ -32,6 +43,7 @@ class DrawingWidget(QtWidgets.QWidget):
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         painter.drawImage(0, 0, self.image)
+        painter.end()
 
     def createBrushCursor(self, color=None):
         cursor_pixmap = QtGui.QPixmap(self.brush_size * 2 + 2, self.brush_size * 2 + 2)
@@ -52,6 +64,7 @@ class DrawingWidget(QtWidgets.QWidget):
         return QtGui.QCursor(cursor_pixmap)
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
+
             self.drawing = True
             self.last_point = event.pos()
 
@@ -60,9 +73,9 @@ class DrawingWidget(QtWidgets.QWidget):
             painter = QtGui.QPainter(self.image)
             pen = QtGui.QPen()
             if event.modifiers() & Qt.ShiftModifier:
-                pen.setColor(Qt.black)
+                pen.setColor(self.alt_color)
             else:
-                pen.setColor(Qt.white)
+                pen.setColor(self.color)
 
             pen.setWidth(self.brush_size)
             pen.setCapStyle(Qt.RoundCap)
@@ -77,7 +90,7 @@ class DrawingWidget(QtWidgets.QWidget):
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.setCursor(self.createBrushCursor(Qt.white))
+            self.setCursor(self.createBrushCursor(self.color))
             self.drawing = False
             self.last_point = None
     def dec_brush(self):
@@ -103,10 +116,12 @@ class ScribbleWidget(QDMNodeContentWidget):
         self.dec_button = QtWidgets.QPushButton("Smaller")
         self.inc_button = QtWidgets.QPushButton("Larger")
         self.new_image = QtWidgets.QPushButton("Resize")
+        self.invert_button = QtWidgets.QPushButton("Invert Canvas")
         self.button_layout = QtWidgets.QHBoxLayout()
         self.button_layout.addWidget(self.dec_button)
         self.button_layout.addWidget(self.inc_button)
         self.button_layout.addWidget(self.new_image)
+        self.button_layout.addWidget(self.invert_button)
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(15, 30, 15, 35)
         layout.addWidget(self.image)
@@ -124,6 +139,7 @@ class ScribbleNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
+        self.color = Qt.black
 
     def initInnerClasses(self):
         self.content = ScribbleWidget(self)
@@ -139,6 +155,7 @@ class ScribbleNode(AiNode):
         self.content.dec_button.clicked.connect(self.content.image.dec_brush)
         self.content.inc_button.clicked.connect(self.content.image.inc_brush)
         self.content.new_image.clicked.connect(self.new_image)
+        self.content.invert_button.clicked.connect(self.switch_color)
 
     def evalImplementation(self, index=0):
 
@@ -146,6 +163,16 @@ class ScribbleNode(AiNode):
         self.markDirty(False)
         self.setOutput(0, pixmap)
         self.executeChild(2)
+    def switch_color(self):
+        if self.color == Qt.black:
+            self.color = Qt.white
+            self.content.image.switch_color()
+
+        else:
+            self.color = Qt.black
+            self.content.image.switch_color()
+
+        self.onMarkedInvalid()
     def new_image(self):
         image = get_custom_size_image()
         if image is not None:
@@ -156,7 +183,7 @@ class ScribbleNode(AiNode):
         #
         pass
     def onMarkedInvalid(self):
-        self.content.image.image.fill(Qt.black)
+        self.content.image.image.fill(self.color)
     def onInputChanged(self, socket=None):
 
         pass

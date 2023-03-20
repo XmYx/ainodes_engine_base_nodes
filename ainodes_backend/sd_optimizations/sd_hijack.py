@@ -26,7 +26,7 @@ gs.embeddings_path = ""
 
 def apply_optimizations():
     #undo_optimizations()
-    hijack_style = "sdp"
+    hijack_style = "sdp_quick"
     ldm.modules.diffusionmodules.model.nonlinearity = silu
     if hijack_style == 'xformers':
         print("Applying xformers cross attention optimization.")
@@ -38,10 +38,16 @@ def apply_optimizations():
         print("Applying scaled dot product cross attention optimization.")
         ldm.modules.attention.CrossAttention.forward = sd_hijack_optimizations.scaled_dot_product_attention_forward
         ldm.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.sdp_attnblock_forward
-
-
-
-        optimization_method = 'sdp'
+    elif hijack_style == 'sdp_quick':
+        print("Applying scaled dot product cross attention optimization (without memory efficient attention).")
+        ldm.modules.attention.CrossAttention.forward = sd_hijack_optimizations.scaled_dot_product_no_mem_attention_forward
+        ldm.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.sdp_no_mem_attnblock_forward
+        optimization_method = 'sdp-no-mem'
+    elif hijack_style == 'doggetx':
+        print("Applying cross attention optimization (Doggettx).")
+        ldm.modules.attention.CrossAttention.forward = sd_hijack_optimizations.split_cross_attention_forward
+        ldm.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.cross_attention_attnblock_forward
+        optimization_method = 'Doggettx'
 
     #print('hijack util')
     #ldm.modules.diffusionmodules.util.make_ddim_timesteps = hijack_util.make_ddim_timesteps

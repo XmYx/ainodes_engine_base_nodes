@@ -56,12 +56,6 @@ class VideoInputWidget(QDMNodeContentWidget):
         self.current_frame = 0
         self.label.setText("Frame: 0")
 
-    def onFrameChanged(self, frame):
-        pixmap = self.movie.currentPixmap()
-        self.node.setOutput(0, pixmap)
-        self.current_frame = frame
-        self.label.setPixmap(pixmap)
-
 
 @register_node(OP_NODE_VIDEO_INPUT)
 class VideoInputNode(AiNode):

@@ -96,7 +96,7 @@ class KSamplerNode(AiNode):
         last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
         short_steps = last_step - self.content.start_step.value()
         steps = self.content.steps.value()
-        self.single_step = int(100 / steps) if self.content.start_step.value() == 0 and last_step == steps else short_steps
+        self.single_step = 100 / steps if self.content.start_step.value() == 0 and last_step == steps else short_steps
         self.progress_value = 0
         cond = self.getInputData(2)
         n_cond = self.getInputData(1)
@@ -113,6 +113,8 @@ class KSamplerNode(AiNode):
             self.content.seed_signal.emit()
             self.seed += 1
         try:
+            print(f"torch {torch.__version__}, cuda {torch.version.cuda}, cudnn {torch.backends.cudnn.version()}")
+            #enable_misc_optimizations()
             sample = common_ksampler(device="cuda",
                                      seed=self.seed,
                                      steps=self.content.steps.value(),
@@ -145,6 +147,8 @@ class KSamplerNode(AiNode):
             torch_gc()
             self.onWorkerFinished([pixmap, return_sample])
         except Exception as e:
+            pixmap = None
+            return_sample = None
             print(e)
             self.busy = False
             if len(self.getOutputs(2)) > 0:
@@ -200,3 +204,23 @@ def get_fixed_seed(seed):
         sign = random.choice([-1, 1])
         value = secrets.randbelow(999999999999999999)
         return sign * value
+
+def enable_misc_optimizations():
+    torch.backends.cudnn.allow_tf32 = True
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.benchmark_limit = 1
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False
+    torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
+    if torch.backends.cudnn.benchmark:
+        print("Enabled CUDNN Benchmark Sucessfully")
+    else:
+        print("CUDNN Benchmark Disabled")
+    if torch.backends.cuda.matmul.allow_tf32 and torch.backends.cudnn.allow_tf32:
+        print("Enabled CUDA & CUDNN TF32 Sucessfully")
+    else:
+        print("CUDA & CUDNN TF32 Disabled")
+    if not torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction and not torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction:
+        print("CUDA Matmul fp16/bf16 Reduced Precision Reduction Disabled")
+    else:
+        print("CUDA Matmul fp16/bf16 Reduced Precision Reduction Expected Value Mismatch")

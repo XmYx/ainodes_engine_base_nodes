@@ -162,7 +162,7 @@ class GifRecorder:
 
     def add_frame(self, frame, dump):
         self.frames.append(frame)
-        if len(self.frames) >= dump:
+        if len(self.frames) >= dump and dump != 0:
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
             fps = 24
             type = 'mp4_ffmpeg'

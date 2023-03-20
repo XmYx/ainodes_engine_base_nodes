@@ -1436,7 +1436,7 @@ class GaussianDiffusion(object):
         mask = t.ne(0).float().view(-1, *((1, ) * (xt.ndim - 1)))
         xt_1 = torch.sqrt(alphas_prev) * x0 + direction + mask * sigmas * noise
 
-        noise.cpu()
+        """noise.cpu()
         direction.cpu()
         mask.cpu()
         alphas.cpu()
@@ -1455,8 +1455,8 @@ class GaussianDiffusion(object):
         del a
         del b
         del eps
-        del x0
-        torch_gc()
+        del x0"""
+        #torch_gc()
         return xt_1
 
     @torch.no_grad()
@@ -1473,7 +1473,6 @@ class GaussianDiffusion(object):
                          frames=1):
         # prepare input
         b = noise.size(0)
-        #xt = noise
 
         # diffusion process (TODO: clamp is inaccurate! Consider replacing the stride by explicit prev/next steps)
         steps = (1 + torch.arange(0, self.num_timesteps,
@@ -1486,6 +1485,7 @@ class GaussianDiffusion(object):
                                      percentile, condition_fn, guide_scale,
                                      ddim_timesteps, eta)
             t.cpu()
+            del t
             t = None
             torch_gc()
             pbar.set_description(f"DDIM sampling {str(step)}")

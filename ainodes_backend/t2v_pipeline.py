@@ -13,6 +13,7 @@ from einops import rearrange
 import cv2
 from tqdm import tqdm
 from . import VAE, samplers
+from .sd_optimizations.sd_hijack import apply_optimizations
 from .t2v_model import UNetSD, AutoencoderKL, FrozenOpenCLIPEmbedder, GaussianDiffusion, beta_schedule
 from ainodes_frontend import singleton as gs
 from huggingface_hub import snapshot_download
@@ -156,6 +157,7 @@ class TextToVideoSynthesis():
         self.clip_encoder.model.to('cpu')
 
         self.clip_encoder.to("cpu")
+        apply_optimizations()
 
     #@torch.compile()
     def __call__(self, prompt: str = "A bunny in the forest",
@@ -205,7 +207,7 @@ class TextToVideoSynthesis():
             self.model.to(self.device)
             if latents == None:
                 latents = torch.randn(num_sample, 4, max_frames, latent_h,
-                                          latent_w).to(
+                                          latent_w).half().to(
                                               self.device)
             else:
                 latents = latents.to(self.device)
