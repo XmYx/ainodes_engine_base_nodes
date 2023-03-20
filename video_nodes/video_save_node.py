@@ -159,9 +159,15 @@ class GifRecorder:
 
     def add_frame(self, frame):
         self.frames.append(frame)
+        if len(self.frames) >= 14400:
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            fps = 24
+            type = 'mp4_ffmpeg'
+            self.close(timestamp, fps, type, True)
+
         print(f"VIDEO SAVE NODE: Image added to frame buffer, current frames: {len(self.frames)}")
 
-    def close(self, timestamp, fps, type='GIF'):
+    def close(self, timestamp, fps, type='GIF', dump=False):
         if type == 'GIF':
             os.makedirs("output/gifs", exist_ok=True)
             filename = f"output/gifs/{timestamp}.gif"
@@ -181,7 +187,7 @@ class GifRecorder:
                    filename]
             video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
             for frame in self.frames:
-                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 video_writer.stdin.write(frame.tobytes())
             video_writer.communicate()
         elif type == 'mp4_fourcc':
@@ -194,4 +200,5 @@ class GifRecorder:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 video_writer.write(frame)
             video_writer.release()
-        #self.frames = []
+        if dump:
+            self.frames = []
