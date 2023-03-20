@@ -12,10 +12,10 @@ import torch.cuda.amp as amp
 from einops import rearrange
 import cv2
 from tqdm import tqdm
-from . import VAE
+from . import VAE, samplers
 from .t2v_model import UNetSD, AutoencoderKL, FrozenOpenCLIPEmbedder, GaussianDiffusion, beta_schedule
-
-
+from ainodes_frontend import singleton as gs
+from huggingface_hub import snapshot_download
 __all__ = ['TextToVideoSynthesis']
 
 try:
@@ -74,6 +74,12 @@ class TextToVideoSynthesis():
         """
         super().__init__()
         self.model_dir = model_dir
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir, exist_ok=True)
+            snapshot_download('damo-vilab/modelscope-damo-text-to-video-synthesis',
+                              repo_type='model',
+                              local_dir=model_dir)
+
         self.device = torch.device('cpu')
         # Load the configuration from a file
         with open('models/t2v/configuration.json', 'r') as f:
@@ -89,7 +95,7 @@ class TextToVideoSynthesis():
             'temporal_attention'] == 'True' else False
 
         # Initialize unet
-        self.sd_model = UNetSD(
+        self.model = UNetSD(
             in_dim=cfg['unet_in_dim'],
             dim=cfg['unet_dim'],
             y_dim=cfg['unet_y_dim'],
@@ -102,12 +108,12 @@ class TextToVideoSynthesis():
             attn_scales=cfg['unet_attn_scales'],
             dropout=cfg['unet_dropout'],
             temporal_attention=cfg['temporal_attention'])
-        self.sd_model.load_state_dict(
+        self.model.load_state_dict(
             torch.load(
                 osp.join(self.model_dir, self.config.model["model_args"]["ckpt_unet"])),
             strict=True)
-        self.sd_model.eval()
-        self.sd_model.half()
+        self.model.eval()
+        self.model.half()
         # Initialize diffusion
         betas = beta_schedule(
             'linear_sd',
@@ -152,7 +158,7 @@ class TextToVideoSynthesis():
         self.clip_encoder.to("cpu")
 
     #@torch.compile()
-    def infer(self, prompt: str = "A bunny in the forest",
+    def __call__(self, prompt: str = "A bunny in the forest",
               n_prompt: Optional[str] = "",
               steps: int = 50,
               frames: int = 15,
@@ -184,7 +190,6 @@ class TextToVideoSynthesis():
         Returns:
             A generated video (as pytorch tensor).
         """
-        self.sd_model.use_fps_condition = False
         self.device = torch.device('cuda')
         self.clip_encoder.to(self.device)
         y, zero_y = self.preprocess(prompt, n_prompt)
@@ -197,7 +202,7 @@ class TextToVideoSynthesis():
             num_sample = 1
             max_frames = frames
             latent_h, latent_w = height // 8, width // 8
-            self.sd_model.to(self.device)
+            self.model.to(self.device)
             if latents == None:
                 latents = torch.randn(num_sample, 4, max_frames, latent_h,
                                           latent_w).to(
@@ -205,10 +210,11 @@ class TextToVideoSynthesis():
             else:
                 latents = latents.to(self.device)
             with amp.autocast(enabled=True):
-                self.sd_model.to(self.device)
+                self.model.to(self.device)
+
                 x0 = self.diffusion.ddim_sample_loop(
                     noise=latents,  # shape: b c f h w
-                    model=self.sd_model,
+                    model=self.model,
                     model_kwargs=[{
                         'y':
                         context[1].unsqueeze(0).repeat(num_sample, 1, 1)
@@ -222,7 +228,7 @@ class TextToVideoSynthesis():
                     frames=frames,
                     percentile=strength)
 
-                self.sd_model.to("cpu")
+                self.model.to("cpu")
                 torch_gc()
                 scale_factor = 0.18215
                 bs_vd = x0.shape[0]
@@ -286,7 +292,7 @@ class TextToVideoSynthesis():
 
         video_path = self.postprocess_video(vd_out)
         self.clip_encoder.to("cpu")
-        self.sd_model.to("cpu")
+        self.model.to("cpu")
         self.autoencoder.to("cpu")
         #self.autoencoder.encoder.to("cpu")
         #self.autoencoder.decoder.to("cpu")

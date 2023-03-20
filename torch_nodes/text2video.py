@@ -71,11 +71,12 @@ class Text2VideoNode(AiNode):
         self.content = Text2VideoWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.width = 340
-        self.grNode.height = 500
+        self.grNode.height = 600
         self.content.setMinimumHeight(400)
         self.content.setMinimumWidth(340)
         self.busy = False
     def evalImplementation(self, index=0):
+        self.busy = False
         self.markDirty(True)
         if self.busy == False:
             self.busy = True
@@ -109,17 +110,15 @@ class Text2VideoNode(AiNode):
                 seed = choice * seed
             steps = self.content.steps.value()
             import torch._dynamo
-            #torch._dynamo.config.suppress_errors = True
-            #torch._dynamo.config.verbose = True
-            if "t2v" not in gs.models:
-                gs.models["t2v"] = TextToVideoSynthesis(model_dir="models/t2v")
+            if "t2v_pipeline" not in gs.models:
+                gs.models["t2v_pipeline"] = TextToVideoSynthesis(model_dir="models/t2v")
             torch.manual_seed(seed)
             fancy_readout(prompt, steps, frames, scale, width, height, seed)
             if self.last_latent is not None and self.content.continue_sampling.isChecked():
                 latents = self.last_latent
             else:
                 latents = None
-            return_samples, latent = gs.models["t2v"].infer(prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength)
+            return_samples, latent = gs.models["t2v_pipeline"](prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength)
             self.last_latent = latent
             for frame in return_samples:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
@@ -130,15 +129,15 @@ class Text2VideoNode(AiNode):
                     self.executeChild(output_index=1)
                 time.sleep(0.05)
 
-            """from modelscope.outputs import OutputKeys
-            from modelscope.pipelines import pipeline
-            pipe = pipeline('text-to-video-synthesis', "models/t2v")
-            
-    
-            mp4 =  pipe({'text': prompt})
-            pipe.model.cpu()
-            del pipe
-            print(mp4)"""
+                """from modelscope.outputs import OutputKeys
+                from modelscope.pipelines import pipeline
+                pipe = pipeline('text-to-video-synthesis', "models/t2v")
+                
+        
+                mp4 =  pipe({'text': prompt})
+                pipe.model.cpu()
+                del pipe
+                print(mp4)"""
         except Exception as e:
             print(e)
             try:
