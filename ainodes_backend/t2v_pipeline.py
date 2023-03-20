@@ -11,7 +11,7 @@ import torch
 import torch.cuda.amp as amp
 from einops import rearrange
 import cv2
-
+from tqdm import tqdm
 from . import VAE
 from .t2v_model import UNetSD, AutoencoderKL, FrozenOpenCLIPEmbedder, GaussianDiffusion, beta_schedule
 
@@ -102,16 +102,12 @@ class TextToVideoSynthesis():
             attn_scales=cfg['unet_attn_scales'],
             dropout=cfg['unet_dropout'],
             temporal_attention=cfg['temporal_attention'])
-        #pl_sd = torch.load("models/checkpoints/model.ckpt", map_location="cpu")
-        #sd = self.get_state_dict_from_checkpoint(pl_sd)
-        #self.sd_model.load_state_dict(sd, strict=False)
         self.sd_model.load_state_dict(
             torch.load(
                 osp.join(self.model_dir, self.config.model["model_args"]["ckpt_unet"])),
             strict=True)
         self.sd_model.eval()
         self.sd_model.half()
-
         # Initialize diffusion
         betas = beta_schedule(
             'linear_sd',
@@ -154,84 +150,49 @@ class TextToVideoSynthesis():
         self.clip_encoder.model.to('cpu')
 
         self.clip_encoder.to("cpu")
-        #self.load_vae()
-
-    def load_vae(self):
-        path = os.path.join('models/vae', "Anything-V3.0.vae.pt")
-        print("Loading", path)
-        # gs.models["sd"].first_stage_model.cpu()
-        first_stage_model = None
-        self.autoencoder = VAE(ckpt_path=path)
-
-    def get_state_dict_from_checkpoint(self, pl_sd):
-        pl_sd = pl_sd.pop("state_dict", pl_sd)
-        pl_sd.pop("state_dict", None)
-
-        sd = {}
-        for k, v in pl_sd.items():
-            new_key = self.transform_checkpoint_dict_key(k)
-
-            if new_key is not None:
-                sd[new_key] = v
-
-        pl_sd.clear()
-        pl_sd.update(sd)
-        sd = None
-        return pl_sd
-    def transform_checkpoint_dict_key(self, k):
-        chckpoint_dict_replacements = {
-            'cond_stage_model.transformer.embeddings.': 'cond_stage_model.transformer.text_model.embeddings.',
-            'cond_stage_model.transformer.encoder.': 'cond_stage_model.transformer.text_model.encoder.',
-            'cond_stage_model.transformer.final_layer_norm.': 'cond_stage_model.transformer.text_model.final_layer_norm.',
-        }
-        for text, replacement in chckpoint_dict_replacements.items():
-            if k.startswith(text):
-                k = replacement + k[len(text):]
-
-        return k
 
     #@torch.compile()
-    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae=False, latents=None):
+    def infer(self, prompt: str = "A bunny in the forest",
+              n_prompt: Optional[str] = "",
+              steps: int = 50,
+              frames: int = 15,
+              scale: float = 12.5,
+              width=256,
+              height=256,
+              eta=0.0,
+              cpu_vae=False,
+              latents=None,
+              strength=None):
         r"""
         The entry function of text to image synthesis task.
         1. Using diffusion model to generate the video's latent representation.
         2. Using vqgan model (autoencoder) to decode the video's latent representation to visual space.
 
         Args:
-            input (`Dict[Str, Any]`):
-                The input of the task
+            prompt (str, optional): A string describing the scene to generate. Defaults to "A bunny in the forest".
+            n_prompt (Optional[str], optional): An additional prompt for generating the scene. Defaults to "".
+            steps (int, optional): The number of steps to run the diffusion model. Defaults to 50.
+            frames (int, optional): The number of frames in the generated video. Defaults to 15.
+            scale (float, optional): The scaling factor for the generated video. Defaults to 12.5.
+            width (int, optional): The width of the generated video. Defaults to 256.
+            height (int, optional): The height of the generated video. Defaults to 256.
+            eta (float, optional): A hyperparameter related to the diffusion model's noise schedule. Defaults to 0.0.
+            cpu_vae (bool, optional): If True, the VQGAN model will run on the CPU. Defaults to False.
+            latents (Optional[Tensor], optional): An optional latent tensor to use as input for the VQGAN model. Defaults to None.
+            strength (Optional[float], optional): A hyperparameter to control the strength of the generated video when using input latent. Defaults to None.
+
         Returns:
             A generated video (as pytorch tensor).
         """
-        print(self.sd_model.use_fps_condition)
-        cfg = self.config.model["model_cfg"]
-        cfg['temporal_attention'] = True if cfg[
-            'temporal_attention'] == 'True' else False
-        betas = beta_schedule(
-            'linear_sd',
-            cfg['num_timesteps'],
-            init_beta=0.00085,
-            last_beta=0.0120)
-
-        self.diffusion = GaussianDiffusion(
-            betas=betas,
-            mean_type=cfg['mean_type'],
-            var_type=cfg['var_type'],
-            loss_type=cfg['loss_type'],
-            rescale_timesteps=False)
-
         self.sd_model.use_fps_condition = False
         self.device = torch.device('cuda')
         self.clip_encoder.to(self.device)
         y, zero_y = self.preprocess(prompt, n_prompt)
         self.clip_encoder.to("cpu")
-        #self.clip_encoder = None
-        #del self.clip_encoder
         torch_gc()
 
         context = torch.cat([zero_y, y], dim=0).to(self.device)
         # synthesis
-
         with torch.no_grad():
             num_sample = 1
             max_frames = frames
@@ -242,7 +203,7 @@ class TextToVideoSynthesis():
                                           latent_w).to(
                                               self.device)
             else:
-                latents.to(self.device)
+                latents = latents.to(self.device)
             with amp.autocast(enabled=True):
                 self.sd_model.to(self.device)
                 x0 = self.diffusion.ddim_sample_loop(
@@ -259,7 +220,7 @@ class TextToVideoSynthesis():
                     ddim_timesteps=steps,
                     eta=eta,
                     frames=frames,
-                    percentile=0.4)
+                    percentile=strength)
 
                 self.sd_model.to("cpu")
                 torch_gc()
@@ -272,31 +233,24 @@ class TextToVideoSynthesis():
                     del x0
                     print("CREATING FRAME")
                     print(vd.shape)
-                    #self.autoencoder.to(self.device)
-                    # Split the tensor into chunks along the first dimension
-                    chunk_size = 1
-                    chunks = vd.chunk(vd.size(0) // chunk_size)
+                    # Split the tensor into chunks along the second dimension
+                    chunks = torch.chunk(vd, chunks=max_frames, dim=2)
                     # Apply the autoencoder to each chunk
                     output_chunks = []
-                    #self.autoencoder.to("cpu")
                     print("STARTING VAE ON CPU")
                     x = 0
                     for chunk in chunks:
                         ch = chunk.cpu().float()
                         ch = 1. / scale_factor * ch
                         ch = rearrange(ch, 'b c f h w -> (b f) c h w')
-                        #print(ch)
-                        chunk = None
                         del chunk
                         output_chunk = self.autoencoder.decode(ch)
                         output_chunk.cpu()
                         output_chunks.append(output_chunk)
                         x += 1
                 else:
-                    chunk_size = 1
                     vd = x0.cpu()
                     chunks = torch.chunk(vd, chunks=max_frames, dim=2)
-
                     del x0
                     print("CREATING FRAME")
                     #print(x0.shape)
@@ -305,10 +259,11 @@ class TextToVideoSynthesis():
                     # Apply the autoencoder to each chunk
                     output_chunks = []
                     print(vd.shape)
-                    print(f"STARTING VAE ON GPU {len(chunks)}")
+                    #print(f"STARTING VAE ON GPU {len(chunks)}")
                     torch_gc()
                     x = 0
-                    for chunk in chunks:
+                    pbar = tqdm(chunks, desc="DDIM sampling")
+                    for chunk in pbar:
                         chunk = chunk.cuda().half()
                         chunk = 1. / scale_factor * chunk
                         chunk = rearrange(chunk, 'b c f h w -> (b f) c h w')
@@ -317,7 +272,9 @@ class TextToVideoSynthesis():
                         del output_chunk
                         output_chunks.append(cpu_chunk)
                         x += 1
-                print("FINISHED VAE ON CPU")
+                        pbar.set_description(f"DECODING {str(x)}")
+                pbar.close()
+                #print("FINISHED VAE ON CPU")
                 torch_gc()
                 # Concatenate the output chunks back into a single tensor
                 vd_out = torch.cat(output_chunks, dim=0)
@@ -344,7 +301,7 @@ class TextToVideoSynthesis():
         video_data = None
         del video_data
         torch_gc()
-        return video_path
+        return video_path, vd
     def cleanup(self):
         pass
     def preprocess(self, prompt, n_prompt, offload=True):

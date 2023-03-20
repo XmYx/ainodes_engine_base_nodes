@@ -45,6 +45,8 @@ class VideoOutputWidget(QDMNodeContentWidget):
         self.fps.setMaximum(4096)
         self.fps.setValue(24)
 
+        self.dump_at = self.create_spin_box("Dump at every:", 0, 20000, 0, 1)
+
 
         layout = QVBoxLayout()
         layout.addWidget(self.type_select)
@@ -52,6 +54,7 @@ class VideoOutputWidget(QDMNodeContentWidget):
         #layout.addWidget(self.width_value)
         #layout.addWidget(self.height_value)
         layout.addWidget(self.fps)
+        layout.addWidget(self.dump_at)
 
         self.setLayout(layout)
 
@@ -94,7 +97,7 @@ class VideoOutputNode(AiNode):
             frame = np.array(image)
             self.markInvalid(False)
             self.markDirty(True)
-            self.content.video.add_frame(frame)
+            self.content.video.add_frame(frame, dump=self.content.dump_at.value())
             self.setOutput(0, val)
             if len(self.getOutputs(1)) > 0:
                 self.executeChild(output_index=1)
@@ -157,9 +160,9 @@ class GifRecorder:
         self.filename = filename
         self.fps = fps
 
-    def add_frame(self, frame):
+    def add_frame(self, frame, dump):
         self.frames.append(frame)
-        if len(self.frames) >= 14400:
+        if len(self.frames) >= dump:
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
             fps = 24
             type = 'mp4_ffmpeg'
@@ -200,5 +203,5 @@ class GifRecorder:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 video_writer.write(frame)
             video_writer.release()
-        if dump:
+        if dump == True:
             self.frames = []

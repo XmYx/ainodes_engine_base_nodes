@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 import open_clip
 from os import path as osp
+from tqdm import tqdm
 
 __all__ = ['UNetSD']
 
@@ -1478,15 +1479,17 @@ class GaussianDiffusion(object):
         steps = (1 + torch.arange(0, self.num_timesteps,
                                   self.num_timesteps // ddim_timesteps)).clamp(
                                       0, self.num_timesteps - 1).flip(0)
-        for step in steps:
+        pbar = tqdm(steps, desc="DDIM sampling")
+        for step in pbar:
             t = torch.full((b, ), step, dtype=torch.long, device=noise.device)
             noise = self.ddim_sample(noise, t, model, model_kwargs, clamp,
                                      percentile, condition_fn, guide_scale,
                                      ddim_timesteps, eta)
-            t = t.cpu()
+            t.cpu()
             t = None
             torch_gc()
-            print(step)
+            pbar.set_description(f"DDIM sampling {str(step)}")
+        pbar.close()
         return noise
 
     def _scale_timesteps(self, t):

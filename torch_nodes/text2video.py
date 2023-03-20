@@ -33,10 +33,12 @@ class Text2VideoWidget(QDMNodeContentWidget):
         self.steps = self.create_spin_box("STEPS", 1, 1000, 15, 1)
         self.frames = self.create_spin_box("FRAMES", 1, 1000, 15, 1)
         self.scale = self.create_double_spin_box("GUIDANCE", 0.01, 100.0, 0.01, 7.5)
-        self.eta = self.create_double_spin_box("ETA", 0.01, 100.0, 0.01, 0.0)
+        self.eta = self.create_double_spin_box("ETA", 0.00, 100.0, 0.01, 0.0)
+        self.strength = self.create_double_spin_box("STRENGTH", 0.00, 100.0, 0.01, 0.0)
         self.width_value = self.create_spin_box("Width", 64, 4096, 320, 64)
         self.height_value = self.create_spin_box("Height", 64, 4096, 320, 64)
         self.cpu_vae = self.create_check_box("CPU VAE")
+        self.random_prompt = self.create_check_box("RANDOM PROMPT")
         self.continue_sampling = self.create_check_box("CONTINUE")
 
 
@@ -88,7 +90,7 @@ class Text2VideoNode(AiNode):
     def evalImplementation_thread(self, index=0):
         try:
             prompt = self.content.prompt.toPlainText()
-            prompt = generate_video_prompt()
+            prompt = generate_video_prompt() if self.content.random_prompt.isChecked() else prompt
             n_prompt = self.content.n_prompt.toPlainText()
             seed = self.content.seed.text()
             frames = self.content.frames.value()
@@ -96,7 +98,9 @@ class Text2VideoNode(AiNode):
             width = self.content.width_value.value()
             height = self.content.height_value.value()
             eta = self.content.eta.value()
+            strength = self.content.strength.value()
             cpu_vae = self.content.cpu_vae.isChecked()
+            strength = strength if strength != 0 else None
             try:
                 seed = int(seed)
             except:
@@ -111,12 +115,12 @@ class Text2VideoNode(AiNode):
                 gs.models["t2v"] = TextToVideoSynthesis(model_dir="models/t2v")
             torch.manual_seed(seed)
             fancy_readout(prompt, steps, frames, scale, width, height, seed)
-            if self.last_latent != None and self.content.continue_sampling.isChecked() == True:
-                print("Continuing last one")
+            if self.last_latent is not None and self.content.continue_sampling.isChecked():
                 latents = self.last_latent
             else:
                 latents = None
-            return_samples = gs.models["t2v"].infer(prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents)
+            return_samples, latent = gs.models["t2v"].infer(prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength)
+            self.last_latent = latent
             for frame in return_samples:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 image = Image.fromarray(frame)
@@ -231,8 +235,27 @@ def generate_video_prompt_2():
     return prompt
 
 def generate_video_prompt():
-    subjects = [
-        "giraffe", "goldendoodle", "panda bear", "teddy bear", "drone", "dog", "monkey", "litter of puppies", "robot",
+
+    human_subjects = [
+        "chef", "athlete", "scientist", "teacher", "doctor", "engineer", "painter", "dancer", "musician", "astronaut",
+        "detective", "actor", "writer", "farmer", "nurse", "pilot", "construction worker", "firefighter",
+        "police officer",
+        "magician", "salesperson", "librarian", "lifeguard", "student", "plumber", "electrician", "architect",
+        "photographer",
+        "bus driver", "bartender", "hairdresser", "gardener", "chef", "journalist", "coach", "mechanic", "programmer",
+        "veterinarian", "banker", "designer", "comedian", "judge", "lawyer", "dentist", "waiter", "receptionist"
+    ]
+
+    inorganic_subjects = [
+        "robot", "drone", "airplane", "spaceship", "car", "bicycle", "boat", "train", "bus", "truck",
+        "smartphone", "computer", "camera", "television", "clock", "washing machine", "dishwasher", "refrigerator",
+        "oven",
+        "fan", "air conditioner", "calculator", "printer", "scanner", "vacuum cleaner", "blender", "microwave", "lamp",
+        "sewing machine", "keyboard", "mouse", "laptop", "headphones", "speaker", "guitar", "piano", "violin", "drums"
+    ]
+
+    organic_subjects = [
+        "giraffe", "goldendoodle", "panda bear", "teddy bear", "dog", "monkey", "litter of puppies",
         "elephant", "kangaroo", "tiger", "lion", "orca", "octopus", "dolphin", "eagle", "parrot", "flamingo", "peacock",
         "penguin", "koala", "sloth", "rhinoceros", "hippopotamus", "iguana", "chameleon", "crocodile", "platypus",
         "anteater",
@@ -240,6 +263,9 @@ def generate_video_prompt():
         "buffalo", "wildebeest", "butterfly", "dragonfly", "bee", "ant", "spider", "snake", "lizard", "frog", "toad",
         "tortoise", "turtle", "shark", "whale", "jellyfish", "starfish", "coral", "fish"
     ]
+
+    subjects = random.choice([human_subjects, inorganic_subjects, organic_subjects])
+
     actions = [
         "underneath a microwave", "playing in a park by a lake", "driving a car", "running in New York City",
         "flythrough of a fast food restaurant",
