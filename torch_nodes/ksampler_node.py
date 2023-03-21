@@ -75,6 +75,8 @@ class KSamplerNode(AiNode):
         self.content.seed_signal.connect(self.setSeed)
         self.content.progress_signal.connect(self.setProgress)
         self.progress_value = 0
+        self.content.eval_signal.connect(self.evalImplementation)
+    @QtCore.Slot()
     def evalImplementation(self, index=0):
         self.markDirty(True)
         if self.value is None:
@@ -89,6 +91,8 @@ class KSamplerNode(AiNode):
             self.markDirty(False)
             self.markInvalid(False)
             return self.value
+    def eval(self, index=0):
+        self.content.eval_signal.emit()
 
     def onMarkedDirty(self):
         self.value = None

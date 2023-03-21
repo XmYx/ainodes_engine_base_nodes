@@ -1,5 +1,6 @@
 import datetime
 import os
+import time
 
 from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
@@ -51,6 +52,7 @@ class ImagePreviewWidget(AiNode):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
         self.content.button.clicked.connect(self.save_image)
         self.content.next_button.clicked.connect(self.show_next_image)
+        self.busy = False
 
     def initInnerClasses(self):
         self.content = ImageOutputWidget(self)
@@ -60,6 +62,8 @@ class ImagePreviewWidget(AiNode):
         self.images = []
         self.index = 0
         self.content.preview_signal.connect(self.show_image)
+        self.content.eval_signal.connect(self.evalImplementation)
+
 
     def show_next_image(self):
         length = len(self.images)
@@ -91,6 +95,7 @@ class ImagePreviewWidget(AiNode):
             self.index += 1
             self.resize()
     def evalImplementation(self, index=0):
+        self.busy = True
         if self.getInput(0) is not None:
             input_node, other_index = self.getInput(0)
             if not input_node:
@@ -109,7 +114,12 @@ class ImagePreviewWidget(AiNode):
             self.markInvalid(False)
             self.markDirty(False)
             if len(self.getOutputs(2)) > 0:
-                self.executeChild(output_index=2)
+                node = self.getOutputs(2)[0]
+                node.eval()
+                #while node.busy == True:
+                #    time.sleep(0.1)
+                #    self.busy = node.busy
+
         elif self.getInput(1) is not None:
             data_node, other_index = self.getInput(1)
             data = data_node.getOutput(other_index)
@@ -124,6 +134,7 @@ class ImagePreviewWidget(AiNode):
             val = None
         else:
             val = self.value
+        self.busy = False
         return val
     @QtCore.Slot(object)
     def show_image(self, image):
@@ -145,8 +156,8 @@ class ImagePreviewWidget(AiNode):
             print(f"IMAGE PREVIEW NODE: Image could not be saved because: {e}")
     def onInputChanged(self, socket=None):
         pass
-    def eval(self):
-        self.evalImplementation(0)
+    def eval(self, index=0):
+        self.content.eval_signal.emit()
 
     def resize(self):
         self.grNode.setToolTip("")

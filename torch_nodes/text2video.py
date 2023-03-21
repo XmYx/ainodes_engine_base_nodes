@@ -1,3 +1,4 @@
+import copy
 import os
 import random
 import secrets
@@ -66,6 +67,8 @@ class Text2VideoNode(AiNode):
         super().__init__(scene, inputs=[1], outputs=[5,1,1])
         self.loader = ModelLoader()
         self.last_latent = None
+        self.content.eval_signal.connect(self.evalImplementation)
+
 
     def initInnerClasses(self):
         self.content = Text2VideoWidget(self)
@@ -75,6 +78,7 @@ class Text2VideoNode(AiNode):
         self.content.setMinimumHeight(400)
         self.content.setMinimumWidth(340)
         self.busy = False
+        self.iterating = False
     def evalImplementation(self, index=0):
         self.busy = False
         self.markDirty(True)
@@ -120,14 +124,16 @@ class Text2VideoNode(AiNode):
                 latents = None
             return_samples, latent = gs.models["t2v_pipeline"](prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength)
             self.last_latent = latent
-            for frame in return_samples:
-                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                image = Image.fromarray(frame)
-                pixmap = pil_image_to_pixmap(image)
-                self.setOutput(0, pixmap)
-                if len(self.getOutputs(1)) > 0:
-                    self.executeChild(output_index=1)
-                time.sleep(0.05)
+
+            if len(self.getOutputs(1)) > 0:
+                self.iterate_frames(return_samples)
+                while self.iterating == True:
+                    time.sleep(0.1)
+
+
+                #if len(self.getOutputs(1)) > 0:
+                #    self.executeChild(output_index=1)
+                #time.sleep(0.05)
 
                 """from modelscope.outputs import OutputKeys
                 from modelscope.pipelines import pipeline
@@ -155,10 +161,27 @@ class Text2VideoNode(AiNode):
             return True
     def eval(self, index=0):
         self.markDirty(True)
-        self.evalImplementation(0)
+        self.content.eval_signal.emit()
     def onInputChanged(self, socket=None):
         pass
 
+    def iterate_frames(self, frames):
+        self.iterating = True
+        for frame in frames:
+            node = None
+            if len(self.getOutputs(1)) > 0:
+                node = self.getOutputs(1)[0]
+            if node is not None:
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                image = Image.fromarray(copy.deepcopy(frame))
+                pixmap = pil_image_to_pixmap(image)
+                self.setOutput(0, pixmap)
+                node.eval()
+                time.sleep(0.1)
+                while node.busy == True:
+                    time.sleep(0.1)
+
+        self.iterating = False
 
 def fancy_readout(prompt, steps, frames, scale, width, height, seed):
     # Define the box-drawing characters

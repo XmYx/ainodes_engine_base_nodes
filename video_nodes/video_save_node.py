@@ -1,6 +1,7 @@
 import datetime
 import os
 import subprocess
+import time
 
 import cv2
 import imageio
@@ -72,9 +73,8 @@ class VideoOutputNode(AiNode):
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])
         self.filename = ""
-        #self.eval()
-        #self.content.eval_signal.connect(self.evalImplementation)
-
+        self.content.eval_signal.connect(self.evalImplementation)
+        self.busy = False
     def initInnerClasses(self):
         self.content = VideoOutputWidget(self)
         self.grNode = CalcGraphicsNode(self)
@@ -85,6 +85,7 @@ class VideoOutputNode(AiNode):
         self.content.setGeometry(0, 0, 260, 230)
         self.markInvalid(True)
     def evalImplementation(self, index=0):
+        self.busy = True
         if self.getInput(0) is not None:
             input_node, other_index = self.getInput(0)
             if not input_node:
@@ -100,8 +101,12 @@ class VideoOutputNode(AiNode):
             self.content.video.add_frame(frame, dump=self.content.dump_at.value())
             self.setOutput(0, val)
             if len(self.getOutputs(1)) > 0:
-                self.executeChild(output_index=1)
-
+                node = self.getOutputs(1)[0]
+                node.eval()
+                while node.busy == True:
+                    time.sleep(0.1)
+                    self.busy = node.busy
+        self.busy = False
         return None
     def close(self):
         self.content.video.close(self.filename)
@@ -120,7 +125,7 @@ class VideoOutputNode(AiNode):
 
     def eval(self):
         self.markDirty(True)
-        self.evalImplementation()
+        self.content.eval_signal.emit()
 
     def start_new_video(self):
         self.markDirty(True)

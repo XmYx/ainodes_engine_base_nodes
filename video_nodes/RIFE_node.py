@@ -1,3 +1,4 @@
+import threading
 import time
 
 import numpy as np
@@ -45,9 +46,11 @@ class RIFENode(AiNode):
         self.painter = QtGui.QPainter()
 
         self.rife_temp = []
-
+        self.content.eval_signal.connect(self.evalImplementation)
         if "rife" not in gs.models:
             gs.models["rife"] = RIFEModel()
+        self.iterating = False
+        self.busy = False
 
     def initInnerClasses(self):
         self.content = RIFEWidget(self)
@@ -56,8 +59,18 @@ class RIFENode(AiNode):
         self.input_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
 
         self.grNode.height = 220
-    @QtCore.Slot(int)
+    @QtCore.Slot()
     def evalImplementation(self, index=0):
+        self.busy = True
+        self.markDirty(True)
+        if self.busy == False:
+            self.busy = True
+            thread0 = threading.Thread(target=self.evalImplementation_thread)
+            thread0.start()
+        return None
+
+    @QtCore.Slot()
+    def evalImplementation_thread(self, index=0):
         exp = self.content.exp.value()
         ratio = self.content.ratio.value()
         if ratio == 0.0:
@@ -103,13 +116,10 @@ class RIFENode(AiNode):
                 if len(self.rife_temp) == 2:
                     frames = gs.models["rife"].infer(image1=self.rife_temp[0], image2=self.rife_temp[1], exp=exp, ratio=ratio, rthreshold=rthreshold, rmaxcycles=rmaxcycles)
                     print(f"RIFE NODE:  {len(frames)}")
-                    for frame in frames:
-                        image = Image.fromarray(frame)
-                        pixmap = pil_image_to_pixmap(image)
-                        self.setOutput(0, pixmap)
-                        if len(self.getOutputs(1)) > 0:
-                            self.executeChild(output_index=1)
-                        time.sleep(0.05)
+                    if len(self.getOutputs(1)) > 0:
+                        self.iterate_frames(frames)
+                        while self.iterating:
+                            time.sleep(0.1)
 
                     self.rife_temp = [self.rife_temp[1]]
 
@@ -132,10 +142,21 @@ class RIFENode(AiNode):
                 pass
         if len(self.getOutputs(2)) > 0:
             self.executeChild(output_index=2)
-
+        self.busy = False
         return None
+    def iterate_frames(self, frames):
+        for frame in frames:
+            image = Image.fromarray(frame)
+            pixmap = pil_image_to_pixmap(image)
+            self.setOutput(0, pixmap)
+            node = self.getOutputs(1)[0]
+            node.eval()
+            time.sleep(0.1)
+            while node.busy == True:
+                time.sleep(0.1)
+
     def onMarkedDirty(self):
         self.value = None
-    def eval(self):
-        self.markDirty(True)
-        self.evalImplementation()
+    def eval(self, index=0):
+        self.markDirty()
+        self.content.eval_signal.emit()
