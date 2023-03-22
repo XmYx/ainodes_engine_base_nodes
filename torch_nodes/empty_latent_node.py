@@ -47,7 +47,7 @@ class LatentNode(AiNode):
         self.output_socket_name = ["EXEC", "LATENT"]
         self.grNode.height = 210
         self.grNode.width = 200
-    @QtCore.Slot(int)
+    @QtCore.Slot()
     def evalImplementation(self, index=0):
 
         #print(self.getInput(0))
@@ -181,7 +181,7 @@ class LatentCompositeNode(AiNode):
         self.output_socket_name = ["EXEC", "LATENT"]
         self.grNode.height = 220
         self.grNode.width = 240
-    @QtCore.Slot(int)
+    @QtCore.Slot()
     def evalImplementation(self, index=0):
 
         if self.isDirty() == True:

@@ -1,4 +1,5 @@
 import threading
+import time
 
 from qtpy import QtWidgets, QtCore
 
@@ -47,16 +48,6 @@ class ConditioningNode(AiNode):
         self.output_socket_name = ["EXEC", "COND"]
 
         #self.content.image.changeEvent.connect(self.onInputChanged)
-    def evalImplementation(self, index=0):
-        if self.busy == False:
-            self.busy = True
-            thread0 = threading.Thread(target=self.evalImplementation_thread)
-            thread0.start()
-            return None
-        else:
-            self.markDirty(False)
-            self.markInvalid(False)
-            return None
 
     def evalImplementation_thread(self, index=0):
         try:
@@ -65,22 +56,23 @@ class ConditioningNode(AiNode):
             result = self.get_conditioning()
             self.setOutput(0, result)
             # print(result)
-
             self.markDirty(False)
             self.markInvalid(False)
+            self.busy = False
 
             if len(self.getOutputs(1)) > 0:
                 self.executeChild(output_index=1)
-            self.busy = False
-            return None
+            return result
         except:
             self.busy = False
             return None
+    def eval(self, index=0):
+        self.markDirty(True)
+        self.content.eval_signal.emit()
 
     def onMarkedDirty(self):
         self.value = None
     def get_conditioning(self, progress_callback=None):
-        #print("Getting Conditioning on ", id(self))
         prompt = self.content.prompt.toPlainText()
 
         """if gs.loaded_models["loaded"] == []:
@@ -92,22 +84,16 @@ class ConditioningNode(AiNode):
         c = gs.models["sd"].model.cond_stage_model.encode([prompt])
         uc = {}
         return [[c, uc]]
+    @QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        # Update the node value and mark it as dirty
-        self.value = result
-        #self.scene.queue.task_finished.disconnect(self.onWorkerFinished)
-        #self.worker.autoDelete()
-        #result = None
         self.setOutput(0, result)
-        #print(result)
         self.markDirty(False)
         self.markInvalid(False)
         self.busy = False
         if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
-        return
-        #self.markDescendantsDirty()
-        #self.evalChildren()
+            node = self.getOutputs(1)[0]
+            node.eval()
+        return True
     def onInputChanged(self, socket=None):
         pass
 

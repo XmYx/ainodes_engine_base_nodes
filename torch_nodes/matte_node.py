@@ -48,7 +48,7 @@ class MatteNode(AiNode):
 
         self.grNode.height = 200
         self.grNode.width = 280
-    @QtCore.Slot(int)
+    @QtCore.Slot()
     def evalImplementation(self, index=0):
         if self.getInput(0) != None:
             node, index = self.getInput(0)

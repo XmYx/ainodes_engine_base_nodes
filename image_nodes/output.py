@@ -72,7 +72,6 @@ class ImagePreviewWidget(AiNode):
         if length > 0:
             img = self.images[self.index]
             print(img)
-
             # Create a new RGBA image with the same dimensions as the greyscale image
             mask_image = Image.new("RGBA", img.size, (0, 0, 0, 0))
 
@@ -102,9 +101,7 @@ class ImagePreviewWidget(AiNode):
                 self.grNode.setToolTip("Input is not connected")
                 self.markInvalid()
                 return
-
             val = input_node.getOutput(other_index)
-
             if val is None:
                 self.grNode.setToolTip("Input is NaN")
                 self.markInvalid()
@@ -114,11 +111,7 @@ class ImagePreviewWidget(AiNode):
             self.markInvalid(False)
             self.markDirty(False)
             if len(self.getOutputs(2)) > 0:
-                node = self.getOutputs(2)[0]
-                node.eval()
-                #while node.busy == True:
-                #    time.sleep(0.1)
-                #    self.busy = node.busy
+                self.executeChild(2)
 
         elif self.getInput(1) is not None:
             data_node, other_index = self.getInput(1)

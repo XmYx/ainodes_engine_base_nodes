@@ -42,17 +42,14 @@ class BlendNode(AiNode):
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,5,1], outputs=[5,1])
         self.painter = QtGui.QPainter()
-        #self.eval()
-        #self.content.eval_signal.connect(self.eval)
 
     def initInnerClasses(self):
         self.content = BlendWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.output_socket_name = ["EXEC", "IMAGE"]
         self.input_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
-
         self.grNode.height = 220
-    @QtCore.Slot(int)
+    @QtCore.Slot()
     def evalImplementation(self, index=0):
         if self.getInput(1) != None:
             node, index = self.getInput(1)

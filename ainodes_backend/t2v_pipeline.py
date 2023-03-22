@@ -77,7 +77,7 @@ class TextToVideoSynthesis():
         self.model_dir = model_dir
         if not os.path.exists(model_dir):
             os.makedirs(model_dir, exist_ok=True)
-            snapshot_download('damo-vilab/modelscope-damo-text-to-video-synthesis',
+            snapshot_download('kabachuha/modelscope-damo-text2video-pruned-weights',
                               repo_type='model',
                               local_dir=model_dir)
 
@@ -258,6 +258,7 @@ class TextToVideoSynthesis():
                         x += 1
                 else:
                     vd = x0.cpu()
+
                     chunks = torch.chunk(vd, chunks=max_frames, dim=2)
                     del x0
                     print("CREATING FRAME")

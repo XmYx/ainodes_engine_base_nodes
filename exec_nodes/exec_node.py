@@ -1,7 +1,9 @@
+from qtpy import QtCore
 from qtpy import QtWidgets
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
+from ainodes_frontend import singleton as gs
 
 OP_NODE_EXEC = get_next_opcode()
 
@@ -44,13 +46,22 @@ class ExecNode(AiNode):
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(160)
-        return
-    def evalImplementation(self, index=0):
+        self.content.eval_signal.connect(self.evalImplementation)
+    """def evalImplementation(self, index=0):
+        self.busy = False
         self.markDirty(True)
         self.markInvalid(False)
         self.markDirty(False)
         self.executeChild(0)
-        return None
+        return None"""
+
+    def eval(self, index=0):
+        self.markDirty(True)
+        self.content.eval_signal.emit()
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+        self.busy = False
+        self.executeChild(0)
     def onMarkedDirty(self):
         self.value = None
         return
@@ -61,7 +72,8 @@ class ExecNode(AiNode):
         return
     def start(self):
         self.interrupt = False
-        self.evalImplementation(0)
+        self.busy = False
+        self.eval()
         return
 
 

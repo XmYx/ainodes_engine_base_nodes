@@ -103,9 +103,6 @@ class VideoOutputNode(AiNode):
             if len(self.getOutputs(1)) > 0:
                 node = self.getOutputs(1)[0]
                 node.eval()
-                while node.busy == True:
-                    time.sleep(0.1)
-                    self.busy = node.busy
         self.busy = False
         return None
     def close(self):

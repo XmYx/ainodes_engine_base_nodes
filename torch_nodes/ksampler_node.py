@@ -2,6 +2,7 @@ import inspect
 import random
 import secrets
 import threading
+import time
 
 import numpy as np
 from einops import rearrange
@@ -18,6 +19,8 @@ from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
+
+from queue import Queue
 
 OP_NODE_K_SAMPLER = get_next_opcode()
 
@@ -76,35 +79,23 @@ class KSamplerNode(AiNode):
         self.content.progress_signal.connect(self.setProgress)
         self.progress_value = 0
         self.content.eval_signal.connect(self.evalImplementation)
-    @QtCore.Slot()
-    def evalImplementation(self, index=0):
-        self.markDirty(True)
-        if self.value is None:
-            # Start the worker thread
-            if self.busy == False:
-                self.busy = True
-                self.content.progress_signal.emit(0)
-                thread0 = threading.Thread(target=self.k_sampling)
-                thread0.start()
-            return None
-        else:
-            self.markDirty(False)
-            self.markInvalid(False)
-            return self.value
     def eval(self, index=0):
+        self.markDirty(True)
         self.content.eval_signal.emit()
 
     def onMarkedDirty(self):
         self.value = None
-    def k_sampling(self):
+    def evalImplementation_thread(self):
+        self.content.progress_signal.emit(0)
+        # Add a task to the task queue
+        cond = self.getInputData(2)
+        n_cond = self.getInputData(1)
+        latent = self.getInputData(0)
         last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
         short_steps = last_step - self.content.start_step.value()
         steps = self.content.steps.value()
         self.single_step = 100 / steps if self.content.start_step.value() == 0 and last_step == steps else short_steps
         self.progress_value = 0
-        cond = self.getInputData(2)
-        n_cond = self.getInputData(1)
-        latent = self.getInputData(0)
         if latent == None:
             latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
 
@@ -149,14 +140,12 @@ class KSamplerNode(AiNode):
             x_samples = None
             sample = None
             torch_gc()
-            self.onWorkerFinished([pixmap, return_sample])
         except Exception as e:
             pixmap = None
             return_sample = None
             print(e)
-            self.busy = False
-            if len(self.getOutputs(2)) > 0:
-                self.executeChild(output_index=2)
+
+
         return [pixmap, return_sample]
     def decode_sample(self, sample):
         if gs.loaded_vae == 'default':
@@ -185,16 +174,19 @@ class KSamplerNode(AiNode):
         self.markInvalid(False)
         self.setOutput(0, result[0])
         self.setOutput(1, result[1])
-        self.busy = False
+
         self.content.progress_signal.emit(100)
         self.progress_value = 0
         if len(self.getOutputs(2)) > 0:
-            self.executeChild(output_index=2)
-        return
+            node = self.getOutputs(2)[0]
+            node.eval()
+            #self.executeChild(output_index=2)
+        self.busy = False
+        return True
     @QtCore.Slot()
     def setSeed(self):
         self.content.seed.setText(str(self.seed))
-    @QtCore.Slot(int)
+    @QtCore.Slot()
     def setProgress(self, progress=None):
         if progress != 100 and progress != 0:
             self.progress_value = self.progress_value + self.single_step

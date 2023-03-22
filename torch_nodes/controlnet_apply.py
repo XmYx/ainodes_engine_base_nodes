@@ -1,3 +1,4 @@
+import threading
 import time
 import numpy as np
 import torch
@@ -45,40 +46,44 @@ class CNApplyNode(AiNode):
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(256)
+        self.content.eval_signal.connect(self.evalImplementation)
     def evalImplementation(self, index=0):
-        self.markDirty(True)
-        self.markInvalid(True)
-        self.busy = False
-        if self.value is None:
-            result = self.apply_control_net()
-            self.setOutput(0, result)
-            self.busy = False
-            if len(self.getOutputs(1)) > 0:
-                self.executeChild(1)
+        cond_node, index = self.getInput(1)
+        conditioning = cond_node.getOutput(index)
+        latent_node, index = self.getInput(0)
+        image = latent_node.getOutput(index)
 
-            #self.scene.threadpool.start(self.worker)
+        if self.busy == False:
+            self.busy = True
+            self.task_queue.put(lambda: self.evalImplementation_thread(conditioning, image))
+            thread0 = threading.Thread(target=self.process_tasks)
+            thread0.start()
             return None
         else:
+            self.task_queue.put(lambda: self.evalImplementation_thread(conditioning, image))
             self.markDirty(False)
             self.markInvalid(False)
-            return self.value
+            return None
+    @QtCore.Slot()
+    def evalImplementation_thread(self, conditioning, image, index=0):
+        self.markDirty(True)
+        self.markInvalid(True)
+        result = self.apply_control_net(conditioning, image)
+        self.setOutput(0, result)
+        if len(self.getOutputs(1)) > 0:
+            node = self.getOutputs(1)[0]
+            node.eval()
+        self.busy = False
+
+        self.task_done()
+        return None
 
     def onMarkedDirty(self):
         self.value = None
-    def apply_control_net(self, progress_callback=None):
+    def apply_control_net(self, conditioning, image, progress_callback=None):
         if self.content.control_net_selector.currentText() == 'controlnet':
             print(f"CONTROLNET APPLY NODE: Applying {gs.models['loaded_controlnet']}")
         start_time = time.time()
-        try:
-            cond_node, index = self.getInput(1)
-            conditioning = cond_node.getOutput(index)
-        except:
-            conditioning = None
-        try:
-            latent_node, index = self.getInput(0)
-            image = latent_node.getOutput(index)
-        except:
-            image = None
         cnet_string = self.content.control_net_selector.currentText()
         image = pixmap_to_pil_image(image)
         image = image.convert("RGB")
@@ -94,7 +99,6 @@ class CNApplyNode(AiNode):
                 c_net.set_previous_controlnet(t[1]['control'])
             n[1]['control'] = c_net
             c.append(n)
-        #self.value = c
         self.setOutput(0, c)
         end_time = time.time()
         time_diff_ms = (end_time - start_time) * 1000
@@ -109,10 +113,14 @@ class CNApplyNode(AiNode):
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result)
-        self.busy = False
+
         if len(self.getOutputs(1)) > 0:
             self.executeChild(1)
+        self.busy = False
         return
+    def eval(self, index=0):
+        self.markDirty(True)
+        self.content.eval_signal.emit()
 
     def onInputChanged(self, socket=None):
         pass

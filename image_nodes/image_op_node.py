@@ -1,3 +1,6 @@
+import threading
+import time
+
 import cv2
 import numpy as np
 from PIL import ImageOps, Image
@@ -10,7 +13,7 @@ from ..ainodes_backend.cnet_preprocessors.midas import MidasDetector
 from ..ainodes_backend.cnet_preprocessors import OpenposeDetector
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 
-from ainodes_frontend.base import register_node, get_next_opcode
+from ainodes_frontend.base import register_node, get_next_opcode, Worker
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
@@ -132,42 +135,55 @@ class ImageOpNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
-        #self.eval()
-        self.content.eval_signal.connect(self.eval)
+        self.content.eval_signal.connect(self.evalImplementation)
 
     def initInnerClasses(self):
         self.content = ImageOpsWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.content.dropdown.currentIndexChanged.connect(self.evalImplementation)
+        #self.content.dropdown.currentIndexChanged.connect(self.evalImplementation)
         self.output_socket_name = ["EXEC", "DATA","IMAGE"]
         self.input_socket_name = ["EXEC", "DATA", "IMAGE"]
-
         self.grNode.height = 340
         self.grNode.width = 280
-
         self.content.setMinimumHeight(130)
         self.content.setMinimumWidth(260)
+        self.busy = False
+    def eval(self, index=0):
+        self.markDirty(True)
+        self.content.eval_signal.emit()
+    @QtCore.Slot()
+    def evalImplementation(self):
+        if self.busy == False:
+            self.busy = True
+            worker = Worker(self.evalImplementation_thread)
+            worker.signals.result.connect(self.onWorkerFinished)
+            self.scene.threadpool.start(worker)
+            #thread0 = threading.Thread(target=self.evalImplementation_thread)
+            #thread0.start()
+        return None
 
-        #self.content.image.changeEvent.connect(self.onInputChanged)
-    @QtCore.Slot(int)
-    def evalImplementation(self, index=0):
-        if self.getInput(index) != None:
-            node, index = self.getInput(index)
+    @QtCore.Slot()
+    def evalImplementation_thread(self):
+        return_pixmap = None
+        if self.getInput(0) != None:
+            node, index = self.getInput(0)
             if node != None:
                 pixmap = node.getOutput(index)
                 method = self.content.dropdown.currentText()
-                self.value = self.image_op(pixmap, method)
-                self.setOutput(0, self.value)
-            self.markDirty(False)
-            self.markInvalid(False)
-        if len(self.getOutputs(2)) > 0:
-            self.executeChild(output_index=2)
-        return self.value
+                return_pixmap = self.image_op(pixmap, method)
+        return return_pixmap
     def onMarkedDirty(self):
         self.value = None
-    def eval(self):
-        self.markDirty(True)
-        self.evalImplementation()
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, pixmap):
+        self.setOutput(0, pixmap)
+        if len(self.getOutputs(2)) > 0:
+            self.executeChild(2)
+        self.busy = False
+        self.markDirty(False)
+        self.markInvalid(False)
+        return pixmap
+
     def image_op(self, pixmap, method):
         # Convert the QPixmap object to a PIL Image object
         image = pixmap_to_pil_image(pixmap)

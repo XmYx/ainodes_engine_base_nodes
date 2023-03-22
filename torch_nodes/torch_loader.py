@@ -1,6 +1,7 @@
 import os
 import threading
 
+from qtpy import QtCore
 from qtpy import QtWidgets
 
 from ..ainodes_backend.model_loader import ModelLoader
@@ -74,7 +75,9 @@ class TorchLoaderNode(AiNode):
         self.content.setMinimumHeight(140)
         self.content.setMinimumWidth(340)
         self.busy = False
-    def evalImplementation(self, index=0):
+        self.content.eval_signal.connect(self.evalImplementation)
+
+    """def evalImplementation(self, index=0):
         self.markDirty(True)
         if self.busy == False:
             self.busy = True
@@ -84,7 +87,7 @@ class TorchLoaderNode(AiNode):
         else:
             self.markDirty(False)
             self.markInvalid(False)
-            return None
+            return None"""
 
     def evalImplementation_thread(self, index=0):
         try:
@@ -146,18 +149,25 @@ class TorchLoaderNode(AiNode):
                 self.markDirty(False)
                 self.markInvalid(False)
                 self.grNode.setToolTip("")
-            self.busy = False
+            return self.value
+
         except:
             self.markDirty(True)
             self.markInvalid(False)
             self.busy = False
             return None
+        finally:
+            self.busy = False
+            return True
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+        self.busy = False
         if len(self.getOutputs(0)) > 0:
             self.executeChild(output_index=0)
-        return self.value
+
     def eval(self, index=0):
         self.markDirty(True)
-        self.evalImplementation(0)
+        self.content.eval_signal.emit()
     def onInputChanged(self, socket=None):
         pass
 

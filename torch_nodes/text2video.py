@@ -79,23 +79,65 @@ class Text2VideoNode(AiNode):
         self.content.setMinimumWidth(340)
         self.busy = False
         self.iterating = False
-    def evalImplementation(self, index=0):
-        self.busy = False
-        self.markDirty(True)
-        if self.busy == False:
-            self.busy = True
-            thread0 = threading.Thread(target=self.evalImplementation_thread)
-            thread0.start()
-            return None
-        else:
-            self.markDirty(False)
-            self.markInvalid(False)
-            return None
+        self.index = 0
+        self.pipeline = TextToVideoSynthesis(model_dir="models/t2v")
+        self.prompts = [
+            "A unicorn discovers a magical forest.",
+            "The unicorn meets a wise old owl.",
+            "Together, they explore a hidden cave.",
+            "The unicorn discovers a treasure chest.",
+            "A beautiful fairy appears before the unicorn.",
+            "The unicorn saves the fairy from a mischievous imp.",
+            "The unicorn and the fairy share a magical dance.",
+            "A mysterious portal opens in the forest.",
+            "The unicorn ventures through the portal.",
+            "In a new world, the unicorn meets a friendly dragon.",
+            "The unicorn and the dragon have a thrilling race.",
+            "The unicorn helps the dragon defeat an evil sorcerer.",
+            "The unicorn learns to harness magical powers.",
+            "The unicorn and dragon celebrate their victory.",
+            "A magical storm transports the unicorn to a faraway land.",
+            "The unicorn meets a group of adventurous animals.",
+            "Together, they embark on a daring quest.",
+            "The unicorn finds a hidden map in a mystical library.",
+            "The map leads the group to a secret kingdom.",
+            "The unicorn discovers a long-lost relative.",
+            "The unicorn and its new-found family member share a tender moment.",
+            "The unicorn learns about its ancient lineage.",
+            "A dark force threatens the secret kingdom.",
+            "The unicorn and its friends rally to defend the kingdom.",
+            "The unicorn battles the dark force in an epic showdown.",
+            "The unicorn discovers the power of friendship.",
+            "The unicorn and its friends save the kingdom.",
+            "A grand celebration is held in the unicorn's honor.",
+            "The unicorn is gifted a magical amulet.",
+            "The amulet grants the unicorn the ability to travel between worlds.",
+            "The unicorn visits a world of enchanting creatures.",
+            "The unicorn encounters a talking tree.",
+            "The tree tells the unicorn an ancient prophecy.",
+            "The unicorn learns of its destiny to restore balance to the magical realms.",
+            "The unicorn gathers allies for an epic battle.",
+            "The unicorn and its allies train for the battle ahead.",
+            "The unicorn unlocks new magical abilities.",
+            "The unicorn and its allies face the forces of darkness.",
+            "The unicorn confronts the dark lord.",
+            "The unicorn and the dark lord engage in a fierce duel.",
+            "The unicorn defeats the dark lord using the power of love.",
+            "Peace is restored to the magical realms.",
+            "The unicorn is crowned as the ruler of the secret kingdom.",
+            "The unicorn brings prosperity to the kingdom.",
+            "The unicorn is visited by its old friends from its adventures.",
+            "The friends share stories of their epic journeys.",
+            "The unicorn makes a decision to continue exploring the magical realms.",
+            "The unicorn says farewell to its friends and sets off on a new adventure.",
+            "The unicorn embarks on a journey to the stars.",
+            "The unicorn discovers a cosmic realm of magic and wonder."
+        ]
 
     def evalImplementation_thread(self, index=0):
         try:
             prompt = self.content.prompt.toPlainText()
-            prompt = generate_video_prompt() if self.content.random_prompt.isChecked() else prompt
+            prompt = self.get_next_prompt() if self.content.random_prompt.isChecked() else prompt
             n_prompt = self.content.n_prompt.toPlainText()
             seed = self.content.seed.text()
             frames = self.content.frames.value()
@@ -114,21 +156,21 @@ class Text2VideoNode(AiNode):
                 seed = choice * seed
             steps = self.content.steps.value()
             import torch._dynamo
-            if "t2v_pipeline" not in gs.models:
-                gs.models["t2v_pipeline"] = TextToVideoSynthesis(model_dir="models/t2v")
+            #if "t2v_pipeline" not in gs.models:
+
             torch.manual_seed(seed)
             fancy_readout(prompt, steps, frames, scale, width, height, seed)
             if self.last_latent is not None and self.content.continue_sampling.isChecked():
                 latents = self.last_latent
             else:
                 latents = None
-            return_samples, latent = gs.models["t2v_pipeline"](prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength)
+            return_samples, latent = self.pipeline(prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength)
             self.last_latent = latent
 
             if len(self.getOutputs(1)) > 0:
                 self.iterate_frames(return_samples)
                 while self.iterating == True:
-                    time.sleep(0.1)
+                    time.sleep(0.15)
 
 
                 #if len(self.getOutputs(1)) > 0:
@@ -155,9 +197,10 @@ class Text2VideoNode(AiNode):
         finally:
             self.markDirty(True)
             self.markInvalid(False)
-            self.busy = False
+
             if len(self.getOutputs(2)) > 0:
                 self.executeChild(output_index=2)
+            self.busy = False
             return True
     def eval(self, index=0):
         self.markDirty(True)
@@ -178,11 +221,11 @@ class Text2VideoNode(AiNode):
                 self.setOutput(0, pixmap)
                 node.eval()
                 time.sleep(0.1)
-                while node.busy == True:
-                    time.sleep(0.1)
-
         self.iterating = False
-
+    def get_next_prompt(self):
+        prompt = self.prompts[self.index]
+        self.index = (self.index + 1) % len(self.prompts)
+        return prompt
 def fancy_readout(prompt, steps, frames, scale, width, height, seed):
     # Define the box-drawing characters
     top_left = "┏"

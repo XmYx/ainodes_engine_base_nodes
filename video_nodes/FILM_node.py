@@ -47,8 +47,7 @@ class FILMNode(AiNode):
         self.FILM_temp = []
         self.content.eval_signal.connect(self.evalImplementation)
 
-        if "FILM" not in gs.models:
-            gs.models["FILM"] = FilmModel()
+        self.film = FilmModel()
         self.busy = False
         #self.eval()
 
@@ -60,7 +59,7 @@ class FILMNode(AiNode):
 
         self.grNode.height = 220
 
-    @QtCore.Slot()
+    """@QtCore.Slot()
     def evalImplementation(self, index=0):
         self.markDirty(True)
         if self.value is None:
@@ -73,13 +72,12 @@ class FILMNode(AiNode):
         else:
             self.markDirty(False)
             self.markInvalid(False)
-            return self.value
+            return self.value"""
 
 
 
     @QtCore.Slot()
-    def evalImplementation_thread(self, index=0):
-
+    def evalImplementation_thread(self):
         if self.getInput(1) != None:
             node, index = self.getInput(1)
             pixmap1 = node.getOutput(index)
@@ -96,7 +94,7 @@ class FILMNode(AiNode):
             image2 = pixmap_to_pil_image(pixmap2)
             np_image1 = np.array(image1)
             np_image2 = np.array(image2)
-            frames = gs.models["FILM"].inference(np_image1, np_image2, inter_frames=25)
+            frames = self.film.inference(np_image1, np_image2, inter_frames=25)
             print(f"FILM NODE:  {len(frames)}")
             for frame in range(len(frames) - 2):
                 image = Image.fromarray(frame)
@@ -113,7 +111,7 @@ class FILMNode(AiNode):
             np_image = np.array(image.convert("RGB"))
             self.FILM_temp.append(np_image)
             if len(self.FILM_temp) == 2:
-                frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
+                frames = self.film.inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
                 print(f"FILM NODE:  {len(frames)}")
                 #frames = frames[1:-1]
                 #last = frames.pop()
@@ -126,18 +124,12 @@ class FILMNode(AiNode):
                     #    node.eval()
                 self.FILM_temp = [self.FILM_temp[1]]
                 print(f"FILM NODE: Using only First input")
-            #except:
-                #if len(self.getOutputs(2)) > 0:
-                #    self.executeChild(output_index=2)
-
-            #    pass
         elif pixmap1 != None:
             try:
                 self.setOutput(0, pixmap1)
                 print(f"FILM NODE: Using only Second input - Passthrough")
                 if len(self.getOutputs(2)) > 0:
                     self.executeChild(output_index=2)
-
             except:
                 pass
         if len(self.getOutputs(2)) > 0:
@@ -151,15 +143,10 @@ class FILMNode(AiNode):
             if len(self.getOutputs(1)) > 0:
                 node = self.getOutputs(1)[0]
             if node is not None:
-                if hasattr(node.content, "preview_signal"):
-                    image = Image.fromarray(copy.deepcopy(frame))
-                    pixmap = pil_image_to_pixmap(image)
-                    self.setOutput(0, pixmap)
-                    node.eval()
-                    time.sleep(0.1)
-                    while node.busy == True:
-                        time.sleep(0.1)
-
+                image = Image.fromarray(copy.deepcopy(frame))
+                pixmap = pil_image_to_pixmap(image)
+                self.setOutput(0, pixmap)
+                node.eval()
         self.iterating = False
     def onMarkedDirty(self):
         self.value = None

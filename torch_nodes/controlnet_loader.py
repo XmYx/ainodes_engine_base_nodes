@@ -1,4 +1,5 @@
 import os
+import threading
 
 from qtpy import QtWidgets
 
@@ -49,11 +50,12 @@ class ControlnetLoaderNode(AiNode):
     def initInnerClasses(self):
         self.content = ControlnetLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
-
         self.content.control_net_name.currentIndexChanged.connect(self.resize)
         self.grNode.width = 280
         self.grNode.height = 100
         self.content.setMinimumWidth(260)
+        self.busy = False
+        self.content.eval_signal.connect(self.evalImplementation)
 
     def resize(self):
         text = self.content.control_net_name.currentText()
@@ -66,7 +68,20 @@ class ControlnetLoaderNode(AiNode):
         new_width = new_width if new_width > 280 else 280
         self.content.setMinimumWidth(new_width)
         self.update_all_sockets()
+
     def evalImplementation(self, index=0):
+        if self.busy == False:
+            self.busy = True
+            thread0 = threading.Thread(target=self.evalImplementation_thread)
+            thread0.start()
+            return None
+        else:
+            self.markDirty(False)
+            self.markInvalid(False)
+            return None
+
+
+    def evalImplementation_thread(self, index=0):
         model_name = self.content.control_net_name.currentText()
         if gs.models["loaded_controlnet"] != model_name:
             self.markInvalid()
@@ -78,11 +93,12 @@ class ControlnetLoaderNode(AiNode):
                 self.markInvalid(False)
                 if len(self.getOutputs(0)) > 0:
                     self.executeChild(output_index=0)
+                self.busy = False
                 return self.value
             else:
                 if len(self.getOutputs(0)) > 0:
                     self.executeChild(output_index=0)
-
+                self.busy = False
                 return self.value
         else:
             self.markDirty(False)
@@ -90,12 +106,11 @@ class ControlnetLoaderNode(AiNode):
             self.grNode.setToolTip("")
             if len(self.getOutputs(0)) > 0:
                 self.executeChild(output_index=0)
-
+            self.busy = False
             return self.value
     def eval(self, index=0):
         self.markDirty(True)
-        self.evalImplementation(0)
-
+        self.content.eval_signal.emit()
 
     def load_controlnet(self):
         #if "controlnet" not in gs.models:

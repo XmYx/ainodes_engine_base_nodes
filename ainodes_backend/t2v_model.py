@@ -1487,7 +1487,7 @@ class GaussianDiffusion(object):
             t.cpu()
             del t
             t = None
-            torch_gc()
+            #torch_gc()
             pbar.set_description(f"DDIM sampling {str(step)}")
         pbar.close()
         return noise
