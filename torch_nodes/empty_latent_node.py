@@ -89,7 +89,7 @@ class LatentNode(AiNode):
         if self.content.rescale_latent.isChecked() == True:
             for sample in samples:
                 sample = resizeright.resize(sample, scale_factors=None,
-                                                out_shape=[self.value.shape[0], self.value.shape[1], int(self.content.height.value() // 8),
+                                                out_shape=[sample.shape[0], sample.shape[1], int(self.content.height.value() // 8),
                                                         int(self.content.width.value() // 8)],
                                                 interp_method=interp_methods.lanczos3, support_sz=None,
                                                 antialiasing=True, by_convs=True, scale_tolerance=None,

@@ -231,7 +231,7 @@ class KSamplerNode(AiNode):
                 c_net.set_previous_controlnet(t[1]['control'])
             n[1]['control'] = c_net
             n[1]['control'].control_model.cpu()
-            del c_net
+            #del c_net
             c.append(n)
         print("APPLIED in KSAMPLER NODE")
         return c
