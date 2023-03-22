@@ -86,18 +86,17 @@ class KSamplerNode(AiNode):
     def onMarkedDirty(self):
         self.value = None
     def evalImplementation_thread(self):
-        self.content.progress_signal.emit(0)
         # Add a task to the task queue
-        cond = self.getInputData(2)
-        n_cond = self.getInputData(1)
-        latent = self.getInputData(0)
+        cond_list = self.getInputData(2)
+        n_cond_list = self.getInputData(1)
+        latent_list = self.getInputData(0)
         last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
         short_steps = last_step - self.content.start_step.value()
         steps = self.content.steps.value()
         self.single_step = 100 / steps if self.content.start_step.value() == 0 and last_step == steps else short_steps
         self.progress_value = 0
-        if latent == None:
-            latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
+        if latent_list == None:
+            latent_list = [torch.zeros([1, 4, 512 // 8, 512 // 8])]
 
         self.seed = self.content.seed.text()
         try:
@@ -108,45 +107,66 @@ class KSamplerNode(AiNode):
             self.content.seed_signal.emit()
             self.seed += 1
         try:
-            print(f"torch {torch.__version__}, cuda {torch.version.cuda}, cudnn {torch.backends.cudnn.version()}")
-            #enable_misc_optimizations()
-            sample = common_ksampler(device="cuda",
-                                     seed=self.seed,
-                                     steps=self.content.steps.value(),
-                                     start_step=self.content.start_step.value(),
-                                     last_step=last_step,
-                                     cfg=self.content.guidance_scale.value(),
-                                     sampler_name=self.content.sampler.currentText(),
-                                     scheduler=self.content.schedulers.currentText(),
-                                     positive=cond,
-                                     negative=n_cond,
-                                     latent=latent,
-                                     disable_noise=self.content.disable_noise.isChecked(),
-                                     force_full_denoise=self.content.force_denoise.isChecked(),
-                                     denoise=self.content.denoise.value(),
-                                     callback=self.callback)
+            x=0
+            return_pixmaps = []
+            return_samples = []
+            for cond in cond_list:
+                self.content.progress_signal.emit(0)
+                #print(f"torch {torch.__version__}, cuda {torch.version.cuda}, cudnn {torch.backends.cudnn.version()}")
+                #enable_misc_optimizations()
+                if len(latent_list) == len(cond_list):
+                    latent = latent_list[x]
+                else:
+                    latent = latent_list[0]
+                if len(n_cond_list) == len(cond_list):
+                    n_cond = n_cond_list[x]
+                else:
+                    n_cond = n_cond_list[0]
+                for i in cond:
+                    if 'control_hint' in i[1]:
+                        cond = self.apply_control_net(cond)
+                sample = common_ksampler(device="cuda",
+                                         seed=self.seed,
+                                         steps=self.content.steps.value(),
+                                         start_step=self.content.start_step.value(),
+                                         last_step=last_step,
+                                         cfg=self.content.guidance_scale.value(),
+                                         sampler_name=self.content.sampler.currentText(),
+                                         scheduler=self.content.schedulers.currentText(),
+                                         positive=cond,
+                                         negative=n_cond,
+                                         latent=latent,
+                                         disable_noise=self.content.disable_noise.isChecked(),
+                                         force_full_denoise=self.content.force_denoise.isChecked(),
+                                         denoise=self.content.denoise.value(),
+                                         callback=self.callback)
 
+                for c in cond:
+                    if "control" in c[1]:
+                        del c[1]["control"]
 
-            return_sample = sample.cpu().half()
+                return_sample = sample.cpu().half()
+                return_samples.append(return_sample)
+                x_sample = self.decode_sample(sample)
+                image = Image.fromarray(x_sample.astype(np.uint8))
+                qimage = ImageQt(image)
+                pixmap = QPixmap().fromImage(qimage)
 
-            x_sample = self.decode_sample(sample)
+                if len(self.getOutputs(0)) > 0:
+                    node = self.getOutputs(0)[0]
+                    if hasattr(node.content, "preview_signal"):
+                        print("emitting")
+                        node.content.preview_signal.emit(pixmap)
 
-
-            image = Image.fromarray(x_sample.astype(np.uint8))
-            qimage = ImageQt(image)
-            pixmap = QPixmap().fromImage(qimage)
-            self.value = pixmap
-            del sample
-            x_samples = None
-            sample = None
-            torch_gc()
+                return_pixmaps.append(pixmap)
+                del sample
+                x_samples = None
+                sample = None
+                torch_gc()
+                x+=1
         except Exception as e:
-            pixmap = None
-            return_sample = None
             print(e)
-
-
-        return [pixmap, return_sample]
+        return [return_pixmaps, return_samples]
     def decode_sample(self, sample):
         if gs.loaded_vae == 'default':
             x_samples = gs.models["sd"].model.decode_first_stage(sample.half())
@@ -178,9 +198,7 @@ class KSamplerNode(AiNode):
         self.content.progress_signal.emit(100)
         self.progress_value = 0
         if len(self.getOutputs(2)) > 0:
-            node = self.getOutputs(2)[0]
-            node.eval()
-            #self.executeChild(output_index=2)
+            self.executeChild(output_index=2)
         self.busy = False
         return True
     @QtCore.Slot()
@@ -194,6 +212,21 @@ class KSamplerNode(AiNode):
         self.content.progress_bar.setValue(self.progress_value)
     def onInputChanged(self, socket=None):
         pass
+    def apply_control_net(self, conditioning, progress_callback=None):
+        cnet_string = 'controlnet'
+        c = []
+        for t in conditioning:
+            n = [t[0], t[1].copy()]
+            c_net = gs.models[cnet_string]
+            c_net.set_cond_hint(t[1]['control_hint'], t[1]['control_strength'])
+            if 'control' in t[1]:
+                c_net.set_previous_controlnet(t[1]['control'])
+            n[1]['control'] = c_net
+            n[1]['control'].control_model.cpu()
+            del c_net
+            c.append(n)
+        print("APPLIED in KSAMPLER NODE")
+        return c
 
 def get_fixed_seed(seed):
     if seed is None or seed == '':

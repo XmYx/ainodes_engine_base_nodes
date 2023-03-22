@@ -161,7 +161,7 @@ class ScribbleNode(AiNode):
 
         pixmap = self.content.image.get_image()
         self.markDirty(False)
-        self.setOutput(0, pixmap)
+        self.setOutput(0, [pixmap])
         self.executeChild(2)
     def switch_color(self):
         if self.color == Qt.black:

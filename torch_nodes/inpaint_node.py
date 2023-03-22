@@ -100,29 +100,10 @@ class InpaintNode(AiNode):
         #self.content.setMinimumWidth(256)
         #self.content.image.changeEvent.connect(self.onInputChanged)
 
-    def evalImplementation(self, index=0):
-
-
-        self.markDirty(True)
-        #self.markInvalid(True)
-        #self.busy = False
-        #self.worker = Worker(self.k_sampling)
-        # Connect the worker's finished signal to a slot that updates the node value
-        #self.worker.signals.result.connect(self.onWorkerFinished)
-        #self.scene.queue.add_task(self.k_sampling)
-        #self.scene.queue.task_finished.connect(self.onWorkerFinished)
-        self.busy = True
-        #self.scene.threadpool.start(self.worker)
-        thread0 = threading.Thread(target=self.inpainting)
-        thread0.start()
-
-
-        return None
-
     def onMarkedDirty(self):
         self.value = None
 
-    def inpainting(self):
+    def evalImplementation_thread(self):
         try:
             image_input_node, index = self.getInput(1)
             image_pixmap = image_input_node.getOutput(index)

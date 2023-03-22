@@ -118,7 +118,7 @@ class ImageListNode(AiNode):
         self.grNode.toggleHelp()
         pixmap = self.pixmap
         self.markDirty(False)
-        self.setOutput(0, pixmap)
+        self.setOutput(0, [pixmap])
         self.executeChild(2)
         self.select_next_item()
     def onMarkedDirty(self):

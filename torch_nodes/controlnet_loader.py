@@ -69,18 +69,6 @@ class ControlnetLoaderNode(AiNode):
         self.content.setMinimumWidth(new_width)
         self.update_all_sockets()
 
-    def evalImplementation(self, index=0):
-        if self.busy == False:
-            self.busy = True
-            thread0 = threading.Thread(target=self.evalImplementation_thread)
-            thread0.start()
-            return None
-        else:
-            self.markDirty(False)
-            self.markInvalid(False)
-            return None
-
-
     def evalImplementation_thread(self, index=0):
         model_name = self.content.control_net_name.currentText()
         if gs.models["loaded_controlnet"] != model_name:

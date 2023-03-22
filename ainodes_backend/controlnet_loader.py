@@ -55,6 +55,7 @@ def load_controlnet(ckpt_path, model=None):
                         if sd_key in model_sd:
                             cd = controlnet_data[x]
                             cd += model_sd[sd_key].type(cd.dtype).to(cd.device)
+                del model_sd
                 model.unpatch_model()
             else:
                 print("WARNING: Loaded a diff controlnet without a model. It will very likely not work.")

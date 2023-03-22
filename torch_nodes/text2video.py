@@ -64,7 +64,7 @@ class Text2VideoNode(AiNode):
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC"]
     def __init__(self, scene):
-        super().__init__(scene, inputs=[1], outputs=[5,1,1])
+        super().__init__(scene, inputs=[1], outputs=[5,1])
         self.loader = ModelLoader()
         self.last_latent = None
         self.content.eval_signal.connect(self.evalImplementation)
@@ -166,40 +166,32 @@ class Text2VideoNode(AiNode):
                 latents = None
             return_samples, latent = self.pipeline(prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength)
             self.last_latent = latent
+            return_pixmaps = []
+            for frame in return_samples:
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                image = Image.fromarray(copy.deepcopy(frame))
+                pixmap = pil_image_to_pixmap(image)
+                return_pixmaps.append(pixmap)
 
-            if len(self.getOutputs(1)) > 0:
-                self.iterate_frames(return_samples)
-                while self.iterating == True:
-                    time.sleep(0.15)
+            #if len(self.getOutputs(1)) > 0:
+            #    self.iterate_frames(return_samples)
+            #    while self.iterating == True:
+            #        time.sleep(0.15)
+            self.setOutput(0, return_pixmaps)
 
-
-                #if len(self.getOutputs(1)) > 0:
-                #    self.executeChild(output_index=1)
-                #time.sleep(0.05)
-
-                """from modelscope.outputs import OutputKeys
-                from modelscope.pipelines import pipeline
-                pipe = pipeline('text-to-video-synthesis', "models/t2v")
-                
-        
-                mp4 =  pipe({'text': prompt})
-                pipe.model.cpu()
-                del pipe
-                print(mp4)"""
         except Exception as e:
             print(e)
             try:
-                gs.models["t2v"].cleanup()
-                gs.models["t2v"] = None
-                del gs.models["t2v"]
+                self.pipeline.cleanup()
+                self.pipeline = None
+                del self.pipeline
             except:
                 pass
         finally:
             self.markDirty(True)
             self.markInvalid(False)
-
-            if len(self.getOutputs(2)) > 0:
-                self.executeChild(output_index=2)
+            if len(self.getOutputs(1)) > 0:
+                self.executeChild(output_index=1)
             self.busy = False
             return True
     def eval(self, index=0):

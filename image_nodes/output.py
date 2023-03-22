@@ -93,7 +93,8 @@ class ImagePreviewWidget(AiNode):
             self.setOutput(0, pixmap)
             self.index += 1
             self.resize()
-    def evalImplementation(self, index=0):
+    @QtCore.Slot()
+    def evalImplementation_thread(self, index=0):
         self.busy = True
         if self.getInput(0) is not None:
             input_node, other_index = self.getInput(0)
@@ -106,7 +107,10 @@ class ImagePreviewWidget(AiNode):
                 self.grNode.setToolTip("Input is NaN")
                 self.markInvalid()
                 return
-            self.content.preview_signal.emit(val)
+            for pixmap in val:
+
+                self.content.preview_signal.emit(pixmap)
+                time.sleep(0.04)
             self.setOutput(0, val)
             self.markInvalid(False)
             self.markDirty(False)

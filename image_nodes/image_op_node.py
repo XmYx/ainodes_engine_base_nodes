@@ -168,21 +168,24 @@ class ImageOpNode(AiNode):
         if self.getInput(0) != None:
             node, index = self.getInput(0)
             if node != None:
-                pixmap = node.getOutput(index)
+                pixmap_list = node.getOutput(index)
                 method = self.content.dropdown.currentText()
-                return_pixmap = self.image_op(pixmap, method)
-        return return_pixmap
+                return_pixmap_list = []
+                for pixmap in pixmap_list:
+                    return_pixmap = self.image_op(pixmap, method)
+                    return_pixmap_list.append(return_pixmap)
+        return return_pixmap_list
     def onMarkedDirty(self):
         self.value = None
     @QtCore.Slot(object)
-    def onWorkerFinished(self, pixmap):
-        self.setOutput(0, pixmap)
+    def onWorkerFinished(self, pixmap_list):
+        self.setOutput(0, pixmap_list)
         if len(self.getOutputs(2)) > 0:
             self.executeChild(2)
         self.busy = False
         self.markDirty(False)
         self.markInvalid(False)
-        return pixmap
+        return True
 
     def image_op(self, pixmap, method):
         # Convert the QPixmap object to a PIL Image object

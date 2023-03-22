@@ -93,13 +93,14 @@ class VideoOutputNode(AiNode):
                 self.markInvalid()
                 return
 
-            val = input_node.getOutput(other_index)
-            image = pixmap_to_pil_image(val)
-            frame = np.array(image)
-            self.markInvalid(False)
-            self.markDirty(True)
-            self.content.video.add_frame(frame, dump=self.content.dump_at.value())
-            self.setOutput(0, val)
+            pixmap_list = input_node.getOutput(other_index)
+            for val in pixmap_list:
+                image = pixmap_to_pil_image(val)
+                frame = np.array(image)
+                #self.markInvalid(False)
+                #self.markDirty(True)
+                self.content.video.add_frame(frame, dump=self.content.dump_at.value())
+            self.setOutput(0, pixmap_list)
             if len(self.getOutputs(1)) > 0:
                 node = self.getOutputs(1)[0]
                 node.eval()

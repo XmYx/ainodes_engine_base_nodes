@@ -54,6 +54,7 @@ class ConditioningNode(AiNode):
             self.markDirty(True)
             print(f"CONDITIONING NODE: Applying conditioning with prompt: {self.content.prompt.toPlainText()}")
             result = self.get_conditioning()
+            result = [result]
             self.setOutput(0, result)
             # print(result)
             self.markDirty(False)

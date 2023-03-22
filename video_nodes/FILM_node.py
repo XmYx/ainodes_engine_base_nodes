@@ -41,7 +41,7 @@ class FILMNode(AiNode):
 
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[5,5,1], outputs=[5,1,1])
+        super().__init__(scene, inputs=[5,5,1], outputs=[5,1])
         self.painter = QtGui.QPainter()
 
         self.FILM_temp = []
@@ -59,23 +59,6 @@ class FILMNode(AiNode):
 
         self.grNode.height = 220
 
-    """@QtCore.Slot()
-    def evalImplementation(self, index=0):
-        self.markDirty(True)
-        if self.value is None:
-            # Start the worker thread
-            if self.busy == False:
-                self.busy = True
-                thread0 = threading.Thread(target=self.evalImplementation_thread)
-                thread0.start()
-            return None
-        else:
-            self.markDirty(False)
-            self.markInvalid(False)
-            return self.value"""
-
-
-
     @QtCore.Slot()
     def evalImplementation_thread(self):
         if self.getInput(1) != None:
@@ -89,7 +72,6 @@ class FILMNode(AiNode):
         else:
             pixmap2 = None
         if pixmap1 != None and pixmap2 != None:
-
             image1 = pixmap_to_pil_image(pixmap1)
             image2 = pixmap_to_pil_image(pixmap2)
             np_image1 = np.array(image1)
@@ -106,34 +88,22 @@ class FILMNode(AiNode):
             self.markDirty(False)
             self.markInvalid(False)
         elif pixmap1 != None:
-            #try:
-            image = pixmap_to_pil_image(pixmap1)
-            np_image = np.array(image.convert("RGB"))
-            self.FILM_temp.append(np_image)
-            if len(self.FILM_temp) == 2:
-                frames = self.film.inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
-                print(f"FILM NODE:  {len(frames)}")
-                #frames = frames[1:-1]
-                #last = frames.pop()
-                print(f"FILM NODE:  {len(frames)}")
-                if len(self.getOutputs(1)) > 0:
-                    self.iterate_frames(frames)
-                    while self.iterating == True:
-                        time.sleep(0.1)
-                    #if node is not None:
-                    #    node.eval()
-                self.FILM_temp = [self.FILM_temp[1]]
-                print(f"FILM NODE: Using only First input")
-        elif pixmap1 != None:
-            try:
-                self.setOutput(0, pixmap1)
-                print(f"FILM NODE: Using only Second input - Passthrough")
-                if len(self.getOutputs(2)) > 0:
-                    self.executeChild(output_index=2)
-            except:
-                pass
-        if len(self.getOutputs(2)) > 0:
-            self.executeChild(output_index=2)
+            return_frames = []
+            for pixmap in pixmap1:
+                image = pixmap_to_pil_image(pixmap)
+                np_image = np.array(image.convert("RGB"))
+                self.FILM_temp.append(np_image)
+                if len(self.FILM_temp) == 2:
+                    frames = self.film.inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
+                    for frame in frames:
+                        image = Image.fromarray(copy.deepcopy(frame))
+                        pixmap = pil_image_to_pixmap(image)
+                        return_frames.append(pixmap)
+                    self.FILM_temp = [self.FILM_temp[1]]
+                    print(f"FILM NODE: Using only First input")
+            self.setOutput(0, return_frames)
+        if len(self.getOutputs(1)) > 0:
+            self.executeChild(output_index=1)
         self.busy = False
         return None
     def iterate_frames(self, frames):

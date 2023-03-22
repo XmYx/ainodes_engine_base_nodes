@@ -123,7 +123,7 @@ class ImageInputNode(AiNode):
         self.markDirty(False)
         self.markInvalid(False)
         self.grNode.setToolTip("")
-        self.setOutput(0, self.content.image.pixmap())
+        self.setOutput(0, [self.content.image.pixmap()])
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
         return self.content.image.pixmap()

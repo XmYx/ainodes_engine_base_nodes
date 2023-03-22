@@ -59,15 +59,6 @@ class RIFENode(AiNode):
         self.input_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
 
         self.grNode.height = 220
-    @QtCore.Slot()
-    def evalImplementation(self, index=0):
-        self.busy = True
-        self.markDirty(True)
-        if self.busy == False:
-            self.busy = True
-            thread0 = threading.Thread(target=self.evalImplementation_thread)
-            thread0.start()
-        return None
 
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
@@ -89,9 +80,6 @@ class RIFENode(AiNode):
         else:
             pixmap2 = None
         if pixmap1 != None and pixmap2 != None:
-
-
-
             image1 = pixmap_to_pil_image(pixmap1)
             image2 = pixmap_to_pil_image(pixmap2)
             np_image1 = np.array(image1)
