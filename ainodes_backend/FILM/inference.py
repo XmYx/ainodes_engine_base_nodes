@@ -1,19 +1,29 @@
 import bisect
+import os.path
+
 from tqdm import tqdm
 import torch
 import numpy as np
 
 from .film_util import load_image
+from .. import poorman_wget
+
 
 class FilmModel():
 
     def __init__(self):
         super().__init__()
 
+
+
         self.model_path = "models/other/film_net_fp16.pt"
+        url = 'https://github.com/dajes/frame-interpolation-pytorch/releases/download/v1.0.0/film_net_fp16.pt'
+        if not os.path.isfile(self.model_path):
+            poorman_wget(url, self.model_path)
+
         self.model = torch.jit.load(self.model_path, map_location='cpu')
         self.model.eval()
-        self.model = self.model.half().cuda()
+        self.model = self.model.half()
         self.apply_torch_options()
     def apply_torch_options(self):
         torch.set_grad_enabled(False)
@@ -22,7 +32,7 @@ class FilmModel():
             torch.backends.cudnn.benchmark = True
 
     def inference(self, img1, img2, inter_frames):
-
+        self.model.cuda()
         img_batch_1, crop_region_1 = load_image(img1)
         img_batch_2, crop_region_2 = load_image(img2)
 
@@ -72,4 +82,5 @@ class FilmModel():
         #    return_frames.append(frame)
         #for frame in frames[1:][::-1]:
         #    return_frames.append(frame)
+        self.model.cpu()
         return frames

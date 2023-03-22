@@ -46,10 +46,14 @@ class FILMNode(AiNode):
 
         self.FILM_temp = []
         self.content.eval_signal.connect(self.evalImplementation)
-
-        self.film = FilmModel()
+        if "FILM" not in gs.models:
+            gs.models["FILM"] = FilmModel()
         self.busy = False
         #self.eval()
+    def __del__(self):
+        if "FILM" in gs.models:
+            print("Cleaned FILM")
+            del gs.models["FILM"]
 
     def initInnerClasses(self):
         self.content = FILMWidget(self)
@@ -61,6 +65,10 @@ class FILMNode(AiNode):
 
     @QtCore.Slot()
     def evalImplementation_thread(self):
+        return_frames = []
+        if "FILM" not in gs.models:
+            gs.models["FILM"] = FilmModel()
+
         if self.getInput(1) != None:
             node, index = self.getInput(1)
             pixmap1 = node.getOutput(index)
@@ -72,40 +80,37 @@ class FILMNode(AiNode):
         else:
             pixmap2 = None
         if pixmap1 != None and pixmap2 != None:
-            image1 = pixmap_to_pil_image(pixmap1)
-            image2 = pixmap_to_pil_image(pixmap2)
+            image1 = pixmap_to_pil_image(pixmap1[0])
+            image2 = pixmap_to_pil_image(pixmap2[0])
             np_image1 = np.array(image1)
             np_image2 = np.array(image2)
-            frames = self.film.inference(np_image1, np_image2, inter_frames=25)
+            frames = gs.models["FILM"].inference(np_image1, np_image2, inter_frames=25)
             print(f"FILM NODE:  {len(frames)}")
             for frame in range(len(frames) - 2):
                 image = Image.fromarray(frame)
                 pixmap = pil_image_to_pixmap(image)
-                self.setOutput(0, pixmap)
-                if len(self.getOutputs(1)) > 0:
-                    self.executeChild(output_index=1)
-                time.sleep(0.05)
-            self.markDirty(False)
-            self.markInvalid(False)
+                return_frames.append(pixmap)
         elif pixmap1 != None:
-            return_frames = []
             for pixmap in pixmap1:
                 image = pixmap_to_pil_image(pixmap)
                 np_image = np.array(image.convert("RGB"))
                 self.FILM_temp.append(np_image)
                 if len(self.FILM_temp) == 2:
-                    frames = self.film.inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
+                    frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
                     for frame in frames:
                         image = Image.fromarray(copy.deepcopy(frame))
                         pixmap = pil_image_to_pixmap(image)
                         return_frames.append(pixmap)
                     self.FILM_temp = [self.FILM_temp[1]]
                     print(f"FILM NODE: Using only First input")
-            self.setOutput(0, return_frames)
+        return return_frames
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, return_frames):
+        self.setOutput(0, return_frames)
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
         self.busy = False
-        return None
+
     def iterate_frames(self, frames):
         self.iterating = True
         for frame in frames:

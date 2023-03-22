@@ -190,11 +190,13 @@ class TextToVideoSynthesis():
             A generated video (as pytorch tensor).
         """
         self.device = torch.device('cuda')
-        self.clip_encoder.to(self.device)
+        self.clip_encoder.device = self.device
+        self.clip_encoder.model.to(self.device)
         y, zero_y = self.preprocess(prompt, n_prompt)
-        self.clip_encoder.to("cpu")
+        #y = y.to(self.device)
+        #zero_y = y.to(self.device)
+        self.clip_encoder.model.to("cpu")
         torch_gc()
-
         context = torch.cat([zero_y, y], dim=0).to(self.device)
         # synthesis
         with torch.no_grad():
