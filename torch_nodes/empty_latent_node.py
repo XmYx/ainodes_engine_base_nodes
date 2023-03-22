@@ -93,9 +93,11 @@ class LatentNode(AiNode):
                                                 interp_method=interp_methods.lanczos3, support_sz=None,
                                                 antialiasing=True, by_convs=True, scale_tolerance=None,
                                                 max_numerator=10, pad_mode='reflect').half()
-                print(f"Latent rescaled to: {return_sample.shape}")
+
                 rescaled_samples.append(return_sample)
             samples = rescaled_samples
+
+            print(f"{len(samples)}x Latents rescaled to: {samples[0].shape}")
         #print(samples[0].shape)
         self.setOutput(0, samples)
         self.markDirty(False)

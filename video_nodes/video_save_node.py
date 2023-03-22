@@ -100,6 +100,7 @@ class VideoOutputNode(AiNode):
                 #self.markInvalid(False)
                 #self.markDirty(True)
                 self.content.video.add_frame(frame, dump=self.content.dump_at.value())
+            print(f"VIDEO SAVE NODE: Image added to frame buffer, current frames: {len(self.content.video.frames)}")
             self.setOutput(0, pixmap_list)
             if len(self.getOutputs(1)) > 0:
                 node = self.getOutputs(1)[0]
@@ -146,7 +147,7 @@ class VideoRecorder:
     def add_frame(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         self.video_writer.write(frame)
-        print("VIDEO SAVE NODE: New frame added to video stream")
+
 
     def close(self, filename=""):
         self.video_writer.release()
@@ -171,7 +172,7 @@ class GifRecorder:
             type = 'mp4_ffmpeg'
             self.close(timestamp, fps, type, True)
 
-        print(f"VIDEO SAVE NODE: Image added to frame buffer, current frames: {len(self.frames)}")
+
 
     def close(self, timestamp, fps, type='GIF', dump=False):
         if type == 'GIF':

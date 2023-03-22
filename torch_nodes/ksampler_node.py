@@ -184,7 +184,6 @@ class KSamplerNode(AiNode):
             #x_sample = torch.clamp((x_sample + 1.0) / 2.0, min=0.0, max=1.0)
             x_sample = 255. * x_sample[0].detach().numpy()
             #x_sample = 255. * rearrange(x_sample.detach().numpy(), 'c h w -> h w c')
-
             #print("XSAMPLE:", x_sample.shape)
         return x_sample
 
@@ -233,7 +232,6 @@ class KSamplerNode(AiNode):
             n[1]['control'].control_model.cpu()
             #del c_net
             c.append(n)
-        print("APPLIED in KSAMPLER NODE")
         return c
 
 def get_fixed_seed(seed):

@@ -102,7 +102,7 @@ class FILMNode(AiNode):
                         pixmap = pil_image_to_pixmap(image)
                         return_frames.append(pixmap)
                     self.FILM_temp = [self.FILM_temp[1]]
-                    print(f"FILM NODE: Using only First input")
+        print(f"FILM NODE: Using only First input, created {len(return_frames) - 2} between frames, returning {len(return_frames)} frames.")
         return return_frames
     @QtCore.Slot(object)
     def onWorkerFinished(self, return_frames):
