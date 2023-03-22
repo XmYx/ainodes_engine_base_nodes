@@ -52,16 +52,13 @@ class LatentNode(AiNode):
 
         #print(self.getInput(0))
         if self.getInput(0) != None:
-            #self.markInvalid()
-            #self.markDescendantsDirty()
-
             try:
                 latent_node, index = self.getInput(0)
-                self.value = latent_node.getOutput(index)
+                samples = [latent_node.getOutput(index)]
                 print(f"EMPTY LATENT NODE: Using Latent input with parameters: {self.value.shape}")
             except:
                 print(f"EMPTY LATENT NODE: Tried using Latent input, but found an invalid value, generating latent with parameters: {self.content.width.value(), self.content.height.value()}")
-                self.value = self.generate_latent()
+                samples = [self.generate_latent()]
 
 
             self.markDirty(False)
@@ -69,36 +66,41 @@ class LatentNode(AiNode):
         elif self.getInput(1) != None:
             try:
                 node, index = self.getInput(1)
-                pixmap = node.getOutput(index)
 
-                image = pixmap_to_pil_image(pixmap)
 
-                image, mask_image = load_img(image,
-                                             shape=(image.size[0], image.size[1]),
-                                             use_alpha_as_mask=True)
-                image = image.to("cuda")
-                image = repeat(image, '1 ... -> b ...', b=1)
+                pixmap_list = node.getOutput(index)
+                samples = []
+                for pixmap in pixmap_list:
+                    image = pixmap_to_pil_image(pixmap)
 
-                self.value = self.encode_image(image)
+                    image, mask_image = load_img(image,
+                                                 shape=(image.size[0], image.size[1]),
+                                                 use_alpha_as_mask=True)
+                    image = image.to("cuda")
+                    image = repeat(image, '1 ... -> b ...', b=1)
+
+                    latent = self.encode_image(image)
+                    samples.append(latent)
                 print(f"EMPTY LATENT NODE: Using Image input, encoding to Latent with parameters: {latent.shape}")
             except Exception as e:
                 print(e)
         else:
-            self.value = self.generate_latent()
+            samples = [self.generate_latent()]
         if self.content.rescale_latent.isChecked() == True:
-            self.value = resizeright.resize(self.value, scale_factors=None,
-                                            out_shape=[self.value.shape[0], self.value.shape[1], int(self.content.height.value() // 8),
-                                                    int(self.content.width.value() // 8)],
-                                            interp_method=interp_methods.lanczos3, support_sz=None,
-                                            antialiasing=True, by_convs=True, scale_tolerance=None,
-                                            max_numerator=10, pad_mode='reflect')
-            print(f"Latent rescaled to: {self.value.shape}")
+            for sample in samples:
+                sample = resizeright.resize(sample, scale_factors=None,
+                                                out_shape=[self.value.shape[0], self.value.shape[1], int(self.content.height.value() // 8),
+                                                        int(self.content.width.value() // 8)],
+                                                interp_method=interp_methods.lanczos3, support_sz=None,
+                                                antialiasing=True, by_convs=True, scale_tolerance=None,
+                                                max_numerator=10, pad_mode='reflect')
+                print(f"Latent rescaled to: {sample.shape}")
 
-        self.setOutput(0, self.value)
+        self.setOutput(0, samples)
         self.markDirty(False)
         self.markInvalid(False)
         if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1    )
+            self.executeChild(output_index=1)
         return None
             #return self.value
 

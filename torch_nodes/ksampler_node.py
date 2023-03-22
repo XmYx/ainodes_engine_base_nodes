@@ -84,6 +84,7 @@ class KSamplerNode(AiNode):
         self.content.eval_signal.emit()
 
     def onMarkedDirty(self):
+        self.busy = False
         self.value = None
     def evalImplementation_thread(self):
         # Add a task to the task queue
@@ -107,13 +108,19 @@ class KSamplerNode(AiNode):
             self.content.seed_signal.emit()
             self.seed += 1
         try:
-            x=0
+
+            if len(cond_list) < len(latent_list):
+                new_cond_list = []
+                for x in range(len(latent_list)):
+                    new_cond_list.append(cond_list[0])
+                #cond_list = len(latent_list) * cond_list[0]
+                cond_list = new_cond_list
+
             return_pixmaps = []
             return_samples = []
+            x=0
+
             for cond in cond_list:
-                self.content.progress_signal.emit(0)
-                #print(f"torch {torch.__version__}, cuda {torch.version.cuda}, cudnn {torch.backends.cudnn.version()}")
-                #enable_misc_optimizations()
                 if len(latent_list) == len(cond_list):
                     latent = latent_list[x]
                 else:
@@ -157,7 +164,7 @@ class KSamplerNode(AiNode):
                     if hasattr(node.content, "preview_signal"):
                         print("emitting")
                         node.content.preview_signal.emit(pixmap)
-
+                self.content.progress_signal.emit(0)
                 return_pixmaps.append(pixmap)
                 del sample
                 x_samples = None
@@ -165,6 +172,7 @@ class KSamplerNode(AiNode):
                 torch_gc()
                 x+=1
         except Exception as e:
+            return_pixmaps, return_samples = None, None
             print(e)
         return [return_pixmaps, return_samples]
     def decode_sample(self, sample):
