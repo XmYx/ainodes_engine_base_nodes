@@ -113,8 +113,8 @@ class TextToVideoSynthesis():
             torch.load(
                 osp.join(self.model_dir, self.config.model["model_args"]["ckpt_unet"])),
             strict=True)
-        self.model.eval()
-        self.model.half()
+        #self.model.eval()
+        #self.model.half()
         # Initialize diffusion
         betas = beta_schedule(
             'linear_sd',
@@ -145,18 +145,15 @@ class TextToVideoSynthesis():
             ddconfig, 4,
             osp.join(self.model_dir, self.config.model["model_args"]["ckpt_autoencoder"]))
         self.autoencoder.to('cpu')
-        self.autoencoder.eval()
+        #self.autoencoder.eval()
 
 
         # Initialize Open clip
         self.clip_encoder = FrozenOpenCLIPEmbedder(
             version=osp.join(self.model_dir,
                              self.config.model["model_args"]["ckpt_clip"]),
-            layer='penultimate')
-
-        self.clip_encoder.model.to('cpu')
-
-        self.clip_encoder.to("cpu")
+            layer='penultimate',
+            device='cpu')
         apply_optimizations()
 
     #@torch.compile()

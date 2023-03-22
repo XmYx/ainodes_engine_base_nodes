@@ -49,29 +49,26 @@ class LatentNode(AiNode):
         self.grNode.width = 200
     @QtCore.Slot()
     def evalImplementation(self, index=0):
-
-        #print(self.getInput(0))
+        samples = []
         if self.getInput(0) != None:
             try:
                 latent_node, index = self.getInput(0)
-                samples = [latent_node.getOutput(index)]
-                print(f"EMPTY LATENT NODE: Using Latent input with parameters: {self.value.shape}")
+                samples = latent_node.getOutput(index)
+                print(f"EMPTY LATENT NODE: Using Latent input with parameters: {samples}")
             except:
                 print(f"EMPTY LATENT NODE: Tried using Latent input, but found an invalid value, generating latent with parameters: {self.content.width.value(), self.content.height.value()}")
                 samples = [self.generate_latent()]
-
-
             self.markDirty(False)
             self.markInvalid(False)
         elif self.getInput(1) != None:
             try:
                 node, index = self.getInput(1)
-
-
                 pixmap_list = node.getOutput(index)
                 samples = []
                 for pixmap in pixmap_list:
                     image = pixmap_to_pil_image(pixmap)
+
+                    print("image", image)
 
                     image, mask_image = load_img(image,
                                                  shape=(image.size[0], image.size[1]),
@@ -87,15 +84,19 @@ class LatentNode(AiNode):
         else:
             samples = [self.generate_latent()]
         if self.content.rescale_latent.isChecked() == True:
+            rescaled_samples = []
             for sample in samples:
-                sample = resizeright.resize(sample, scale_factors=None,
+                sample = sample.float()
+                return_sample = resizeright.resize(sample, scale_factors=None,
                                                 out_shape=[sample.shape[0], sample.shape[1], int(self.content.height.value() // 8),
                                                         int(self.content.width.value() // 8)],
                                                 interp_method=interp_methods.lanczos3, support_sz=None,
                                                 antialiasing=True, by_convs=True, scale_tolerance=None,
-                                                max_numerator=10, pad_mode='reflect')
-                print(f"Latent rescaled to: {sample.shape}")
-
+                                                max_numerator=10, pad_mode='reflect').half()
+                print(f"Latent rescaled to: {return_sample.shape}")
+                rescaled_samples.append(return_sample)
+            samples = rescaled_samples
+        print(samples[0].shape)
         self.setOutput(0, samples)
         self.markDirty(False)
         self.markInvalid(False)

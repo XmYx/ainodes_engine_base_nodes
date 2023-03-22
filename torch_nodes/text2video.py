@@ -80,7 +80,6 @@ class Text2VideoNode(AiNode):
         self.busy = False
         self.iterating = False
         self.index = 0
-        self.pipeline = TextToVideoSynthesis(model_dir="models/t2v")
         self.prompts = [
             "A moonlit night with a dark purple sky.",
             "A forest filled with neon, glowing mushrooms.",
@@ -140,6 +139,9 @@ class Text2VideoNode(AiNode):
             "A chamber that can alter the appearance of its occupants.",
             "A room where the walls are made of living, breathing plants."]
     def evalImplementation_thread(self, index=0):
+        if "t2v" not in gs.models:
+            gs.models["t2v"] = TextToVideoSynthesis(model_dir="models/t2v")
+
         try:
             prompt = self.content.prompt.toPlainText()
             prompt = self.get_next_prompt() if self.content.random_prompt.isChecked() else prompt
@@ -169,7 +171,7 @@ class Text2VideoNode(AiNode):
                 latents = self.last_latent
             else:
                 latents = None
-            return_samples, latent = self.pipeline(prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength)
+            return_samples, latent = gs.models["t2v"](prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength)
             self.last_latent = latent
             return_pixmaps = []
             for frame in return_samples:
@@ -187,9 +189,9 @@ class Text2VideoNode(AiNode):
         except Exception as e:
             print(e)
             try:
-                self.pipeline.cleanup()
-                self.pipeline = None
-                del self.pipeline
+                gs.models["t2v"].cleanup()
+                gs.models["t2v"] = None
+                del gs.models["t2v"]
             except:
                 pass
         finally:

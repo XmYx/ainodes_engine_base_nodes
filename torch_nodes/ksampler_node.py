@@ -90,6 +90,7 @@ class KSamplerNode(AiNode):
         cond_list = self.getInputData(2)
         n_cond_list = self.getInputData(1)
         latent_list = self.getInputData(0)
+        print(latent_list[0].shape)
         last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
         short_steps = last_step - self.content.start_step.value()
         steps = self.content.steps.value()
@@ -201,6 +202,7 @@ class KSamplerNode(AiNode):
         self.markInvalid(False)
         self.setOutput(0, result[0])
         self.setOutput(1, result[1])
+
         self.busy = False
         self.content.progress_signal.emit(100)
         self.progress_value = 0
