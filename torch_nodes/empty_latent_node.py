@@ -68,7 +68,7 @@ class LatentNode(AiNode):
                 for pixmap in pixmap_list:
                     image = pixmap_to_pil_image(pixmap)
 
-                    print("image", image)
+                    #print("image", image)
 
                     image, mask_image = load_img(image,
                                                  shape=(image.size[0], image.size[1]),
@@ -96,7 +96,7 @@ class LatentNode(AiNode):
                 print(f"Latent rescaled to: {return_sample.shape}")
                 rescaled_samples.append(return_sample)
             samples = rescaled_samples
-        print(samples[0].shape)
+        #print(samples[0].shape)
         self.setOutput(0, samples)
         self.markDirty(False)
         self.markInvalid(False)

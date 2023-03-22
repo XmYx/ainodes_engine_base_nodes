@@ -272,7 +272,7 @@ class ImageOpNode(AiNode):
                 data = node.getOutput(index)
                 for key, value in data.items():
                     if key[0] == 'Warp3D':
-                        print(key, value)
+                        #print(key, value)
                         args[key[1]] = value
             np_image = anim_frame_warp_3d(device, image, tensor, args["translation_x"], args["translation_y"], args["translation_z"], args["rotation_3d_x"], args["rotation_3d_y"], args["rotation_3d_z"])
             image = Image.fromarray(np_image)
@@ -319,7 +319,7 @@ class ImageOpNode(AiNode):
             image = np.array(image)
             #print(image.shape)
             detector = SemSegModel()
-            print(detector)
+            #print(detector)
             image, masks = detector.predict(image)
             data = {
                 ("images", "list") : masks

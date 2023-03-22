@@ -161,7 +161,7 @@ class KSamplerNode(AiNode):
                 if len(self.getOutputs(0)) > 0:
                     node = self.getOutputs(0)[0]
                     if hasattr(node.content, "preview_signal"):
-                        print("emitting")
+                        #print("emitting")
                         node.content.preview_signal.emit(pixmap)
                 self.content.progress_signal.emit(0)
                 return_pixmaps.append(pixmap)
@@ -185,7 +185,7 @@ class KSamplerNode(AiNode):
             x_sample = 255. * x_sample[0].detach().numpy()
             #x_sample = 255. * rearrange(x_sample.detach().numpy(), 'c h w -> h w c')
 
-            print("XSAMPLE:", x_sample.shape)
+            #print("XSAMPLE:", x_sample.shape)
         return x_sample
 
     def callback(self, tensors):

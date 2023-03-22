@@ -71,7 +71,7 @@ class ImagePreviewWidget(AiNode):
             self.index = 0
         if length > 0:
             img = self.images[self.index]
-            print(img)
+            #print(img)
             # Create a new RGBA image with the same dimensions as the greyscale image
             mask_image = Image.new("RGBA", img.size, (0, 0, 0, 0))
 
@@ -127,7 +127,7 @@ class ImagePreviewWidget(AiNode):
                         for image in value:
                             self.images.append(image)
                             # Create a new QPixmap object with the same size as the original image
-                            print(key[0], image)
+                            #print(key[0], image)
             val = None
         else:
             val = self.value

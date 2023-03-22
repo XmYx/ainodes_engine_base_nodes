@@ -105,7 +105,7 @@ class CNApplyNode(AiNode):
         conditioning = None
         control_hint = None
         torch_gc()
-        print("APPLIED")
+        #print("APPLIED")
         return c
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):

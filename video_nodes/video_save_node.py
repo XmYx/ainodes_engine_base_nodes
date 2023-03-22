@@ -187,7 +187,7 @@ class GifRecorder:
             width = self.frames[0].shape[1]
             height = self.frames[0].shape[0]
 
-            print(width, height)
+            #print(width, height)
             cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
                    'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-an',
                    filename]

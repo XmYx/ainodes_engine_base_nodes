@@ -100,7 +100,7 @@ class RIFEModel():
                         print("appending RIFE frame")
                     tmp.append(img1)
                     img_list = tmp
-            print(len(img_list))
+            #print(len(img_list))
         
         if not os.path.exists('output'):
             os.mkdir('output')
@@ -112,5 +112,5 @@ class RIFEModel():
             #    cv2.imwrite('output/img{}.exr'.format(i), (img_list[i][0]).cpu().numpy().transpose(1, 2, 0)[:h, :w], [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF])
             #else:
             #cv2.imwrite('output/img{}.png'.format(i), (img_list[i][0] * 255).byte().cpu().numpy().transpose(1, 2, 0)[:h, :w])
-        print(len(np_images))
+        #print(len(np_images))
         return np_images

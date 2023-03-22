@@ -94,7 +94,7 @@ class TorchLoaderNode(AiNode):
             model_name = self.content.dropdown.currentText()
             config_name = self.content.config_dropdown.currentText()
             print("TORCH LOADER:", gs.loaded_models["loaded"])
-            print(gs.current["sd_model"])
+            #print(gs.current["sd_model"])
             if model_name not in gs.loaded_models["loaded"]:
                 if model_name != "" and "inpaint" not in model_name:
                     if gs.current["sd_model"] != model_name:

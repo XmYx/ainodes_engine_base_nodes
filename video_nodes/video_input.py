@@ -41,7 +41,7 @@ class VideoInputWidget(QDMNodeContentWidget):
         file_name, _ = QFileDialog.getOpenFileName(self, "Open Video File", "", "Video Files (*.mp4 *.avi *.mkv)")
 
         if file_name:
-            print(file_name)
+            #print(file_name)
             self.video.load_video(file_name)
             self.advance_frame()
 
