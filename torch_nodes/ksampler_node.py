@@ -84,7 +84,6 @@ class KSamplerNode(AiNode):
         self.content.eval_signal.emit()
 
     def onMarkedDirty(self):
-        self.busy = False
         self.value = None
     def evalImplementation_thread(self):
         # Add a task to the task queue
@@ -166,10 +165,10 @@ class KSamplerNode(AiNode):
                         node.content.preview_signal.emit(pixmap)
                 self.content.progress_signal.emit(0)
                 return_pixmaps.append(pixmap)
-                del sample
-                x_samples = None
-                sample = None
-                torch_gc()
+                #del sample
+                #x_samples = None
+                #sample = None
+                #torch_gc()
                 x+=1
         except Exception as e:
             return_pixmaps, return_samples = None, None
@@ -202,12 +201,12 @@ class KSamplerNode(AiNode):
         self.markInvalid(False)
         self.setOutput(0, result[0])
         self.setOutput(1, result[1])
-
+        self.busy = False
         self.content.progress_signal.emit(100)
         self.progress_value = 0
         if len(self.getOutputs(2)) > 0:
             self.executeChild(output_index=2)
-        self.busy = False
+
         return True
     @QtCore.Slot()
     def setSeed(self):

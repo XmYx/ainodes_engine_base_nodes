@@ -32,7 +32,6 @@ class ConditioningNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[3,1])
-        #self.eval()
         self.content.eval_signal.connect(self.evalImplementation)
         # Create a worker object
     def initInnerClasses(self):
@@ -56,13 +55,9 @@ class ConditioningNode(AiNode):
             result = self.get_conditioning()
             result = [result]
             self.setOutput(0, result)
-            # print(result)
             self.markDirty(False)
             self.markInvalid(False)
             self.busy = False
-
-            if len(self.getOutputs(1)) > 0:
-                self.executeChild(output_index=1)
             return result
         except:
             self.busy = False
@@ -70,12 +65,10 @@ class ConditioningNode(AiNode):
     def eval(self, index=0):
         self.markDirty(True)
         self.content.eval_signal.emit()
-
     def onMarkedDirty(self):
         self.value = None
     def get_conditioning(self, progress_callback=None):
         prompt = self.content.prompt.toPlainText()
-
         """if gs.loaded_models["loaded"] == []:
             for node in self.scene.nodes:
                 if isinstance(node, TorchLoaderNode):
