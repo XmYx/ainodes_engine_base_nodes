@@ -34,7 +34,6 @@ class ExecSplitterNode(AiNode):
         self.markInvalid(True)
         self.busy = False
         self.executeChild(1)
-        time.sleep(0.1)
         self.executeChild(0)
         return None
     def onMarkedDirty(self):

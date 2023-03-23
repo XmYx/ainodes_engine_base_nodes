@@ -8,6 +8,7 @@ import threading
 import time
 
 import torch
+from qtpy import QtCore
 from qtpy import QtWidgets
 from PIL import Image
 import cv2
@@ -27,6 +28,7 @@ class Text2VideoWidget(QDMNodeContentWidget):
         self.create_widgets()
         self.create_main_layout()
 
+
     def create_widgets(self):
         self.prompt = self.create_text_edit("PROMPT")
         self.n_prompt = self.create_text_edit("N_PROMPT")
@@ -41,8 +43,19 @@ class Text2VideoWidget(QDMNodeContentWidget):
         self.cpu_vae = self.create_check_box("CPU VAE")
         self.random_prompt = self.create_check_box("RANDOM PROMPT")
         self.continue_sampling = self.create_check_box("CONTINUE")
+        self.edit_prompt_button = QtWidgets.QPushButton("Edit Prompt")
+        self.create_button_layout([self.edit_prompt_button])
+        self.edit_prompt_button.clicked.connect(self.prompt_editor)
+        self.prompts = []
 
 
+    def prompt_editor(self):
+        prompts = EditPromptsDialog(self.prompts)
+        result = prompts.exec()
+        if result == QtWidgets.QDialog.Accepted:
+            self.prompts = prompts.prompts
+            # Save the modified prompt list to a file or do something else with it
+            print("Modified prompts:", self.prompts)
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
     def __init__(self, parent=None):
         super().__init__(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -141,7 +154,7 @@ class Text2VideoNode(AiNode):
     def evalImplementation_thread(self, index=0):
         if "t2v" not in gs.models:
             gs.models["t2v"] = TextToVideoSynthesis(model_dir="models/t2v")
-
+        return_pixmaps = []
         try:
             prompt = self.content.prompt.toPlainText()
             prompt = self.get_next_prompt() if self.content.random_prompt.isChecked() else prompt
@@ -184,7 +197,7 @@ class Text2VideoNode(AiNode):
             #    self.iterate_frames(return_samples)
             #    while self.iterating == True:
             #        time.sleep(0.15)
-            self.setOutput(0, return_pixmaps)
+
 
         except Exception as e:
             print(e)
@@ -195,12 +208,16 @@ class Text2VideoNode(AiNode):
             except:
                 pass
         finally:
-            self.markDirty(True)
-            self.markInvalid(False)
-            if len(self.getOutputs(1)) > 0:
-                self.executeChild(output_index=1)
-            self.busy = False
-            return True
+            return return_pixmaps
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+        self.setOutput(0, result)
+        self.markDirty(True)
+        self.markInvalid(False)
+        if len(self.getOutputs(1)) > 0:
+            self.executeChild(output_index=1)
+        self.busy = False
+
     def eval(self, index=0):
         self.markDirty(True)
         self.content.eval_signal.emit()
@@ -222,70 +239,9 @@ class Text2VideoNode(AiNode):
                 time.sleep(0.1)
         self.iterating = False
     def get_next_prompt(self):
-
-        self.prompts = [
-            "A moonlit night with a dark purple sky.",
-            "A forest filled with neon, glowing mushrooms.",
-            "A mysterious portal leading to a hidden dimension.",
-            "Walls of the floating castle pulsate with vibrant colors.",
-            "A room inside the castle full of swirling, hypnotic patterns.",
-            "Crystal gardens that refract light into mesmerizing prisms.",
-            "A waterfall cascading down from the castle, morphing into different shapes.",
-            "Shadowy figures dancing in a trance-like state.",
-            "A river of liquid light flowing through the landscape.",
-            "The castle walls adorned with intricate, moving murals.",
-            "A hall of mirrors distorting reality and reflections.",
-            "A glowing labyrinth leading to the heart of the castle.",
-            "A room filled with floating orbs that emit otherworldly music.",
-            "A spiral staircase that changes direction and shape as it is climbed.",
-            "A bridge made of shifting, iridescent energy.",
-            "A library filled with ancient, enchanted books.",
-            "A garden of plants that change color and shape with every touch.",
-            "A room with walls made of undulating waves of color.",
-            "An observatory where celestial bodies form mesmerizing patterns.",
-            "A banquet hall filled with surreal, transformative feasts.",
-            "A surreal landscape of melting mountains and flowing skies.",
-            "A throne room where shadows come to life and bow to their ruler.",
-            "A dark, foggy forest with trees that whisper secrets.",
-            "A hidden cavern filled with pulsating crystal formations.",
-            "A room that transports visitors to alternate dimensions.",
-            "A balcony with a view of a horizon that shifts and transforms.",
-            "A courtyard where shadows become solid and can be sculpted.",
-            "A room of portals that connect to different worlds.",
-            "An underground chamber with walls of shifting, living darkness.",
-            "A sky filled with swirling, hypnotic clouds.",
-            "A marketplace where dreams and nightmares can be bought and sold.",
-            "A room that reflects the deepest desires and fears of its occupants.",
-            "A dark, enchanting forest that beckons travelers to wander.",
-            "A room filled with holographic projections of past and future events.",
-            "A gallery of paintings that come to life and tell stories.",
-            "A realm where the natural laws of reality are constantly in flux.",
-            "A room where echoes of lost souls can be heard.",
-            "A garden where plants sing haunting melodies.",
-            "A chamber that can manipulate the flow of time.",
-            "A room where dreams and memories manifest as tangible objects.",
-            "A chasm filled with dark, shimmering water.",
-            "A room where the walls are made of ever-changing fractal patterns.",
-            "A dance floor where participants merge and separate like liquid.",
-            "A fountain that flows with glowing, transformative liquid.",
-            "A room where shadows play out scenes from forgotten myths.",
-            "A cosmic garden filled with plants from other planets.",
-            "A hall filled with statues that come to life.",
-            "A room that can control the elements of nature.",
-            "A floating island with a dark, enchanted forest.",
-            "A room where visitors can enter the minds of others.",
-            "A cavern with walls that tell stories of ancient civilizations.",
-            "A room where the floor moves and shifts like a liquid.",
-            "A magical workshop filled with enchanted tools and materials.",
-            "A room that contains the essence of every emotion.",
-            "A celestial observatory with views into other galaxies.",
-            "A chamber that can alter the appearance of its occupants.",
-            "A room where the walls are made of living, breathing plants."]
-
-
-
-        prompt = self.prompts[self.index]
+        self.prompts = self.content.prompts
         self.index = (self.index + 1) % len(self.prompts)
+        prompt = self.prompts[self.index]
         return prompt
 def fancy_readout(prompt, steps, frames, scale, width, height, seed):
     # Define the box-drawing characters
@@ -456,3 +412,84 @@ def get_video_prompt():
     )
 
     return response.choices[0].text.strip()
+
+
+class EditPromptsDialog(QtWidgets.QDialog):
+    def __init__(self, prompts):
+        super().__init__()
+        self.prompts = prompts.copy()
+        self.edited_prompts = []
+        self.list_widget = QtWidgets.QListWidget()
+        for prompt in self.prompts:
+            self.list_widget.addItem(prompt)
+        add_button = QtWidgets.QPushButton("Add")
+        add_button.clicked.connect(self.add_prompt)
+        edit_button = QtWidgets.QPushButton("Edit")
+        edit_button.clicked.connect(self.edit_prompt)
+        delete_button = QtWidgets.QPushButton("Delete")
+        delete_button.clicked.connect(self.delete_prompt)
+        ok_button = QtWidgets.QPushButton("OK")
+        ok_button.clicked.connect(self.accept)
+        button_layout = QtWidgets.QHBoxLayout()
+        button_layout.addWidget(add_button)
+        button_layout.addWidget(edit_button)
+        button_layout.addWidget(delete_button)
+        button_layout.addWidget(ok_button)
+        main_layout = QtWidgets.QVBoxLayout()
+        main_layout.addWidget(self.list_widget)
+        main_layout.addLayout(button_layout)
+        self.setLayout(main_layout)
+
+    def add_prompt(self):
+        dialog = LargeTextEditDialog("Add Prompt")
+        result = dialog.exec()
+
+        if result == QtWidgets.QDialog.Accepted:
+            prompt = dialog.get_text()
+            if prompt not in self.prompts and prompt != "":
+                self.prompts.append(prompt)
+                self.edited_prompts.append(prompt)
+                self.list_widget.addItem(prompt)
+
+    def edit_prompt(self):
+        selected_items = self.list_widget.selectedItems()
+        if len(selected_items) == 1:
+            old_prompt = selected_items[0].text()
+            dialog = LargeTextEditDialog("Edit Prompt", old_prompt)
+            result = dialog.exec()
+
+            if result == QtWidgets.QDialog.Accepted:
+                new_prompt = dialog.get_text()
+                if new_prompt != "" and new_prompt != old_prompt:
+                    self.prompts[self.prompts.index(old_prompt)] = new_prompt
+                    self.edited_prompts.append(new_prompt)
+                    selected_items[0].setText(new_prompt)
+
+    def delete_prompt(self):
+        selected_items = self.list_widget.selectedItems()
+        if len(selected_items) > 0:
+            for item in selected_items:
+                self.prompts.remove(item.text())
+                self.list_widget.takeItem(self.list_widget.row(item))
+                self.edited_prompts.append(item.text())
+
+
+class LargeTextEditDialog(QtWidgets.QDialog):
+    def __init__(self, title, text="", parent=None):
+        super(LargeTextEditDialog, self).__init__(parent)
+
+        self.setWindowTitle(title)
+
+        self.text_edit = QtWidgets.QPlainTextEdit(self)
+        self.text_edit.setPlainText(text)
+
+        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(self.text_edit)
+        layout.addWidget(self.button_box)
+
+    def get_text(self):
+        return self.text_edit.toPlainText()

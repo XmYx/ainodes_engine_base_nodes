@@ -17,6 +17,7 @@ OP_NODE_IMG_SCRIBBLE = get_next_opcode()
 class DrawingWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.parent = parent
         self.image = QtGui.QImage(512, 512, QtGui.QImage.Format_RGB32)
         self.image.fill(Qt.black)
         self.drawing = False
@@ -27,6 +28,8 @@ class DrawingWidget(QtWidgets.QWidget):
         self.color = Qt.white
         self.alt_color = Qt.black
         self.setCursor(self.createBrushCursor(self.alt_color))
+        self.history = []
+        self.redo_history = []
     def switch_color(self):
         if self.color == Qt.white:
             self.color = Qt.black
@@ -64,10 +67,9 @@ class DrawingWidget(QtWidgets.QWidget):
         return QtGui.QCursor(cursor_pixmap)
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-
+            self.save_history()
             self.drawing = True
             self.last_point = event.pos()
-
     def mouseMoveEvent(self, event):
         if self.drawing and self.last_point is not None:
             painter = QtGui.QPainter(self.image)
@@ -101,7 +103,21 @@ class DrawingWidget(QtWidgets.QWidget):
     def inc_brush(self):
         self.brush_size += 3
         self.setCursor(self.createBrushCursor())
+    def save_history(self):
+        self.redo_history.clear()
+        self.history.append(self.image.copy())
 
+    def undo(self):
+        if self.history:
+            self.redo_history.append(self.image)
+            self.image = self.history.pop()
+            self.update()
+
+    def redo(self):
+        if self.redo_history:
+            self.history.append(self.image)
+            self.image = self.redo_history.pop()
+            self.update()
 
 class ScribbleWidget(QDMNodeContentWidget):
     preview_signal = QtCore.Signal(object)
@@ -117,16 +133,21 @@ class ScribbleWidget(QDMNodeContentWidget):
         self.inc_button = QtWidgets.QPushButton("Larger")
         self.new_image = QtWidgets.QPushButton("Resize")
         self.invert_button = QtWidgets.QPushButton("Invert Canvas")
+        self.undo_button = QtWidgets.QPushButton("Undo")
+        self.redo_button = QtWidgets.QPushButton("Redo")
         self.button_layout = QtWidgets.QHBoxLayout()
         self.button_layout.addWidget(self.dec_button)
         self.button_layout.addWidget(self.inc_button)
         self.button_layout.addWidget(self.new_image)
         self.button_layout.addWidget(self.invert_button)
+        self.button_layout.addWidget(self.undo_button)
+        self.button_layout.addWidget(self.redo_button)
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(15, 30, 15, 35)
         layout.addWidget(self.image)
         layout.addLayout(self.button_layout)
         self.setLayout(layout)
+        self.parent = self.parent()
 
 @register_node(OP_NODE_IMG_SCRIBBLE)
 class ScribbleNode(AiNode):
@@ -156,6 +177,8 @@ class ScribbleNode(AiNode):
         self.content.inc_button.clicked.connect(self.content.image.inc_brush)
         self.content.new_image.clicked.connect(self.new_image)
         self.content.invert_button.clicked.connect(self.switch_color)
+        self.content.undo_button.clicked.connect(self.content.image.undo)
+        self.content.redo_button.clicked.connect(self.content.image.redo)
 
     def evalImplementation(self, index=0):
 
