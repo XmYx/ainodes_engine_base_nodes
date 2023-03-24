@@ -9,11 +9,13 @@ miklos.mnagy@gmail.com
 import hashlib
 import os
 
+import numpy as np
 from omegaconf import OmegaConf
 from torch.nn.functional import silu
 
 from ldm.models.autoencoder import AutoencoderKL
 from .lora_loader import ModelPatcher
+from .sd_optimizations.sd_hijack import apply_optimizations
 from .torch_gc import torch_gc
 from ldm.util import instantiate_from_config
 from ainodes_frontend import singleton as gs
@@ -57,7 +59,7 @@ class ModelLoader(torch.nn.Module):
             vae = VAE(scale_factor=scale_factor, config=vae_config)
             w.first_stage_model = vae.first_stage_model
             load_state_dict_to = [w]
-            vae.first_stage_model = w.first_stage_model.half().cuda()
+            vae.first_stage_model = w.first_stage_model.half()
 
             clip = CLIP(config=clip_config, embedding_directory="models/embeddings")
             w.cond_stage_model = clip.cond_stage_model
@@ -67,14 +69,14 @@ class ModelLoader(torch.nn.Module):
             model = instantiate_from_config(config.model)
             sd = load_torch_file(ckpt_path)
             model = load_model_weights(model, sd, verbose=False, load_state_dict_to=load_state_dict_to)
-            model = model.half().cuda()
+            model = model.half()
 
             gs.models["sd"] = ModelPatcher(model)
             gs.models["clip"] = clip
             gs.models["vae"] = vae
             print("LOADED")
             gs.loaded_models["loaded"].append(file)
-
+            apply_optimizations()
     def load_model_old(self, file=None, config=None, inpaint=False, verbose=False):
 
         if file not in gs.loaded_models["loaded"]:
@@ -363,14 +365,14 @@ class VAE:
         samples = samples.to(self.device)
         pixel_samples = self.first_stage_model.decode(1. / self.scale_factor * samples)
         pixel_samples = torch.clamp((pixel_samples + 1.0) / 2.0, min=0.0, max=1.0)
-        #self.first_stage_model = self.first_stage_model.cpu()
+        self.first_stage_model = self.first_stage_model.cpu()
         pixel_samples = pixel_samples.cpu().movedim(1,-1)
         return pixel_samples
 
     def decode_tiled(self, samples, tile_x=64, tile_y=64, overlap = 8):
         #model_management.unload_model()
         output = torch.empty((samples.shape[0], 3, samples.shape[2] * 8, samples.shape[3] * 8), device="cpu")
-        self.first_stage_model = self.first_stage_model.to(self.device)
+        #self.first_stage_model = self.first_stage_model.to(self.device)
         for b in range(samples.shape[0]):
             s = samples[b:b+1]
             out = torch.zeros((s.shape[0], 3, s.shape[2] * 8, s.shape[3] * 8), device="cpu")
@@ -397,12 +399,18 @@ class VAE:
         return output.movedim(1,-1)
 
     def encode(self, pixel_samples):
-        #model_management.unload_model()
+        pixel_samples = pixel_samples.cuda()
         #self.first_stage_model = self.first_stage_model.to(self.device)
-        pixel_samples = pixel_samples.movedim(-1,1).to(self.device)
+        #pixel_samples = pixel_samples.movedim(-1,1).to(self.device)
         samples = self.first_stage_model.encode(2. * pixel_samples - 1.).sample() * self.scale_factor
+        pixel_samples = pixel_samples.detach().cpu()
         #self.first_stage_model = self.first_stage_model.cpu()
-        samples = samples.cpu()
+        samples = samples.detach().cpu()
+
+        del pixel_samples
+
+        torch_gc()
+
         return samples
 
 

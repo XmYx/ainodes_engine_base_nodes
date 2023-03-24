@@ -26,7 +26,7 @@ gs.embeddings_path = ""
 
 def apply_optimizations():
     #undo_optimizations()
-    hijack_style = "sdp_quick"
+    hijack_style = "sdp"
     ldm.modules.diffusionmodules.model.nonlinearity = silu
     if hijack_style == 'xformers':
         print("Applying xformers cross attention optimization.")

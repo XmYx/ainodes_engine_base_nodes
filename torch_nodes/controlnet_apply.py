@@ -56,6 +56,9 @@ class CNApplyNode(AiNode):
         self.markDirty(True)
         self.markInvalid(True)
         return_list = []
+
+        print(conditioning, image_list)
+
         for image in image_list:
             result = self.add_control_image(conditioning[0], image)
             return_list.append(result)

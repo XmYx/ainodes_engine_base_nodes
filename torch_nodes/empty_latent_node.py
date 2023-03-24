@@ -5,7 +5,7 @@ from PIL import Image
 from qtpy import QtWidgets, QtCore, QtGui
 
 from ..ainodes_backend.resizeRight import resizeright, interp_methods
-from ..ainodes_backend import pixmap_to_pil_image
+from ..ainodes_backend import pixmap_to_pil_image, torch_gc
 
 from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
@@ -61,26 +61,43 @@ class LatentNode(AiNode):
             self.markDirty(False)
             self.markInvalid(False)
         elif self.getInput(1) != None:
-            try:
-                node, index = self.getInput(1)
-                pixmap_list = node.getOutput(index)
-                samples = []
-                for pixmap in pixmap_list:
-                    image = pixmap_to_pil_image(pixmap)
+            #try:
+            node, index = self.getInput(1)
+            pixmap_list = node.getOutput(index)
+            samples = []
+            gs.models["vae"].first_stage_model.cuda()
+            for pixmap in pixmap_list:
+                image = pixmap_to_pil_image(pixmap)
 
-                    #print("image", image)
+                #print("image", image)
 
-                    image, mask_image = load_img(image,
-                                                 shape=(image.size[0], image.size[1]),
-                                                 use_alpha_as_mask=True)
-                    image = image.to("cuda")
-                    image = repeat(image, '1 ... -> b ...', b=1)
+                """image, mask_image = load_img(image,
+                                             shape=(image.size[0], image.size[1]),
+                                             use_alpha_as_mask=True)
+                image = image.to("cuda")
+                image = repeat(image, '1 ... -> b ...', b=1)"""
 
-                    latent = self.encode_image(image)
-                    samples.append(latent)
-                print(f"EMPTY LATENT NODE: Using Image input, encoding to Latent with parameters: {latent.shape}")
-            except Exception as e:
-                print(e)
+
+                image = image.convert("RGB")
+                image = np.array(image).astype(np.float32) / 255.0
+                image = image[None].transpose(0, 3, 1, 2)
+                image = torch.from_numpy(image)
+                image = image.detach().half().cpu()
+                torch_gc()
+
+                latent = gs.models["vae"].encode(image)
+                latent = latent.to("cpu")
+                image = image.detach().to("cpu")
+                del image
+                samples.append(latent)
+                shape = latent.shape
+                del latent
+                torch_gc()
+            gs.models["vae"].first_stage_model.cpu()
+            torch_gc()
+            print(f"EMPTY LATENT NODE: Using Image input, encoding to Latent with parameters: {shape}")
+            #except Exception as e:
+            #    print(e)
         else:
             samples = [self.generate_latent()]
         if self.content.rescale_latent.isChecked() == True:
@@ -110,8 +127,9 @@ class LatentNode(AiNode):
     def onMarkedDirty(self):
         self.value = None
     def encode_image(self, init_image=None):
-        init_latent = gs.models["sd"].model.get_first_stage_encoding(
-            gs.models["sd"].model.encode_first_stage(init_image))  # move to latent space
+        init_latent = gs.models["vae"].encode(init_image)
+        init_latent.to("cpu")# move to latent space
+        torch_gc()
         return init_latent
 
     def generate_latent(self):

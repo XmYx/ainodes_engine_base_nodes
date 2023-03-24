@@ -90,7 +90,7 @@ class ImagePreviewWidget(AiNode):
 
             pixmap = pil_image_to_pixmap(mask_image)
             self.content.image.setPixmap(pixmap)
-            self.setOutput(0, pixmap)
+            self.setOutput(0, [pixmap])
             self.index += 1
             self.resize()
     @QtCore.Slot()
@@ -108,7 +108,6 @@ class ImagePreviewWidget(AiNode):
                 self.markInvalid()
                 return
             for pixmap in val:
-
                 self.content.preview_signal.emit(pixmap)
                 time.sleep(0.04)
             self.setOutput(0, val)

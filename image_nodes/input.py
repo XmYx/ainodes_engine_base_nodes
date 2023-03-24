@@ -177,10 +177,14 @@ class ImageInputNode(AiNode):
             for pixmap in self.images:
                 self.content.image.setPixmap(pixmap)
                 time.sleep(0.1)
-        self.setOutput(0, self.images)
+        pixmap = self.content.image.pixmap()
+        self.setOutput(0, [pixmap])
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
         return self.images
+    def eval(self):
+        self.markDirty()
+        self.evalImplementation()
 
     def openFileDialog(self):
         # Open the file dialog to select a PNG file

@@ -50,8 +50,7 @@ class ConditioningNode(AiNode):
         try:
             self.markDirty(True)
             print(f"CONDITIONING NODE: Applying conditioning with prompt: {self.content.prompt.toPlainText()}")
-            result = self.get_conditioning()
-            result = [result]
+            result = [self.get_conditioning()]
             self.setOutput(0, result)
             self.markDirty(False)
             self.markInvalid(False)
@@ -77,6 +76,7 @@ class ConditioningNode(AiNode):
         return [[c, uc]]
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        print(result)
         self.setOutput(0, result)
         self.markDirty(False)
         self.markInvalid(False)
