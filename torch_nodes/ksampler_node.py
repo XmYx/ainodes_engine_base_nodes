@@ -95,6 +95,8 @@ class KSamplerNode(AiNode):
         steps = self.content.steps.value()
         self.single_step = 100 / steps if self.content.start_step.value() == 0 and last_step == steps else short_steps
         self.progress_value = 0
+
+
         if latent_list == None:
             latent_list = [torch.zeros([1, 4, 512 // 8, 512 // 8])]
 
@@ -175,16 +177,8 @@ class KSamplerNode(AiNode):
             print(e)
         return [return_pixmaps, return_samples]
     def decode_sample(self, sample):
-        if gs.loaded_vae == 'default':
-            x_samples = gs.models["sd"].model.decode_first_stage(sample.half())
-            x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
-            x_sample = 255. * rearrange(x_samples[0].cpu().numpy(), 'c h w -> h w c')
-        else:
-            x_sample = gs.models["sd"].first_stage_model.decode(sample)
-            #x_sample = torch.clamp((x_sample + 1.0) / 2.0, min=0.0, max=1.0)
-            x_sample = 255. * x_sample[0].detach().numpy()
-            #x_sample = 255. * rearrange(x_sample.detach().numpy(), 'c h w -> h w c')
-            #print("XSAMPLE:", x_sample.shape)
+        x_sample = gs.models["vae"].decode(sample.half())
+        x_sample = 255. * x_sample[0].detach().numpy()
         return x_sample
 
     def callback(self, tensors):

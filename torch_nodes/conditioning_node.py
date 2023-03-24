@@ -46,8 +46,6 @@ class ConditioningNode(AiNode):
         self.input_socket_name = ["EXEC"]
         self.output_socket_name = ["EXEC", "COND"]
 
-        #self.content.image.changeEvent.connect(self.onInputChanged)
-
     def evalImplementation_thread(self, index=0):
         try:
             self.markDirty(True)
@@ -74,8 +72,7 @@ class ConditioningNode(AiNode):
                 if isinstance(node, TorchLoaderNode):
                     node.evalImplementation()
                     #print("Node found")"""
-
-        c = gs.models["sd"].model.cond_stage_model.encode([prompt])
+        c = gs.models["clip"].encode(prompt)
         uc = {}
         return [[c, uc]]
     @QtCore.Slot(object)

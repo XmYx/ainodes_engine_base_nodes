@@ -6,7 +6,7 @@ from . import samplers
 from .torch_gc import torch_gc
 
 
-def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, callback=None):
+def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, callback=None, model_key="sd"):
     latent_image = latent
     noise_mask = None
     if disable_noise:
@@ -51,12 +51,12 @@ def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive,
     if "controlnet" in gs.models:
         gs.models["controlnet"].control_model.cuda()
     if sampler_name in samplers.KSampler.SAMPLERS:
-        sampler = samplers.KSampler(steps=steps, device=device, sampler=sampler_name, scheduler=scheduler, denoise=denoise)
+        sampler = samplers.KSampler(steps=steps, device=device, sampler=sampler_name, scheduler=scheduler, denoise=denoise, model_key=model_key)
     else:
         #other samplers
         pass
 
-    samples = sampler.sample(noise, positive_copy, negative_copy, cfg=cfg, latent_image=latent_image, start_step=start_step, last_step=last_step, force_full_denoise=force_full_denoise, denoise_mask=noise_mask, callback=callback)
+    samples = sampler.sample(noise, positive_copy, negative_copy, cfg=cfg, latent_image=latent_image, start_step=start_step, last_step=last_step, force_full_denoise=force_full_denoise, denoise_mask=noise_mask, callback=callback, model_key=model_key)
     #samples = samples.cpu()
     for c in control_nets:
         c.cleanup()
