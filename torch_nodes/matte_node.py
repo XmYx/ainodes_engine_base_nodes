@@ -32,7 +32,7 @@ class MatteNode(AiNode):
     op_code = OP_NODE_MATTE
     op_title = "Matting"
     content_label_objname = "image_matte_node"
-    category = "image"
+    category = "Image"
 
 
     def __init__(self, scene):

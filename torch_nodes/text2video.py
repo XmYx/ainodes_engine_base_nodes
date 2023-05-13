@@ -13,6 +13,7 @@ from qtpy import QtWidgets
 from PIL import Image
 import cv2
 
+
 from ..ainodes_backend.model_loader import ModelLoader
 from ..ainodes_backend import torch_gc, pil_image_to_pixmap
 
@@ -21,7 +22,6 @@ from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
 from ..ainodes_backend.t2v_pipeline import TextToVideoSynthesis
-
 OP_NODE_T2V = get_next_opcode()
 class Text2VideoWidget(QDMNodeContentWidget):
     def initUI(self):
@@ -73,7 +73,7 @@ class Text2VideoNode(AiNode):
     op_code = OP_NODE_T2V
     op_title = "Text2Video Node"
     content_label_objname = "t2v_loader_node"
-    category = "sampling"
+    category = "Sampling"
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC"]
     def __init__(self, scene):
@@ -153,7 +153,17 @@ class Text2VideoNode(AiNode):
             "A room where the walls are made of living, breathing plants."]
     def evalImplementation_thread(self, index=0):
         if "t2v" not in gs.models:
-            gs.models["t2v"] = TextToVideoSynthesis(model_dir="models/t2v")
+            #gs.models["t2v"] = TextToVideoSynthesis(model_dir="models/t2v")
+            from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler
+            import torch
+            from diffusers import TextToVideoSDPipeline
+            gs.models["t2v"] = TextToVideoSDPipeline.from_pretrained("models/t2v_custom", torch_dtype=torch.float16,
+                                                     variant="fp16", local_files_only=True)
+            gs.models["t2v"].scheduler = DPMSolverMultistepScheduler.from_config(gs.models["t2v"].scheduler.config)
+            gs.models["t2v"].enable_model_cpu_offload()
+            gs.models["t2v"].enable_vae_slicing()
+            gs.models["t2v"].enable_xformers_memory_efficient_attention()
+
         return_pixmaps = []
         try:
             prompt = self.content.prompt.toPlainText()
@@ -180,13 +190,31 @@ class Text2VideoNode(AiNode):
 
             torch.manual_seed(seed)
             fancy_readout(prompt, steps, frames, scale, width, height, seed)
-            if self.last_latent is not None and self.content.continue_sampling.isChecked():
-                latents = self.last_latent
-            else:
-                latents = None
-            return_samples, latent = gs.models["t2v"](prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength)
-            self.last_latent = latent
-            return_pixmaps = []
+
+            style = "diffusers"
+            if style == "classic":
+                if self.last_latent is not None and self.content.continue_sampling.isChecked():
+                    latents = self.last_latent
+                else:
+                    latents = None
+                generator = torch.Generator(device="cuda").manual_seed(seed)
+                return_samples, latent = gs.models["t2v"](prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength, generator=generator)
+                self.last_latent = latent
+                return_pixmaps = []
+            elif style == "diffusers":
+                return_samples = gs.models["t2v"](
+                    prompt = prompt,
+                    height = height,
+                    width = width,
+                    num_frames = frames,
+                    num_inference_steps = steps,
+                    guidance_scale = scale,
+                    negative_prompt = n_prompt,
+                    eta = eta,
+                    output_type = "np"
+
+                ).frames
+
             for frame in return_samples:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 image = Image.fromarray(copy.deepcopy(frame))

@@ -37,7 +37,7 @@ class FILMNode(AiNode):
     op_code = OP_NODE_FILM
     op_title = "FILM"
     content_label_objname = "FILM_node"
-    category = "video"
+    category = "Interpolation"
 
 
     def __init__(self, scene):
@@ -97,6 +97,13 @@ class FILMNode(AiNode):
                 self.FILM_temp.append(np_image)
                 if len(self.FILM_temp) == 2:
                     frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
+
+                    skip_first, skip_last = False, True
+                    if skip_first:
+                        frames.pop(0)
+                    if skip_last:
+                        frames.pop(-1)
+
                     for frame in frames:
                         image = Image.fromarray(copy.deepcopy(frame))
                         pixmap = pil_image_to_pixmap(image)

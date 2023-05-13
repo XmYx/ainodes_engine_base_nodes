@@ -28,10 +28,10 @@ class ConditioningNode(AiNode):
     op_code = OP_NODE_CONDITIONING
     op_title = "Conditioning"
     content_label_objname = "cond_node"
-    category = "sampling"
+    category = "Sampling"
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[1], outputs=[3,1])
+        super().__init__(scene, inputs=[6,1], outputs=[6,3,1])
         self.content.eval_signal.connect(self.evalImplementation)
         # Create a worker object
     def initInnerClasses(self):
@@ -49,13 +49,35 @@ class ConditioningNode(AiNode):
     def evalImplementation_thread(self, index=0):
         try:
             self.markDirty(True)
-            print(f"CONDITIONING NODE: Applying conditioning with prompt: {self.content.prompt.toPlainText()}")
-            result = [self.get_conditioning()]
+            data = None
+            prompt = self.content.prompt.toPlainText()
+            if len(self.getInputs(0)) > 0:
+                data_node, index = self.getInput(0)
+                data = data_node.getOutput(index)
+            if data:
+                if "prompt" in data:
+                    prompt = data["prompt"]
+                else:
+                    data["prompt"] = prompt
+                if "model" in data:
+                    if data["model"] == "deepfloyd_1":
+                        result = [gs.models["deepfloyd_1"].encode_prompt(prompt)]
+                        print(result, data)
+                else:
+
+                    result = [self.get_conditioning(prompt=prompt)]
+
+            else:
+                data = {}
+                data["prompt"] = prompt
+                result = [self.get_conditioning(prompt=prompt)]
+            print(f"CONDITIONING NODE: Applying conditioning with prompt: {prompt}")
+
             self.setOutput(0, result)
             self.markDirty(False)
             self.markInvalid(False)
             self.busy = False
-            return result
+            return result, data
         except:
             self.busy = False
             return None
@@ -64,8 +86,8 @@ class ConditioningNode(AiNode):
         self.content.eval_signal.emit()
     def onMarkedDirty(self):
         self.value = None
-    def get_conditioning(self, progress_callback=None):
-        prompt = self.content.prompt.toPlainText()
+    def get_conditioning(self, prompt="", progress_callback=None):
+
         """if gs.loaded_models["loaded"] == []:
             for node in self.scene.nodes:
                 if isinstance(node, TorchLoaderNode):
@@ -77,13 +99,13 @@ class ConditioningNode(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         print(result)
-        self.setOutput(0, result)
+        self.setOutput(1, result[0])
+        self.setOutput(0, result[1])
         self.markDirty(False)
         self.markInvalid(False)
         self.busy = False
-        if len(self.getOutputs(1)) > 0:
-            node = self.getOutputs(1)[0]
-            node.eval()
+        if len(self.getOutputs(2)) > 0:
+            self.executeChild(2)
         return True
     def onInputChanged(self, socket=None):
         pass

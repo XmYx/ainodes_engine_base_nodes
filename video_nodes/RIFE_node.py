@@ -38,7 +38,7 @@ class RIFENode(AiNode):
     op_code = OP_NODE_RIFE
     op_title = "RIFE"
     content_label_objname = "rife_node"
-    category = "video"
+    category = "Interpolation"
 
 
     def __init__(self, scene):
@@ -97,19 +97,15 @@ class RIFENode(AiNode):
             self.markInvalid(False)
         elif pixmap1 != None:
             try:
-                image = pixmap_to_pil_image(pixmap1)
+                image = pixmap_to_pil_image(pixmap1[0])
                 np_image = np.array(image)
                 self.rife_temp.append(np_image)
 
                 if len(self.rife_temp) == 2:
                     frames = gs.models["rife"].infer(image1=self.rife_temp[0], image2=self.rife_temp[1], exp=exp, ratio=ratio, rthreshold=rthreshold, rmaxcycles=rmaxcycles)
                     print(f"RIFE NODE:  {len(frames)}")
-                    if len(self.getOutputs(1)) > 0:
-                        self.iterate_frames(frames)
-                        while self.iterating:
-                            time.sleep(0.1)
-
                     self.rife_temp = [self.rife_temp[1]]
+                    return frames
 
                 #self.setOutput(0, pixmap2)
                 print(f"RIFE NODE: Using only First input")
@@ -132,11 +128,18 @@ class RIFENode(AiNode):
             self.executeChild(output_index=2)
         self.busy = False
         return None
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, return_frames):
+        self.setOutput(0, return_frames)
+        if len(self.getOutputs(1)) > 0:
+            self.executeChild(output_index=1)
+        self.busy = False
+
     def iterate_frames(self, frames):
         for frame in frames:
             image = Image.fromarray(frame)
             pixmap = pil_image_to_pixmap(image)
-            self.setOutput(0, pixmap)
+            self.setOutput(0, [pixmap])
             node = self.getOutputs(1)[0]
             node.eval()
             time.sleep(0.1)

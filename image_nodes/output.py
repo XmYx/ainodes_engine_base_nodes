@@ -45,7 +45,7 @@ class ImagePreviewWidget(AiNode):
     op_code = OP_NODE_IMG_PREVIEW
     op_title = "Image Preview"
     content_label_objname = "image_output_node"
-    category = "image"
+    category = "Image"
 
 
     def __init__(self, scene):
@@ -110,11 +110,6 @@ class ImagePreviewWidget(AiNode):
             for pixmap in val:
                 self.content.preview_signal.emit(pixmap)
                 time.sleep(0.04)
-            self.setOutput(0, val)
-            self.markInvalid(False)
-            self.markDirty(False)
-            if len(self.getOutputs(2)) > 0:
-                self.executeChild(2)
 
         elif self.getInput(1) is not None:
             data_node, other_index = self.getInput(1)
@@ -138,6 +133,13 @@ class ImagePreviewWidget(AiNode):
         self.resize()
         if self.content.checkbox.isChecked() == True:
             self.save_image(image)
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, val):
+        self.setOutput(0, val)
+        self.markInvalid(False)
+        self.markDirty(False)
+        if len(self.getOutputs(2)) > 0:
+            self.executeChild(2)
 
     def save_image(self, image):
         try:

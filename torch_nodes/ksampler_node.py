@@ -59,9 +59,9 @@ class KSamplerNode(AiNode):
     op_code = OP_NODE_K_SAMPLER
     op_title = "K Sampler"
     content_label_objname = "K_sampling_node"
-    category = "sampling"
+    category = "Sampling"
     def __init__(self, scene, inputs=[], outputs=[]):
-        super().__init__(scene, inputs=[2,3,3,1], outputs=[5,2,1])
+        super().__init__(scene, inputs=[6,2,3,3,1], outputs=[5,2,1])
         self.content.button.clicked.connect(self.evalImplementation)
         self.busy = False
 
@@ -87,9 +87,14 @@ class KSamplerNode(AiNode):
         self.value = None
     def evalImplementation_thread(self):
         # Add a task to the task queue
-        cond_list = self.getInputData(2)
-        n_cond_list = self.getInputData(1)
-        latent_list = self.getInputData(0)
+        cond_list = self.getInputData(3)
+        print("COND", cond_list)
+        n_cond_list = self.getInputData(2)
+        print("N_COND", n_cond_list)
+
+        latent_list = self.getInputData(1)
+        data = self.getInputData(0)
+        print("DATA", data)
         last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
         short_steps = last_step - self.content.start_step.value()
         steps = self.content.steps.value()
@@ -108,55 +113,103 @@ class KSamplerNode(AiNode):
         if self.content.iterate_seed.isChecked() == True:
             self.content.seed_signal.emit()
             self.seed += 1
+        return_pixmaps = []
+        return_samples = []
+        generator = torch.manual_seed(self.seed)
         try:
-
-            if len(cond_list) < len(latent_list):
-                new_cond_list = []
-                for x in range(len(latent_list)):
-                    new_cond_list.append(cond_list[0])
-                #cond_list = len(latent_list) * cond_list[0]
-                cond_list = new_cond_list
-
-            return_pixmaps = []
-            return_samples = []
             x=0
+            if data:
+                if "model" in data:
+                    from diffusers.utils import pt_to_pil
 
-            for cond in cond_list:
-                if len(latent_list) == len(cond_list):
-                    latent = latent_list[x]
+                    if data["model"] == "deepfloyd_1":
+
+
+                        image = gs.models["deepfloyd_1"](prompt_embeds=cond_list[0][0], negative_prompt_embeds=n_cond_list[0][0],
+                                                         generator=generator, output_type="pt", num_inference_steps=steps).images
+                        gs.models["deepfloyd_1"].to("cpu")
+
+                    elif data["model"] == "deepfloyd_2":
+                        generator = torch.manual_seed(self.seed)
+                        image = gs.models["deepfloyd_2"](
+                            image=latent_list[0], prompt_embeds=cond_list[0][0], negative_prompt_embeds=n_cond_list[0][0],
+                            generator=generator, output_type="pt"
+                        ).images
+                        gs.models["deepfloyd_2"].to("cpu")
+
+                    elif data["model"] == "deepfloyd_3":
+                        print("UPSCALE X4")
+                        latent = latent_list[0]
+                        if latent.shape[1] == 4:  # Checking if tensor has 4 channels
+                            latent = latent[:, 1:, :, :]  # Stripping the first channel
+                        print(latent.shape)
+                        image = gs.models["deepfloyd_3"](prompt=data["prompt"], image=latent, generator=generator, noise_level=100).images
+                        print(image)
+                        gs.models["deepfloyd_3"].to("cpu")
+
+                if data["model"] not in ["deepfloyd_3"]:
+                    img = pt_to_pil(image)[0]
                 else:
-                    latent = latent_list[0]
-                if len(n_cond_list) == len(cond_list):
-                    n_cond = n_cond_list[x]
-                else:
-                    n_cond = n_cond_list[0]
-                for i in cond:
-                    if 'control_hint' in i[1]:
-                        cond = self.apply_control_net(cond)
-                sample = common_ksampler(device="cuda",
-                                         seed=self.seed,
-                                         steps=self.content.steps.value(),
-                                         start_step=self.content.start_step.value(),
-                                         last_step=last_step,
-                                         cfg=self.content.guidance_scale.value(),
-                                         sampler_name=self.content.sampler.currentText(),
-                                         scheduler=self.content.schedulers.currentText(),
-                                         positive=cond,
-                                         negative=n_cond,
-                                         latent=latent,
-                                         disable_noise=self.content.disable_noise.isChecked(),
-                                         force_full_denoise=self.content.force_denoise.isChecked(),
-                                         denoise=self.content.denoise.value(),
-                                         callback=self.callback)
+                    img = image[0]
+                qimage = ImageQt(img)
+                pixmap = QPixmap().fromImage(qimage)
 
-                for c in cond:
-                    if "control" in c[1]:
-                        del c[1]["control"]
+                if len(self.getOutputs(0)) > 0:
+                    node = self.getOutputs(0)[0]
+                    if hasattr(node.content, "preview_signal"):
+                        # print("emitting")
+                        node.content.preview_signal.emit(pixmap)
+                self.content.progress_signal.emit(0)
+                return_pixmaps.append(pixmap)
+                return_samples.append(image)
 
-                return_sample = sample.cpu().half()
-                return_samples.append(return_sample)
-                x_sample = self.decode_sample(sample)
-                image = Image.fromarray(x_sample.astype(np.uint8))
+
+
+            else:
+                if len(cond_list) < len(latent_list):
+                    new_cond_list = []
+                    for x in range(len(latent_list)):
+                        new_cond_list.append(cond_list[0])
+                    # cond_list = len(latent_list) * cond_list[0]
+                    cond_list = new_cond_list
+
+                for cond in cond_list:
+                    if len(latent_list) == len(cond_list):
+                        latent = latent_list[x]
+                    else:
+                        latent = latent_list[0]
+                    if len(n_cond_list) == len(cond_list):
+                        n_cond = n_cond_list[x]
+                    else:
+                        n_cond = n_cond_list[0]
+                    for i in cond:
+                        if 'control_hint' in i[1]:
+                            cond = self.apply_control_net(cond)
+
+                    sample = common_ksampler(device="cuda",
+                                             seed=self.seed,
+                                             steps=self.content.steps.value(),
+                                             start_step=self.content.start_step.value(),
+                                             last_step=last_step,
+                                             cfg=self.content.guidance_scale.value(),
+                                             sampler_name=self.content.sampler.currentText(),
+                                             scheduler=self.content.schedulers.currentText(),
+                                             positive=cond,
+                                             negative=n_cond,
+                                             latent=latent,
+                                             disable_noise=self.content.disable_noise.isChecked(),
+                                             force_full_denoise=self.content.force_denoise.isChecked(),
+                                             denoise=self.content.denoise.value(),
+                                             callback=self.callback)
+
+                    for c in cond:
+                        if "control" in c[1]:
+                            del c[1]["control"]
+
+                    return_sample = sample.detach().cpu().half()
+                    return_samples.append(return_sample)
+                    x_sample = self.decode_sample(sample)
+                    image = Image.fromarray(x_sample.astype(np.uint8))
                 qimage = ImageQt(image)
                 pixmap = QPixmap().fromImage(qimage)
 
@@ -167,10 +220,6 @@ class KSamplerNode(AiNode):
                         node.content.preview_signal.emit(pixmap)
                 self.content.progress_signal.emit(0)
                 return_pixmaps.append(pixmap)
-                #del sample
-                #x_samples = None
-                #sample = None
-                #torch_gc()
                 x+=1
         except Exception as e:
             return_pixmaps, return_samples = None, None

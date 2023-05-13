@@ -63,7 +63,7 @@ class VideoInputNode(AiNode):
     op_code = OP_NODE_VIDEO_INPUT
     op_title = "Video Input"
     content_label_objname = "video_input_node"
-    category = "video"
+    category = "Video"
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC", "IMAGE"]
 
@@ -87,7 +87,7 @@ class VideoInputNode(AiNode):
         skip = self.content.skip_frames.value()
         pixmap = self.content.video.get_frame(skip=skip)
         if pixmap != None:
-            self.setOutput(0, pixmap)
+            self.setOutput(0, [pixmap])
             self.markDirty(False)
             self.markInvalid(False)
             self.content.label.setPixmap(pixmap)

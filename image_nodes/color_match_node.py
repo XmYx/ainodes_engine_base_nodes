@@ -25,7 +25,7 @@ class ColorMatch(AiNode):
     op_code = OP_NODE_COLORMATCH
     op_title = "Color Match"
     content_label_objname = "colormatch_node"
-    category = "image"
+    category = "Image"
     help_text = "Deforum ColorMatch Node\n\n" \
                 "" \
                 "Please refer to Deforum guide"

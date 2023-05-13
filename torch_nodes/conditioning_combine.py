@@ -42,7 +42,7 @@ class ConditioningCombineNode(AiNode):
     op_code = OP_NODE_CONDITIONING_COMBINE
     op_title = "Combine Conditioning"
     content_label_objname = "cond_combine_node"
-    category = "sampling"
+    category = "Conditioning"
 
 
     def __init__(self, scene):
@@ -97,11 +97,6 @@ class ConditioningCombineNode(AiNode):
         return
     def onInputChanged(self, socket=None):
         pass
-
-    def eval(self):
-        self.markDirty(True)
-        self.evalImplementation()
-
     def combine(self, conditioning_1, conditioning_2):
         return [conditioning_1 + conditioning_2]
 @register_node(OP_NODE_CONDITIONING_SET_AREA)
@@ -110,7 +105,7 @@ class ConditioningAreaNode(AiNode):
     op_code = OP_NODE_CONDITIONING_SET_AREA
     op_title = "Set Conditioning Area"
     content_label_objname = "cond_area_node"
-    category = "conditioning"
+    category = "Conditioning"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[3,1], outputs=[3,1])
@@ -138,10 +133,6 @@ class ConditioningAreaNode(AiNode):
         #    print("COND AREA NODE: Failed, please make sure that the conditioning is valid.")
         #    self.markDirty(True)
         #    return None
-
-    def eval(self):
-        self.markDirty(True)
-        self.evalImplementation()
     def onMarkedDirty(self):
         self.value = None
     def onInputChanged(self, socket=None):
@@ -155,19 +146,22 @@ class ConditioningAreaNode(AiNode):
 
     def append_conditioning(self, progress_callback=None, min_sigma=0.0, max_sigma=99.0):
         cond_node, index = self.getInput(0)
-        conditioning = cond_node.getOutput(index)
-        width = self.content.width.value()
-        height = self.content.height.value()
-        x = self.content.x_spinbox.value()
-        y = self.content.y_spinbox.value()
-        strength = self.content.strength.value()
-        c = []
-        for t in conditioning:
-            n = [t[0], t[1].copy()]
-            n[1]['area'] = (height // 8, width // 8, y // 8, x // 8)
-            n[1]['strength'] = strength
-            n[1]['min_sigma'] = min_sigma
-            n[1]['max_sigma'] = max_sigma
-            c.append(n)
-        return c
+        conditioning_list = cond_node.getOutput(index)
+        return_list = []
+        for conditioning in conditioning_list:
+            width = self.content.width.value()
+            height = self.content.height.value()
+            x = self.content.x_spinbox.value()
+            y = self.content.y_spinbox.value()
+            strength = self.content.strength.value()
+            c = []
+            for t in conditioning:
+                n = [t[0], t[1].copy()]
+                n[1]['area'] = (height // 8, width // 8, y // 8, x // 8)
+                n[1]['strength'] = strength
+                n[1]['min_sigma'] = min_sigma
+                n[1]['max_sigma'] = max_sigma
+                c.append(n)
+            return_list.append(c)
+        return return_list
 

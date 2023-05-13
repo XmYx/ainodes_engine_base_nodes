@@ -31,7 +31,7 @@ class CNApplyNode(AiNode):
     op_code = OP_NODE_CN_APPLY
     op_title = "Apply ControlNet"
     content_label_objname = "CN_apply_node"
-    category = "controlnet"
+    category = "ControlNet"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,3,1], outputs=[3,1])
@@ -50,18 +50,21 @@ class CNApplyNode(AiNode):
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         cond_node, index = self.getInput(1)
-        conditioning = cond_node.getOutput(index)
+        conditioning_list = cond_node.getOutput(index)
         latent_node, index = self.getInput(0)
         image_list = latent_node.getOutput(index)
         self.markDirty(True)
         self.markInvalid(True)
         return_list = []
-
-        print(conditioning, image_list)
-
-        for image in image_list:
-            result = self.add_control_image(conditioning[0], image)
-            return_list.append(result)
+        if len(conditioning_list) == 1:
+            for image in image_list:
+                result = self.add_control_image(conditioning_list[0], image)
+                return_list.append(result)
+        elif len(conditioning_list) == len(image_list):
+            x = 0
+            for image in image_list:
+                result = self.add_control_image(conditioning_list[x], image)
+                return_list.append(result)
         return return_list
 
     def onMarkedDirty(self):
@@ -79,37 +82,6 @@ class CNApplyNode(AiNode):
             n[1]['control_strength'] = self.content.strength.value()
             c.append(n)
         return c
-
-    def apply_control_net(self, conditioning, image, progress_callback=None):
-        if self.content.control_net_selector.currentText() == 'controlnet':
-            print(f"CONTROLNET APPLY NODE: Applying {gs.models['loaded_controlnet']}")
-        start_time = time.time()
-        cnet_string = self.content.control_net_selector.currentText()
-        image = pixmap_to_pil_image(image)
-        image = image.convert("RGB")
-        image = np.array(image).astype(np.float32) / 255.0
-        image = torch.from_numpy(image)[None,]
-        c = []
-        control_hint = image.movedim(-1,1)
-        for t in conditioning:
-            n = [t[0], t[1].copy()]
-            c_net = gs.models[cnet_string]
-            c_net.set_cond_hint(control_hint, self.content.strength.value())
-            if 'control' in t[1]:
-                c_net.set_previous_controlnet(t[1]['control'])
-            n[1]['control'] = c_net
-            n[1]['control'].control_model.cpu()
-            #print(n)
-            del c_net
-            c.append(n)
-        #self.setOutput(0, c)
-        end_time = time.time()
-        time_diff_ms = (end_time - start_time) * 1000
-        conditioning = None
-        control_hint = None
-        torch_gc()
-        #print("APPLIED")
-        return c
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         # Update the node value and mark it as dirty
@@ -120,10 +92,5 @@ class CNApplyNode(AiNode):
         if len(self.getOutputs(1)) > 0:
             self.executeChild(1)
         return
-    def eval(self, index=0):
-        self.markDirty(True)
-        self.busy = False
-        self.content.eval_signal.emit()
-
     def onInputChanged(self, socket=None):
         pass

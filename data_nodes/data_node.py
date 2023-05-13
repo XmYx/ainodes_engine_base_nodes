@@ -111,7 +111,7 @@ class DataNode(AiNode):
     op_code = OP_NODE_DATA
     op_title = "Data"
     content_label_objname = "data_node"
-    category = "data"
+    category = "Experimental"
     help_text = "Data Node\n" \
                 "Currently, it can be used to create\n" \
                 "Deforum Warp values, just connect the data\n" \

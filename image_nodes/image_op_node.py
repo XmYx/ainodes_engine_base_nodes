@@ -130,7 +130,7 @@ class ImageOpNode(AiNode):
     op_code = OP_NODE_IMAGE_OPS
     op_title = "Image Operators"
     content_label_objname = "image_op_node"
-    category = "image"
+    category = "Image"
 
 
     def __init__(self, scene):
