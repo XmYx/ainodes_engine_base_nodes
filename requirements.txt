@@ -7,8 +7,8 @@ torch==2.0.0+cu118
 torchvision==0.15.1+cu118
 tensorflow==2.8.4
 tb_nightly==2.12.0a20230126
-transformers==4.27.0
-diffusers[torch]==0.11.1
+transformers==4.29.0
+diffusers[torch]==0.16.1
 imageio[ffmpeg]
 ##diffusers==0.14.0
 einops==0.6.0
@@ -35,3 +35,4 @@ fvcore
 lark==1.1.5
 fonts
 font-roboto
+openai

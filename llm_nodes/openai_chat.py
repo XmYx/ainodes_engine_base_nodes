@@ -13,7 +13,6 @@ from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
 from PIL import Image
-from transformers import OpenAiAgent
 import openai
 
 token = None
