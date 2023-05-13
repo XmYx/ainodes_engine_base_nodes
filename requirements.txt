@@ -36,3 +36,5 @@ lark==1.1.5
 fonts
 font-roboto
 openai
+git+https://github.com/ai-forever/Kandinsky-2.git
+git+https://github.com/openai/CLIP.git
