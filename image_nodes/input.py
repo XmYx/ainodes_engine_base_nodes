@@ -62,7 +62,7 @@ class ImageInputNode(AiNode):
     op_code = OP_NODE_IMG_INPUT
     op_title = "Input Image"
     content_label_objname = "image_input_node"
-    category = "image"
+    category = "Image"
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC", "IMAGE"]
 
@@ -77,6 +77,8 @@ class ImageInputNode(AiNode):
         self.grNode.height = 220
         self.busy = False
         self.content.eval_signal.connect(self.evalImplementation)
+        self.video = VideoPlayer()
+        self.content_type = None
 
     def add_urls(self, url_list):
         i = 0
@@ -95,11 +97,13 @@ class ImageInputNode(AiNode):
                     self.images.append(pixmap)
                     self.content.image.setPixmap(pixmap)
                     self.resize()
+                    self.content_type = "image"
                 elif file_ext in ['.mp4', '.avi', '.mov']:
-                    pixmaps = self.process_video_file(url.toLocalFile())
-                    for pixmap in pixmaps:
-                        self.content.image.setPixmap(pixmap)
-                        self.resize()
+                    pixmap = self.process_video_file(url.toLocalFile())
+                    #for pixmap in pixmaps:
+                    self.content.image.setPixmap(pixmap)
+                    self.resize()
+                    self.content_type = "video"
             else:
                 temp_path = 'temp'
                 os.makedirs(temp_path, exist_ok=True)
@@ -120,8 +124,11 @@ class ImageInputNode(AiNode):
 
     def process_video_file(self, file_path):
         print("VIDEO", file_path)
+        self.video.load_video(file_path)
+        pixmap = self.video.get_frame()
+        return pixmap
 
-        cap = cv2.VideoCapture(file_path)
+        """cap = cv2.VideoCapture(file_path)
         num_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         print(f"Number of frames: {num_frames}")
 
@@ -141,7 +148,7 @@ class ImageInputNode(AiNode):
             pixmaps.append(pixmap)
 
         cap.release()
-        return pixmaps
+        return pixmaps"""
     def cv2_to_qimage(self, cv_img):
         height, width, channel = cv_img.shape
         bytes_per_line = channel * width
@@ -170,6 +177,7 @@ class ImageInputNode(AiNode):
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         #self.init_image()
+        self.busy = False
         self.markDirty(False)
         self.markInvalid(False)
         self.grNode.setToolTip("")
@@ -177,14 +185,19 @@ class ImageInputNode(AiNode):
             for pixmap in self.images:
                 self.content.image.setPixmap(pixmap)
                 time.sleep(0.1)
-        pixmap = self.content.image.pixmap()
+        if self.content_type == 'video':
+            print("GETTING VIDEO FRAME")
+            pixmap = self.video.get_frame()
+            self.content.image.setPixmap(pixmap)
+        else:
+            pixmap = self.content.image.pixmap()
+        return pixmap
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, pixmap):
         self.setOutput(0, [pixmap])
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
-        return self.images
-    def eval(self):
-        self.markDirty()
-        self.evalImplementation()
+
 
     def openFileDialog(self):
         # Open the file dialog to select a PNG file
@@ -197,3 +210,38 @@ class ImageInputNode(AiNode):
         if file_name:
             return file_name
         return None
+
+
+
+class VideoPlayer:
+    def __init__(self):
+        self.video_file = None
+        self.video_capture = None
+
+    def load_video(self, video_file):
+        try:
+            self.video_capture.release()
+        except:
+            pass
+        self.video_file = video_file
+        self.video_capture = cv2.VideoCapture(self.video_file)
+
+    def get_frame(self, skip=1):
+        # Skip frames based on the specified interval
+        for _ in range(skip - 1):
+            self.video_capture.grab()
+
+        # Read the next frame and convert it to a pixmap
+        ret, frame = self.video_capture.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        image = Image.fromarray(frame)
+        pixmap = pil_image_to_pixmap(image)
+
+        # Return the pixmap if the read was successful
+        if ret:
+            return pixmap
+        else:
+            return None
+
+    def reset(self):
+        self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)

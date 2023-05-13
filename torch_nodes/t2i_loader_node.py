@@ -40,7 +40,7 @@ class T2ILoaderNode(AiNode):
     op_code = OP_NODE_T2I_LOADER
     op_title = "T2I Loader"
     content_label_objname = "t2i_loader_node"
-    category = "controlnet"
+    category = "Model"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[1])

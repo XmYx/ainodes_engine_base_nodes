@@ -155,7 +155,7 @@ class ScribbleNode(AiNode):
     op_code = OP_NODE_IMG_SCRIBBLE
     op_title = "Scribble"
     content_label_objname = "image_scribble_node"
-    category = "image"
+    category = "Image"
 
 
     def __init__(self, scene):
@@ -180,10 +180,16 @@ class ScribbleNode(AiNode):
         self.content.undo_button.clicked.connect(self.content.image.undo)
         self.content.redo_button.clicked.connect(self.content.image.redo)
 
-    def evalImplementation(self, index=0):
-
+    def evalImplementation_thread(self):
+        self.busy = True
         pixmap = self.content.image.get_image()
+        return pixmap
+
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, pixmap):
+        self.busy = False
         self.markDirty(False)
+        self.markInvalid(False)
         self.setOutput(0, [pixmap])
         self.executeChild(2)
     def switch_color(self):
@@ -203,7 +209,6 @@ class ScribbleNode(AiNode):
         self.resize()
 
     def onMarkedDirty(self):
-        #
         pass
     def onMarkedInvalid(self):
         self.content.image.image.fill(self.color)

@@ -79,7 +79,7 @@ class InpaintNode(AiNode):
     op_code = OP_NODE_INPAINT
     op_title = "InPaint Alpha"
     content_label_objname = "inpaint_sampling_node"
-    category = "sampling"
+    category = "Sampling"
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,5,1], outputs=[5,1])
         self.content.button.clicked.connect(self.evalImplementation)

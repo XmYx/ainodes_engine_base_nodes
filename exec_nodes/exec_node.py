@@ -47,24 +47,17 @@ class ExecNode(AiNode):
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(160)
         self.content.eval_signal.connect(self.evalImplementation)
-    """def evalImplementation(self, index=0):
-        self.busy = False
-        self.markDirty(True)
-        self.markInvalid(False)
-        self.markDirty(False)
-        self.executeChild(0)
-        return None"""
 
-    def eval(self, index=0):
-        self.markDirty(True)
-        self.content.eval_signal.emit()
+    def evalImplementation(self, index=0, *args, **kwargs):
+        if not self.interrupt:
+            super().evalImplementation(index)
+
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
         self.executeChild(0)
     def onMarkedDirty(self):
         self.value = None
-        return
 
     def stop(self):
         self.interrupt = True

@@ -39,7 +39,7 @@ class LoraLoaderNode(AiNode):
     op_code = OP_NODE_LORA_LOADER
     op_title = "Lora Loader"
     content_label_objname = "lora_loader_node"
-    category = "model"
+    category = "Model"
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC"]
     def __init__(self, scene):

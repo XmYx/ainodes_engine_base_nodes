@@ -85,7 +85,7 @@ class ImageListNode(AiNode):
     op_code = OP_NODE_IMG_LIST
     op_title = "Image List"
     content_label_objname = "image_list_node"
-    category = "image"
+    category = "Image"
 
 
     def __init__(self, scene):

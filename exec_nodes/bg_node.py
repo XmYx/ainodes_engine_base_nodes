@@ -15,7 +15,7 @@ class BGNode(AiNode):
     op_code = OP_NODE_BG
     op_title = "Bg Node"
     content_label_objname = "bg_node"
-    category = "exec"
+    category = "Background"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[], outputs=[])

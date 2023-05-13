@@ -11,7 +11,7 @@ class ExecSplitterNode(AiNode):
     op_code = OP_NODE_EXEC_SPLITTER
     op_title = "Execute Splitter"
     content_label_objname = "exec_splitter_node"
-    category = "exec"
+    category = "Experimental"
     help_text = "Execution Splitter Node\n\n" \
                 "You can split your processes into\n" \
                 "as many branches as you want\n" \
@@ -21,7 +21,6 @@ class ExecSplitterNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[1,1])
-        #self.content.button.clicked.connect(self.evalImplementation)
         self.busy = False
         # Create a worker object
     def initInnerClasses(self):
@@ -29,7 +28,7 @@ class ExecSplitterNode(AiNode):
         self.grNode.height = 160
         self.grNode.width = 256
         self.output_socket_name = ["EXEC_1", "EXEC_2"]
-    def evalImplementation(self, index=0):
+    def evalImplementation(self, index=0, *args, **kwargs):
         self.markDirty(True)
         self.markInvalid(True)
         self.busy = False

@@ -67,7 +67,7 @@ class VideoOutputNode(AiNode):
     op_code = OP_NODE_VIDEO_SAVE
     op_title = "Video Save"
     content_label_objname = "video_output_node"
-    category = "video"
+    category = "Video"
     input_socket_name = ["EXEC", "IMAGE"]
     output_socket_name = ["EXEC", "IMAGE"]
     def __init__(self, scene):
