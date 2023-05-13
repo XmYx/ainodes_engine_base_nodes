@@ -180,12 +180,16 @@ class ScribbleNode(AiNode):
         self.content.undo_button.clicked.connect(self.content.image.undo)
         self.content.redo_button.clicked.connect(self.content.image.redo)
 
-    def evalImplementation_thread(self, index=0):
+    def evalImplementation_thread(self):
+        self.busy = True
         pixmap = self.content.image.get_image()
         return pixmap
+
     @QtCore.Slot(object)
     def onWorkerFinished(self, pixmap):
+        self.busy = False
         self.markDirty(False)
+        self.markInvalid(False)
         self.setOutput(0, [pixmap])
         self.executeChild(2)
     def switch_color(self):
