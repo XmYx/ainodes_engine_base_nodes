@@ -97,6 +97,9 @@ class ImagePreviewWidget(AiNode):
     def evalImplementation_thread(self, index=0):
         self.busy = True
         if self.getInput(0) is not None:
+
+
+
             input_node, other_index = self.getInput(0)
             if not input_node:
                 self.grNode.setToolTip("Input is not connected")
@@ -109,7 +112,7 @@ class ImagePreviewWidget(AiNode):
                 return
             for pixmap in val:
                 self.content.preview_signal.emit(pixmap)
-                self.images.append(pixmap)
+                self.images = [pixmap]
                 time.sleep(0.04)
 
         elif self.getInput(1) is not None:

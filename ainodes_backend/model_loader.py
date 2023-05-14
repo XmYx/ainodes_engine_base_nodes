@@ -55,7 +55,7 @@ class UpscalerLoader(torch.nn.Module):
         if load:
 
             state_dict = load_torch_file(file)
-            gs.models[name] = model_loading.load_state_dict(state_dict).eval()
+            gs.models[name] = model_loading.load_state_dict(state_dict).eval().to("cuda")
             self.loaded_model = name
 
         return self.loaded_model

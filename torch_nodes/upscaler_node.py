@@ -78,62 +78,64 @@ class TorchLoaderNode(AiNode):
 
         images = self.getInputData(0)
         return_pixmaps = []
-        gs.models[model_name].to("cuda")
-        if images:
-            for image in images:
+        try:
+            if images:
+                for image in images:
 
-                img = pixmap_to_pil_image(image).convert("RGB")
-                img = np.array(img).astype(np.float32) / 255.0
-                img = torch.from_numpy(img)[None,]
+                    img = pixmap_to_pil_image(image).convert("RGB")
+                    img = np.array(img).astype(np.float32) / 255.0
+                    img = torch.from_numpy(img)[None,]
 
-                in_img = img.movedim(-1, -3).to(self.loader.device)
-                # Add a channel dimension at the beginning
-                #in_img = in_img.unsqueeze(0)
+                    in_img = img.movedim(-1, -3).to("cuda")
+                    # Add a channel dimension at the beginning
+                    #in_img = in_img.unsqueeze(0)
 
-                # Move the channel dimension to the correct position (-3)
-                #in_img = in_img.movedim(1, -3)
-                print(in_img.shape)
+                    # Move the channel dimension to the correct position (-3)
+                    #in_img = in_img.movedim(1, -3)
+                    print(in_img.shape)
 
-                tile = 128 + 64
-                overlap = 8
-                #steps = in_img.shape[0] * get_tiled_scale_steps(in_img.shape[3], in_img.shape[2],
-                #                                                            tile_x=tile, tile_y=tile, overlap=overlap)
-                #pbar = comfy.utils.ProgressBar(steps)
-                s = tiled_scale(in_img, lambda a: gs.models[model_name](a), tile_x=tile, tile_y=tile,
-                                            overlap=overlap, upscale_amount=gs.models[model_name].scale, pbar=None)
-                gs.models[model_name].cpu()
-                s = torch.clamp(s.movedim(-3, -1), min=0, max=1.0) * 255
-
-
-
-                """img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                img = img * 1.0 / 255
-                img = torch.from_numpy(np.transpose(img[:, :, [2, 1, 0]], (2, 0, 1))).float()
-                img_LR = img.unsqueeze(0)
-                img_LR = img_LR.to(self.loader.device)
+                    tile = 128 + 64
+                    overlap = 8
+                    #steps = in_img.shape[0] * get_tiled_scale_steps(in_img.shape[3], in_img.shape[2],
+                    #                                                            tile_x=tile, tile_y=tile, overlap=overlap)
+                    #pbar = comfy.utils.ProgressBar(steps)
+                    gs.models[model_name].to("cuda")
+                    s = tiled_scale(in_img, lambda a: gs.models[model_name](a), tile_x=tile, tile_y=tile,
+                                                overlap=overlap, upscale_amount=gs.models[model_name].scale, pbar=None)
+                    gs.models[model_name].cpu()
+                    s = torch.clamp(s.movedim(-3, -1), min=0, max=1.0) * 255
 
 
 
+                    """img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                    img = img * 1.0 / 255
+                    img = torch.from_numpy(np.transpose(img[:, :, [2, 1, 0]], (2, 0, 1))).float()
+                    img_LR = img.unsqueeze(0)
+                    img_LR = img_LR.to(self.loader.device)
+    
+    
+    
+    
+                    with torch.no_grad():
+                        output = gs.models["ESRGAN"](img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
+                    output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))
+                    output = (output * 255.0).round()
+                    output = output.astype(np.uint8)
+                    output = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
+                    #output = (output * 255.0).round()"""
 
-                with torch.no_grad():
-                    output = gs.models["ESRGAN"](img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
-                output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))
-                output = (output * 255.0).round()
-                output = output.astype(np.uint8)
-                output = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
-                #output = (output * 255.0).round()"""
-
-                print(s.shape)
+                    print(s.shape)
 
 
-                img = s[0].detach().numpy().astype(np.uint8)
+                    img = s[0].detach().numpy().astype(np.uint8)
 
-                print(img)
+                    print(img)
 
-                img = Image.fromarray(img)
-                pixmap = pil_image_to_pixmap(img)
-                return_pixmaps.append(pixmap)
-
+                    img = Image.fromarray(img)
+                    pixmap = pil_image_to_pixmap(img)
+                    return_pixmaps.append(pixmap)
+        except:
+            return_pixmaps = []
 
         return return_pixmaps
         """except:

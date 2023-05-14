@@ -204,6 +204,8 @@ class UnetHook(nn.Module):
             require_inpaint_hijack = False
             is_in_high_res_fix = False
 
+
+
             # High-res fix
             for param in outer.control_params:
                 # select which hint_cond to use
