@@ -1,6 +1,7 @@
 import os
 import threading
 
+from PySide6.QtWidgets import QLineEdit
 from qtpy import QtCore
 from qtpy import QtWidgets
 
@@ -26,6 +27,8 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         checkpoint_files = ["Stage 1", "Stage 2", "Stage 3"]
         self.dropdown = self.create_combo_box(checkpoint_files, "Models")
         self.token = self.create_line_edit("Token:")
+        self.token.setEchoMode(QLineEdit.Password)
+
 
 
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):

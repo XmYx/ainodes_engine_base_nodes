@@ -2,6 +2,7 @@ import datetime
 import os
 import time
 
+from PySide6.QtWidgets import QLineEdit
 from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
 from qtpy import QtWidgets, QtGui, QtCore
@@ -50,6 +51,8 @@ class OpenAiWidget(QDMNodeContentWidget):
         self.token = self.create_line_edit("Token")
         self.button = QtWidgets.QPushButton("Run GPT")
 
+        self.token.setEchoMode(QLineEdit.Password)
+
         self.create_button_layout([self.button])
 
 @register_node(OP_NODE_LLM)
@@ -68,8 +71,10 @@ class OpenAiNode(AiNode):
     def initInnerClasses(self):
         self.content = OpenAiWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 200
+        self.grNode.height = 280
         self.grNode.width = 320
+        self.content.setMinimumHeight(200)
+        self.content.setMinimumWidth(320)
         self.images = []
         self.index = 0
         self.content.eval_signal.connect(self.evalImplementation)
