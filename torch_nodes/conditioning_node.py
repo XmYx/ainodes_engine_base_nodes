@@ -37,7 +37,7 @@ class ConditioningNode(AiNode):
     def initInnerClasses(self):
         self.content = ConditioningWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 256
+        self.grNode.height = 300
         self.grNode.width = 320
         self.content.setMinimumHeight(200)
         self.content.setMinimumWidth(320)
@@ -78,7 +78,8 @@ class ConditioningNode(AiNode):
             self.markInvalid(False)
             self.busy = False
             return result, data
-        except:
+        except Exception as e:
+            print("ERROR:", e)
             self.busy = False
             return None
     def eval(self, index=0):
@@ -93,6 +94,9 @@ class ConditioningNode(AiNode):
                 if isinstance(node, TorchLoaderNode):
                     node.evalImplementation()
                     #print("Node found")"""
+
+        print("COND NODE DEBUG", gs.models["clip"])
+
         c = gs.models["clip"].encode(prompt)
         uc = {}
         return [[c, uc]]

@@ -8,7 +8,7 @@ import numpy as np
 from einops import rearrange
 
 from .ksampler_node import get_fixed_seed
-from ..ainodes_backend import common_ksampler, torch_gc, pil_image_to_pixmap
+from ..ainodes_backend import common_ksampler, torch_gc, pil_image_to_pixmap, pixmap_to_pil_image
 
 import torch
 from PIL import Image
@@ -60,7 +60,7 @@ class KandinskyNode(AiNode):
     content_label_objname = "kandinsky_node"
     category = "Sampling"
     def __init__(self, scene, inputs=[], outputs=[]):
-        super().__init__(scene, inputs=[6,1], outputs=[5,1])
+        super().__init__(scene, inputs=[5,6,1], outputs=[5,1])
         self.content.button.clicked.connect(self.evalImplementation)
         self.busy = False
 
@@ -94,7 +94,8 @@ class KandinskyNode(AiNode):
 
         if "kandinsky" not in gs.models:
             gs.models["kandinsky"] = get_kandinsky2('cuda', task_type='text2img', model_version='2.1', use_flash_attention=False)
-        data = self.getInputData(0)
+        images = self.getInputData(0)
+        data = self.getInputData(1)
         prompt = self.content.prompt.toPlainText()
 
         if data:
@@ -116,18 +117,37 @@ class KandinskyNode(AiNode):
         except:
             self.seed = get_fixed_seed('')
         torch.manual_seed(self.seed)
-        images = gs.models["kandinsky"].generate_text2img(
-            prompt,
-            num_steps=num_steps,
-            batch_size=1,
-            guidance_scale=guidance_scale,
-            h=h, w=w,
-            sampler=sampler,
-            prior_cf_scale=prior_cf_scale,
-            prior_steps=str(prior_steps)
-        )
         return_images = []
-        for image in images:
+        return_pil_images = []
+        if images is not None:
+            for image in images:
+                pil_img = pixmap_to_pil_image(image)
+                return_pil_images = gs.models["kandinsky"].generate_img2img(
+                    prompt,
+                    pil_img,
+                    strength=0.7,
+                    num_steps=num_steps,
+                    batch_size=1,
+                    guidance_scale=guidance_scale,
+                    h=h,
+                    w=w,
+                    sampler=sampler,
+                    prior_cf_scale=prior_cf_scale,
+                    prior_steps=str(prior_steps),
+                )
+        else:
+            return_pil_images = gs.models["kandinsky"].generate_text2img(
+                prompt,
+                num_steps=num_steps,
+                batch_size=1,
+                guidance_scale=guidance_scale,
+                h=h, w=w,
+                sampler=sampler,
+                prior_cf_scale=prior_cf_scale,
+                prior_steps=str(prior_steps)
+            )
+
+        for image in return_pil_images:
             pixmap = pil_image_to_pixmap(image)
             return_images.append(pixmap)
         return return_images
