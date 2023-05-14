@@ -14,16 +14,55 @@ from omegaconf import OmegaConf
 from torch.nn.functional import silu
 
 from ldm.models.autoencoder import AutoencoderKL
+from .chainner_models import model_loading
 from .lora_loader import ModelPatcher
 from .sd_optimizations.sd_hijack import apply_optimizations
 from .torch_gc import torch_gc
 from ldm.util import instantiate_from_config
 from ainodes_frontend import singleton as gs
 
+from .ESRGAN import model as upscaler
+
 import torch
 from torch import nn
 import safetensors.torch
 import ldm.modules.diffusionmodules.model
+
+class UpscalerLoader(torch.nn.Module):
+
+    """
+    Torch Upscale model loader
+    """
+
+    def __init__(self, parent=None):
+        super().__init__()
+        self.device = "cuda"
+        self.loaded_model = None
+
+    def load_model(self, file="", name=""):
+        load = None
+        if self.loaded_model:
+            if self.loaded_model != name:
+                gs.models[self.loaded_model] = None
+                del gs.models[self.loaded_model]
+                torch_gc()
+                load = True
+            else:
+                load = None
+        else:
+            load = True
+
+        if load:
+
+            state_dict = load_torch_file(file)
+            gs.models[name] = model_loading.load_state_dict(state_dict).eval()
+            self.loaded_model = name
+
+        return self.loaded_model
+
+
+
+
 
 class ModelLoader(torch.nn.Module):
     """
