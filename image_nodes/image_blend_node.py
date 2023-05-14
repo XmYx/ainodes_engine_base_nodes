@@ -66,12 +66,12 @@ class BlendNode(AiNode):
             method = self.content.composite_method.currentText()
             if method == 'blend':
                 blend = self.content.blend.value()
-                value = self.image_op(pixmap1, pixmap2, blend)
+                value = self.image_op(pixmap1[0], pixmap2[0], blend)
                 print(f"BLEND NODE: Using both inputs with a blend value: {blend}")
             elif method == "composite":
                 # Create a new RGBA image with the same dimensions as the RGB image
-                image1 = pixmap_to_pil_image(pixmap1)
-                image2 = pixmap_to_pil_image(pixmap2)
+                image1 = pixmap_to_pil_image(pixmap1[0])
+                image2 = pixmap_to_pil_image(pixmap2[0])
 
                 result_image = Image.new("RGBA", image1.size, (0, 0, 0, 0))
 
@@ -81,7 +81,7 @@ class BlendNode(AiNode):
             elif method in pixmap_composite_method_list:
                 value = self.composite_pixmaps(pixmap1, pixmap2, method)
                 #print(self.value)
-            self.setOutput(0, value)
+            self.setOutput(0, [value])
             self.markDirty(False)
             self.markInvalid(False)
         elif pixmap2 != None:
