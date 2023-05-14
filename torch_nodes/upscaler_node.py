@@ -73,12 +73,12 @@ class TorchLoaderNode(AiNode):
         #try:
         model_name = self.content.dropdown.currentText()
         model_path = f"{gs.upscalers}/{model_name}"
-        loaded = self.loader.load_model(model_path, "ESRGAN")
+        loaded = self.loader.load_model(model_path, model_name)
         print("UPSCALER LOADER:", loaded)
 
         images = self.getInputData(0)
         return_pixmaps = []
-        gs.models["ESRGAN"].to("cuda")
+        gs.models[model_name].to("cuda")
         if images:
             for image in images:
 
@@ -99,9 +99,9 @@ class TorchLoaderNode(AiNode):
                 #steps = in_img.shape[0] * get_tiled_scale_steps(in_img.shape[3], in_img.shape[2],
                 #                                                            tile_x=tile, tile_y=tile, overlap=overlap)
                 #pbar = comfy.utils.ProgressBar(steps)
-                s = tiled_scale(in_img, lambda a: gs.models["ESRGAN"](a), tile_x=tile, tile_y=tile,
-                                            overlap=overlap, upscale_amount=gs.models["ESRGAN"].scale, pbar=None)
-                gs.models["ESRGAN"].cpu()
+                s = tiled_scale(in_img, lambda a: gs.models[model_name](a), tile_x=tile, tile_y=tile,
+                                            overlap=overlap, upscale_amount=gs.models[model_name].scale, pbar=None)
+                gs.models[model_name].cpu()
                 s = torch.clamp(s.movedim(-3, -1), min=0, max=1.0) * 255
 
 
