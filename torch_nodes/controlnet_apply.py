@@ -22,9 +22,18 @@ class CNApplyWidget(QDMNodeContentWidget):
         self.main_layout.setContentsMargins(15, 15, 15, 25)
     def create_widgets(self):
         self.strength = self.create_double_spin_box("Strength", 0.01, 100.00, 0.01, 1.00)
+        self.cfg_scale = self.create_double_spin_box("Guidance Scale", 0.01, 100.00, 0.01, 7.5)
+        self.start = self.create_spin_box("Start %", 0, 100, 0, 1)
+        self.stop = self.create_spin_box("Stop %", 0, 100, 100, 1)
+        self.soft_injection = self.create_check_box("Soft Inject")
+        self.cfg_injection = self.create_check_box("CFG Inject")
+        self.cleanup_on_run = self.create_check_box("CleanUp on Run", True)
+
+
         self.control_net_selector = self.create_combo_box(["controlnet", "t2i", "reference"], "Control Style")
         self.button = QtWidgets.QPushButton("Run")
-        self.create_button_layout([self.button])
+        self.cleanup_button = QtWidgets.QPushButton("CleanUp")
+        self.create_button_layout([self.button, self.cleanup_button])
 
 @register_node(OP_NODE_CN_APPLY)
 class CNApplyNode(AiNode):
@@ -38,28 +47,52 @@ class CNApplyNode(AiNode):
         super().__init__(scene, inputs=[5,3,1], outputs=[3,1])
 
         self.content.button.clicked.connect(self.evalImplementation)
+        self.content.cleanup_button.clicked.connect(self.clean)
         self.busy = False
         self.latest_network = None
         # Create a worker object
     def initInnerClasses(self):
         self.content = CNApplyWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 340
+        self.grNode.height = 376
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(256)
         self.content.eval_signal.connect(self.evalImplementation)
+
+    def clean(self):
+        if self.latest_network is not None:
+            try:
+                self.latest_network.restore(gs.models["sd"].model.model.diffusion_model)
+            except:
+                pass
+
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         self.markDirty(True)
         self.markInvalid(True)
-        latent_node, index = self.getInput(0)
-        image_list = latent_node.getOutput(index)
+        image_list = self.getInputData(0)
         return_list = []
         style = self.content.control_net_selector.currentText()
+        weight = self.content.strength.value()
+        cfg_scale = self.content.cfg_scale.value()
+        print("CNET NODE")
+        print(style)
+
         if style == "reference":
+
+            print("CNET NODE", image_list)
+
             for image in image_list:
-                result = self.apply_ref_control(image)
+
+                print("DEBUG IMAGE", image)
+
+                start = self.content.start.value()
+                stop = self.content.stop.value()
+                soft_injection = self.content.soft_injection.isChecked()
+                cfg_injection = self.content.cfg_injection.isChecked()
+
+                result = self.apply_ref_control(image, weight, cfg_scale, start, stop, soft_injection, cfg_injection)
                 return_list.append(result)
         else:
             cond_node, index = self.getInput(1)
@@ -78,13 +111,14 @@ class CNApplyNode(AiNode):
     def onMarkedDirty(self):
         self.value = None
 
-    def apply_ref_control(self, image):
-
-        if self.latest_network is not None:
-            try:
-                self.latest_network.restore(gs.models["sd"].model.model.diffusion_model)
-            except:
-                pass
+    def apply_ref_control(self, image, weight, cfg_scale, start=0, stop=100, soft_injection=True, cfg_injection=True):
+        cleanup = self.content.cleanup_on_run.isChecked()
+        if cleanup == True:
+            if self.latest_network is not None:
+                try:
+                    self.latest_network.restore(gs.models["sd"].model.model.diffusion_model)
+                except:
+                    pass
 
         #unet = gs.models["sd"].model.model.diffusion_model
 
@@ -110,20 +144,20 @@ class CNApplyNode(AiNode):
         forward_param = ControlParams(
             control_model=model_net,
             hint_cond=control_hint,
-            weight=1.0,
+            weight=weight,
             guidance_stopped=False,
-            start_guidance_percent=0,
-            stop_guidance_percent=100,
+            start_guidance_percent=start,
+            stop_guidance_percent=stop,
             advanced_weighting=None,
             control_model_type=control_model_type,
             global_average_pooling=False,
-            hr_hint_cond=control_hint,
+            hr_hint_cond=None,
             batch_size=1,
             instance_counter=0,
-            is_vanilla_samplers=True,
-            cfg_scale=7.5,
-            soft_injection=True,
-            cfg_injection=False,
+            is_vanilla_samplers=False,
+            cfg_scale=cfg_scale,
+            soft_injection=soft_injection,
+            cfg_injection=cfg_injection,
         )
         forward_params.append(forward_param)
 

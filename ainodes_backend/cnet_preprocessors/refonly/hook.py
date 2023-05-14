@@ -261,20 +261,20 @@ class UnetHook(nn.Module):
                 if param.guidance_stopped:
                     continue
 
-                if param.control_model_type not in [ControlModelType.T2I_StyleAdapter]:
-                    continue
-
-                param.control_model.to("cuda")
-                query_size = int(x.shape[0])
-                control = param.control_model(x=x, hint=param.used_hint_cond, timesteps=timesteps, context=context)
-                uc_mask = param.generate_uc_mask(query_size, dtype=x.dtype, device=x.device)[:, None, None]
-                control = torch.cat([control.clone() for _ in range(query_size)], dim=0)
-                control *= param.weight
-                control *= uc_mask
-                context = torch.cat([context, control.clone()], dim=1)
+                #if param.control_model_type not in [ControlModelType.T2I_StyleAdapter]:
+                #    continue
+                if param.control_model is not None:
+                    param.control_model.to("cuda")
+                    query_size = int(x.shape[0])
+                    control = param.control_model(x=x, hint=param.used_hint_cond, timesteps=timesteps, context=context)
+                    uc_mask = param.generate_uc_mask(query_size, dtype=x.dtype, device=x.device)[:, None, None]
+                    control = torch.cat([control.clone() for _ in range(query_size)], dim=0)
+                    control *= param.weight
+                    control *= uc_mask
+                    context = torch.cat([context, control.clone()], dim=1)
 
             # handle ControlNet / T2I_Adapter
-            for param in outer.control_params:
+            """for param in outer.control_params:
                 if param.guidance_stopped:
                     continue
 
@@ -327,7 +327,7 @@ class UnetHook(nn.Module):
                     if param.control_model_type == ControlModelType.T2I_Adapter:
                         target = total_t2i_adapter_embedding
                     if target is not None:
-                        target[idx] = item + target[idx]
+                        target[idx] = item + target[idx]"""
 
             # Clear attention cache
             for module in outer.attn_module_list:
@@ -348,14 +348,16 @@ class UnetHook(nn.Module):
                 uc_mask = param.generate_uc_mask(query_size, dtype=x.dtype, device="cuda")[:, None, None, None]
 
 
-                l = param.used_hint_cond_latent
-                l = l.to("cuda")
+                #l = param.used_hint_cond_latent
+                #l = l.to("cuda")
 
 
                 #print("Device of param.used_hint_cond_latent:", l.device)
                 #print("Device of timesteps:", timesteps.device)
 
-                ref_cond_xt = outer.sd_ldm.q_sample(l, torch.round(timesteps.float()).long())
+                param.used_hint_cond_latent = param.used_hint_cond_latent.to("cuda")
+
+                ref_cond_xt = outer.sd_ldm.q_sample(param.used_hint_cond_latent, torch.round(timesteps.float()).long())
 
                 if param.cfg_injection:
                     ref_uncond_xt = x.clone()

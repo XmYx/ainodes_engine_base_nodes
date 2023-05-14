@@ -109,6 +109,7 @@ class ImagePreviewWidget(AiNode):
                 return
             for pixmap in val:
                 self.content.preview_signal.emit(pixmap)
+                self.images.append(pixmap)
                 time.sleep(0.04)
 
         elif self.getInput(1) is not None:
@@ -126,7 +127,7 @@ class ImagePreviewWidget(AiNode):
         else:
             val = self.value
         self.busy = False
-        return val
+        return self.images
     @QtCore.Slot(object)
     def show_image(self, image):
         self.content.image.setPixmap(image)
