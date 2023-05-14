@@ -34,7 +34,7 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         self.config_dropdown = self.create_combo_box(config_files, "Configs")
         self.config_dropdown.setCurrentText("v1-inference_fp16.yaml")
 
-        vae_folder = "models/vae"
+        vae_folder = gs.vae
         vae_files = [f for f in os.listdir(vae_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
         vae_files = sorted(vae_files, key=str.lower)
         self.vae_dropdown = self.create_combo_box(vae_files, "Vae")
