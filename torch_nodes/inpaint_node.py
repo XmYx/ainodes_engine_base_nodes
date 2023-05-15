@@ -200,7 +200,8 @@ class InpaintNode(AiNode):
     def onWorkerFinished(self, result):
         # Update the node value and mark it as dirty
         #self.value = result[0]
-        print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed)
+        if gs.logging:
+            print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed)
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result[0])

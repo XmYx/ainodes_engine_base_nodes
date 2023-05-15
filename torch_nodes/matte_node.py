@@ -52,8 +52,8 @@ class MatteNode(AiNode):
     def evalImplementation(self, index=0):
 
         pixmaps = self.getInputData(0)
-
-        print(type(pixmaps))
+        if gs.debug:
+            print(type(pixmaps))
 
 
         if pixmaps is not None:

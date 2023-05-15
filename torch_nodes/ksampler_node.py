@@ -135,7 +135,8 @@ class KSamplerNode(AiNode):
                         gs.models["deepfloyd_2"].to("cpu")
 
                     elif data["model"] == "deepfloyd_3":
-                        print("UPSCALE X4")
+                        if gs.logging:
+                            print("UPSCALE X4")
                         latent = latent_list[0]
                         if latent.shape[1] == 4:  # Checking if tensor has 4 channels
                             latent = latent[:, 1:, :, :]  # Stripping the first channel
@@ -233,7 +234,8 @@ class KSamplerNode(AiNode):
                 print(value)
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed, "images", result[0])
+        if gs.logging:
+            print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed, "images", result[0])
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result[0])

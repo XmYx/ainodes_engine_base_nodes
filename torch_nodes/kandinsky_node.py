@@ -160,7 +160,8 @@ class KandinskyNode(AiNode):
                 print(value)
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed)
+        if gs.logging:
+            print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed)
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result)

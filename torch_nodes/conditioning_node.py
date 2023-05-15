@@ -70,7 +70,8 @@ class ConditioningNode(AiNode):
                 data = {}
                 data["prompt"] = prompt
                 result = [self.get_conditioning(prompt=prompt)]
-            print(f"CONDITIONING NODE: Applying conditioning with prompt: {prompt}")
+            if gs.logging:
+                print(f"CONDITIONING NODE: Applying conditioning with prompt: {prompt}")
 
             self.setOutput(0, result)
             self.markDirty(False)

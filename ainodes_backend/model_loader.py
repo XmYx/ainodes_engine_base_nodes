@@ -78,44 +78,52 @@ class ModelLoader(torch.nn.Module):
 
 
     def load_model(self, file=None, config_name=None, inpaint=False, verbose=False):
-        if file not in gs.loaded_models["loaded"]:
-            ckpt_path = f"models/checkpoints/{file}"
-            config_path = os.path.join('models/configs', config_name)
-            config = OmegaConf.load(config_path)
-            model_config_params = config['model']['params']
-            clip_config = model_config_params['cond_stage_config']
-            scale_factor = model_config_params['scale_factor']
-            vae_config = model_config_params['first_stage_config']
 
-            clip = None
-            vae = None
+        #print(file, gs.loaded_models["loaded"], file not in gs.loaded_models["loaded"])
 
-            class WeightsLoader(torch.nn.Module):
-                pass
+        #if file not in gs.loaded_models["loaded"]:
+        #    gs.loaded_models["loaded"] = [file]
+            #gs.loaded_models["loaded"].append(file)
+            #print(file, gs.loaded_models["loaded"], file not in gs.loaded_models["loaded"])
+        ckpt_path = f"models/checkpoints/{file}"
+        config_path = os.path.join('models/configs', config_name)
+        config = OmegaConf.load(config_path)
+        model_config_params = config['model']['params']
+        clip_config = model_config_params['cond_stage_config']
+        scale_factor = model_config_params['scale_factor']
+        vae_config = model_config_params['first_stage_config']
 
-            w = WeightsLoader()
-            load_state_dict_to = []
-            vae = VAE(scale_factor=scale_factor, config=vae_config)
-            w.first_stage_model = vae.first_stage_model
-            load_state_dict_to = [w]
-            vae.first_stage_model = w.first_stage_model.half()
+        clip = None
+        vae = None
 
-            clip = CLIP(config=clip_config, embedding_directory="models/embeddings")
-            w.cond_stage_model = clip.cond_stage_model
-            load_state_dict_to = [w]
-            clip.cond_stage_model = w.cond_stage_model
+        class WeightsLoader(torch.nn.Module):
+            pass
 
-            model = instantiate_from_config(config.model)
-            sd = load_torch_file(ckpt_path)
-            model = load_model_weights(model, sd, verbose=False, load_state_dict_to=load_state_dict_to)
-            model = model.half()
+        w = WeightsLoader()
+        load_state_dict_to = []
+        vae = VAE(scale_factor=scale_factor, config=vae_config)
+        w.first_stage_model = vae.first_stage_model
+        load_state_dict_to = [w]
+        vae.first_stage_model = w.first_stage_model.half()
 
-            gs.models["sd"] = ModelPatcher(model)
-            gs.models["clip"] = clip
-            gs.models["vae"] = vae
-            print("LOADED")
-            gs.loaded_models["loaded"].append(file)
-            apply_optimizations()
+        clip = CLIP(config=clip_config, embedding_directory="models/embeddings")
+        w.cond_stage_model = clip.cond_stage_model
+        load_state_dict_to = [w]
+        clip.cond_stage_model = w.cond_stage_model
+
+        model = instantiate_from_config(config.model)
+        sd = load_torch_file(ckpt_path)
+        model = load_model_weights(model, sd, verbose=False, load_state_dict_to=load_state_dict_to)
+        model = model.half()
+
+        gs.models["sd"] = ModelPatcher(model)
+        gs.models["clip"] = clip
+        gs.models["vae"] = vae
+        print("LOADED")
+        if gs.DEBUG:
+            print(gs.models["sd"],gs.models["clip"],gs.models["vae"])
+
+        apply_optimizations()
     def load_model_old(self, file=None, config=None, inpaint=False, verbose=False):
 
         if file not in gs.loaded_models["loaded"]:

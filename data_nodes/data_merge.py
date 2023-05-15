@@ -4,6 +4,7 @@ from qtpy import QtWidgets
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
+from ainodes_frontend import singleton as gs
 
 
 OP_NODE_DATA_MERGE = get_next_opcode()
@@ -51,8 +52,8 @@ class DataMergeNode(AiNode):
 
         data1 = self.getInputData(1)
         data2 = self.getInputData(0)
-
-        print("DATA1", data1, "DATA2", data2)
+        if gs.debug:
+            print("DATA1", data1, "DATA2", data2)
 
 
         new_data = {}
@@ -66,7 +67,8 @@ class DataMergeNode(AiNode):
                 new_data = data1
             elif data2 and not data1:
                 new_data = data2
-            print("NEW DATA", new_data)
+            if gs.debug:
+                print("NEW DATA", new_data)
             return new_data
         except Exception as e:
             print(e)

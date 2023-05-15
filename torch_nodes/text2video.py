@@ -157,8 +157,8 @@ class Text2VideoNode(AiNode):
             from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler
             import torch
             from diffusers import TextToVideoSDPipeline
-            gs.models["t2v"] = TextToVideoSDPipeline.from_pretrained("models/t2v_custom", torch_dtype=torch.float16,
-                                                     variant="fp16", local_files_only=True)
+            gs.models["t2v"] = TextToVideoSDPipeline.from_pretrained("strangeman3107/animov-0.1.1", torch_dtype=torch.float16,
+                                                     variant="fp16", local_files_only=False)
             gs.models["t2v"].scheduler = DPMSolverMultistepScheduler.from_config(gs.models["t2v"].scheduler.config)
             gs.models["t2v"].enable_model_cpu_offload()
             gs.models["t2v"].enable_vae_slicing()

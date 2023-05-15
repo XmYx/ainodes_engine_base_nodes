@@ -95,7 +95,8 @@ class LatentNode(AiNode):
                     torch_gc()
                 gs.models["vae"].first_stage_model.cpu()
                 torch_gc()
-                print(f"EMPTY LATENT NODE: Using Image input, encoding to Latent with parameters: {shape}")
+                if gs.logging:
+                    print(f"EMPTY LATENT NODE: Using Image input, encoding to Latent with parameters: {shape}")
             except Exception as e:
                 print(e)
         else:
@@ -113,8 +114,8 @@ class LatentNode(AiNode):
 
                 rescaled_samples.append(return_sample)
             samples = rescaled_samples
-
-            print(f"{len(samples)}x Latents rescaled to: {samples[0].shape}")
+            if gs.logging:
+                print(f"{len(samples)}x Latents rescaled to: {samples[0].shape}")
         #print(samples[0].shape)
         self.setOutput(0, samples)
         self.markDirty(False)

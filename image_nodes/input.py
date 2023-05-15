@@ -17,6 +17,7 @@ from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, poorman_wget
+from ainodes_frontend import singleton as gs
 
 OP_NODE_IMG_INPUT = get_next_opcode()
 
@@ -85,9 +86,11 @@ class ImageInputNode(AiNode):
         for url in url_list:
             file_name = url.fileName()
             file_ext = os.path.splitext(file_name)[-1].lower()
-            print("FILE", file_name)
+            if gs.debug:
+                print("FILE", file_name)
             if 'http' not in url.url():
-                print("LOCAL")
+                if gs.debug:
+                    print("LOCAL")
                 if file_ext in ['.png', '.jpg', '.jpeg']:
 
                     print("PATH", url.toLocalFile())
@@ -118,12 +121,14 @@ class ImageInputNode(AiNode):
         with open(filepath, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
-        print("NEW_URL", QUrl(filepath))
+        if gs.debug:
+            print("NEW_URL", QUrl(filepath))
         url = QUrl.fromLocalFile(filepath)
         self.add_urls([url])
 
     def process_video_file(self, file_path):
-        print("VIDEO", file_path)
+        if gs.debug:
+            print("VIDEO", file_path)
         self.video.load_video(file_path)
         pixmap = self.video.get_frame()
         return pixmap
@@ -186,7 +191,8 @@ class ImageInputNode(AiNode):
                 self.content.image.setPixmap(pixmap)
                 time.sleep(0.1)
         if self.content_type == 'video':
-            print("GETTING VIDEO FRAME")
+            if gs.debug:
+                print("GETTING VIDEO FRAME")
             pixmap = self.video.get_frame()
             self.content.image.setPixmap(pixmap)
         else:

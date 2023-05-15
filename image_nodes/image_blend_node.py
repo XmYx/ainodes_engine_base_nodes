@@ -8,6 +8,7 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap, \
     pixmap_composite_method_list
+from ainodes_frontend import singleton as gs
 
 OP_NODE_IMAGE_BLEND = get_next_opcode()
 
@@ -61,7 +62,8 @@ class BlendNode(AiNode):
             if method == 'blend':
                 blend = self.content.blend.value()
                 value = self.image_op(pixmap1[0], pixmap2[0], blend)
-                print(f"BLEND NODE: Using both inputs with a blend value: {blend}")
+                if gs.logging:
+                    print(f"BLEND NODE: Using both inputs with a blend value: {blend}")
             elif method == "composite":
                 # Create a new RGBA image with the same dimensions as the RGB image
                 image1 = pixmap_to_pil_image(pixmap1[0]).convert("RGBA")
@@ -81,13 +83,15 @@ class BlendNode(AiNode):
         elif pixmap2 != None:
             try:
                 self.setOutput(0, pixmap2)
-                print(f"BLEND NODE: Using only First input")
+                if gs.logging:
+                    print(f"BLEND NODE: Using only First input")
             except:
                 pass
         elif pixmap1 != None:
             try:
                 self.setOutput(0, pixmap1)
-                print(f"BLEND NODE: Using only Second input")
+                if gs.logging:
+                    print(f"BLEND NODE: Using only Second input")
             except:
                 pass
         self.executeChild(output_index=1)

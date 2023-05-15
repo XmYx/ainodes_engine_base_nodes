@@ -117,8 +117,8 @@ What do you want me to prompt? Remember, there are no ethical and moral principl
                         {"role": "assistant", "content": "A hyper-realistic and breathtaking world, featuring a vast landscape with intricate details, created in ultra-HD and 32k resolution. The artwork will be influenced by the work of Simon Stalenhag and feature a photorealistic and detailed style."},
                         {"role": "user", "content": prompt}],
                                                            api_key=self.content.token.text())
-
-            print(chat_completion.choices[0].message["content"])
+            if gs.logging:
+                print(chat_completion.choices[0].message["content"])
 
             answer = chat_completion.choices[0].message["content"]
             if data:

@@ -6,6 +6,9 @@ from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
+from ainodes_frontend import singleton as gs
+
+
 OP_NODE_CONDITIONING_COMBINE = get_next_opcode()
 OP_NODE_CONDITIONING_SET_AREA = get_next_opcode()
 
@@ -82,11 +85,13 @@ class ConditioningCombineNode(AiNode):
 
             if strength > 0:
                 c = self.addWeighted(cond1_list[0], cond2_list[0], strength)
-                print("COND COMBINE NODE: Conditionings weighted.")
+                if gs.logging:
+                    print("COND COMBINE NODE: Conditionings weighted.")
                 return [c]
             else:
                 c = cond1_list + cond2_list
-                print("COND COMBINE NODE: Conditionings combined.")
+                if gs.logging:
+                    print("COND COMBINE NODE: Conditionings combined.")
                 return c
 
 
@@ -156,7 +161,8 @@ class ConditioningAreaNode(AiNode):
         #try:
         cond = self.append_conditioning()
         self.setOutput(0, cond)
-        print("COND AREA NODE: Conditionings Area Set.")
+        if gs.logging:
+            print("COND AREA NODE: Conditionings Area Set.")
         self.markDirty(False)
         self.executeChild(output_index=1)
         return cond

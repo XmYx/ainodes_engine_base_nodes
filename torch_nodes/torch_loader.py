@@ -1,6 +1,7 @@
 import os
 import threading
 
+from PySide6.QtWebEngineCore import QWebEnginePage
 from qtpy import QtCore
 from qtpy import QtWidgets
 
@@ -11,13 +12,19 @@ from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
+
+
 from ainodes_frontend import singleton as gs
 
 OP_NODE_TORCH_LOADER = get_next_opcode()
+
+
 class TorchLoaderWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
         self.create_main_layout()
+
+
 
     def create_widgets(self):
         checkpoint_folder = gs.checkpoints
@@ -40,6 +47,7 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         self.vae_dropdown = self.create_combo_box(vae_files, "Vae")
         self.vae_dropdown.addItem("default")
         self.vae_dropdown.setCurrentText("default")
+
 
 
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
@@ -75,61 +83,46 @@ class TorchLoaderNode(AiNode):
         self.content.setMinimumWidth(340)
         self.busy = False
         self.content.eval_signal.connect(self.evalImplementation)
+    def clean_sd(self):
+        if "sd" in gs.models:
+            try:
+                gs.models["sd"].cpu()
+            except:
+                pass
+            del gs.models["sd"]
+            gs.models["sd"] = None
+            torch_gc()
+        if "inpaint" in gs.models:
+            try:
+                gs.models["inpaint"].cpu()
+            except:
+                pass
+            del gs.models["inpaint"]
+            gs.models["inpaint"] = None
+            torch_gc()
 
     def evalImplementation_thread(self, index=0):
         self.busy = False
         try:
             model_name = self.content.dropdown.currentText()
             config_name = self.content.config_dropdown.currentText()
-            print("TORCH LOADER:", gs.loaded_models["loaded"])
 
-            if model_name not in gs.loaded_models["loaded"]:
-                if model_name != "" and "inpaint" not in model_name:
-                    if gs.current["sd_model"] != model_name:
-                        for i in gs.loaded_models["loaded"]:
-                            if i == gs.current["sd_model"]:
-                                gs.loaded_models["loaded"].remove(i)
-                        gs.current["sd_model"] = model_name
-                    if "sd" in gs.models:
-                        try:
-                            gs.models["sd"].cpu()
-                        except:
-                            pass
-                        del gs.models["sd"]
-                        gs.models["sd"] = None
-                        torch_gc()
-                    inpaint = False
-                    self.value = model_name
-                    self.loader.load_model(model_name, config_name, inpaint)
-                elif model_name != "" and "inpaint" in model_name:
-                    if gs.current["inpaint_model"] != model_name:
-                        for i in gs.loaded_models["loaded"]:
-                            if i == gs.current["inpaint_model"]:
-                                gs.loaded_models["loaded"].remove(i)
-                        gs.current["inpaint_model"] = model_name
+            print(gs.current["sd_model"], model_name)
 
-                    if "inpaint" in gs.models:
-                        try:
-                            gs.models["inpaint"].cpu()
-                        except:
-                            pass
-                        del gs.models["inpaint"]
-                        gs.models["inpaint"] = None
-                        torch_gc()
-                    inpaint = True
-                    self.value = model_name
-                    self.loader.load_model(model_name, config_name, inpaint)
-
-                    self.setOutput(0, model_name)
-                    self.markDirty(False)
-                    self.markInvalid(False)
-                if self.content.vae_dropdown.currentText() != 'default':
-                    model = self.content.vae_dropdown.currentText()
-                    self.loader.load_vae(model)
-                    gs.loaded_vae = model
-                else:
-                    gs.loaded_vae = 'default'
-            elif gs.loaded_vae != self.content.vae_dropdown.currentText():
+            inpaint = True if "inpaint" in model_name else False
+            m = "sd_model" if not inpaint else "inpaint"
+            if gs.current[m] != model_name:
+                self.clean_sd()
+                self.loader.load_model(model_name, config_name, inpaint)
+                gs.current[m] = model_name
+                self.setOutput(0, model_name)
+            if self.content.vae_dropdown.currentText() != 'default':
+                model = self.content.vae_dropdown.currentText()
+                self.loader.load_vae(model)
+                gs.loaded_vae = model
+            else:
+                gs.loaded_vae = 'default'
+            if gs.loaded_vae != self.content.vae_dropdown.currentText():
                 model = self.content.vae_dropdown.currentText()
                 self.loader.load_vae(model)
                 gs.loaded_vae = model
@@ -138,7 +131,6 @@ class TorchLoaderNode(AiNode):
                 self.markInvalid(False)
                 self.grNode.setToolTip("")
             return self.value
-
         except:
             self.markDirty(True)
             self.markInvalid(False)

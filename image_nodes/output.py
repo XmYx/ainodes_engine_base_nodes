@@ -145,7 +145,8 @@ class ImagePreviewWidget(AiNode):
             os.makedirs(os.path.join(gs.output, "stills"), exist_ok=True)
             filename = f"{gs.output}/{timestamp}.png"
             image.save(filename)
-            print(f"IMAGE PREVIEW NODE: File saved at {filename}")
+            if gs.logging:
+                print(f"IMAGE PREVIEW NODE: File saved at {filename}")
         except Exception as e:
             print(f"IMAGE PREVIEW NODE: Image could not be saved because: {e}")
     def onInputChanged(self, socket=None):
