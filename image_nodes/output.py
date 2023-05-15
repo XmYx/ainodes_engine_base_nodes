@@ -100,7 +100,7 @@ class ImagePreviewWidget(AiNode):
             self.images.clear()
             input_images = self.getInputData(0)
             for pixmap in input_images:
-                self.content.preview_signal.emit(pixmap)
+
                 self.images.append(pixmap)
                 time.sleep(0.04)
 
@@ -127,6 +127,7 @@ class ImagePreviewWidget(AiNode):
     def onWorkerFinished(self, val):
         if self.content.checkbox.isChecked() == True:
             for image in self.images:
+                self.content.preview_signal.emit(image)
                 self.save_image(image)
         self.setOutput(0, self.images)
         self.busy = False
