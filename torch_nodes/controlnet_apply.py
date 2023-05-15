@@ -124,6 +124,8 @@ class CNApplyNode(AiNode):
 
         image = pixmap_to_pil_image(image)
 
+        processor_res = int(image.size[0] // 8)
+
         image = np.array(image).astype(np.float32) / 255.0
         image = torch.from_numpy(image)[None,]
         # c = []
@@ -136,6 +138,14 @@ class CNApplyNode(AiNode):
         control_model_type = ControlModelType.AttentionInjection
 
         forward_params = []
+
+        model_net = dict(
+            name="reference_only",
+            preprocessor_resolution=processor_res,
+            threshold_a=512,
+            threshold_b=512
+        )
+
 
         forward_param = ControlParams(
             control_model=model_net,

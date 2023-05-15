@@ -120,7 +120,7 @@ class ModelLoader(torch.nn.Module):
         gs.models["clip"] = clip
         gs.models["vae"] = vae
         print("LOADED")
-        if gs.DEBUG:
+        if gs.debug:
             print(gs.models["sd"],gs.models["clip"],gs.models["vae"])
 
         apply_optimizations()

@@ -103,42 +103,33 @@ class TorchLoaderNode(AiNode):
 
     def evalImplementation_thread(self, index=0):
         self.busy = False
-        try:
-            model_name = self.content.dropdown.currentText()
-            config_name = self.content.config_dropdown.currentText()
+        model_name = self.content.dropdown.currentText()
+        config_name = self.content.config_dropdown.currentText()
 
-            print(gs.current["sd_model"], model_name)
+        print(gs.loaded_sd, model_name)
 
-            inpaint = True if "inpaint" in model_name else False
-            m = "sd_model" if not inpaint else "inpaint"
-            if gs.current[m] != model_name:
-                self.clean_sd()
-                self.loader.load_model(model_name, config_name, inpaint)
-                gs.current[m] = model_name
-                self.setOutput(0, model_name)
-            if self.content.vae_dropdown.currentText() != 'default':
-                model = self.content.vae_dropdown.currentText()
-                self.loader.load_vae(model)
-                gs.loaded_vae = model
-            else:
-                gs.loaded_vae = 'default'
-            if gs.loaded_vae != self.content.vae_dropdown.currentText():
-                model = self.content.vae_dropdown.currentText()
-                self.loader.load_vae(model)
-                gs.loaded_vae = model
-            else:
-                self.markDirty(False)
-                self.markInvalid(False)
-                self.grNode.setToolTip("")
-            return self.value
-        except:
-            self.markDirty(True)
+        inpaint = True if "inpaint" in model_name else False
+        m = "sd_model" if not inpaint else "inpaint"
+        if gs.loaded_sd != model_name:
+            self.clean_sd()
+            self.loader.load_model(model_name, config_name, inpaint)
+            gs.loaded_sd = model_name
+            self.setOutput(0, model_name)
+        if self.content.vae_dropdown.currentText() != 'default':
+            model = self.content.vae_dropdown.currentText()
+            self.loader.load_vae(model)
+            gs.loaded_vae = model
+        else:
+            gs.loaded_vae = 'default'
+        if gs.loaded_vae != self.content.vae_dropdown.currentText():
+            model = self.content.vae_dropdown.currentText()
+            self.loader.load_vae(model)
+            gs.loaded_vae = model
+        else:
+            self.markDirty(False)
             self.markInvalid(False)
-            self.busy = False
-            return None
-        finally:
-            self.busy = False
-            return True
+            self.grNode.setToolTip("")
+        return self.value
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):

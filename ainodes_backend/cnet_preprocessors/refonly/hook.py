@@ -263,8 +263,8 @@ class UnetHook(nn.Module):
                 if param.guidance_stopped:
                     continue
 
-                #if param.control_model_type not in [ControlModelType.T2I_StyleAdapter]:
-                #    continue
+                if param.control_model_type not in [ControlModelType.T2I_StyleAdapter]:
+                    continue
                 if param.control_model is not None:
                     param.control_model.to("cuda")
                     query_size = int(x.shape[0])
