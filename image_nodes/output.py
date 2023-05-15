@@ -50,7 +50,7 @@ class ImagePreviewWidget(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
-        self.content.button.clicked.connect(self.save_image)
+        self.content.button.clicked.connect(self.manual_save)
         self.content.next_button.clicked.connect(self.show_next_image)
         self.busy = False
 
@@ -121,22 +121,25 @@ class ImagePreviewWidget(AiNode):
     def show_image(self, image):
         self.content.image.setPixmap(image)
         self.resize()
-        if self.content.checkbox.isChecked() == True:
-            self.save_image(image)
+
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, val):
-
+        if self.content.checkbox.isChecked() == True:
+            for image in self.images:
+                self.save_image(image)
         self.setOutput(0, self.images)
         self.busy = False
         self.markInvalid(False)
         self.markDirty(False)
         if len(self.getOutputs(2)) > 0:
             self.executeChild(2)
+    def manual_save(self):
+        for image in self.images:
+            self.save_image(image)
 
-    def save_image(self, image):
+    def save_image(self, pixmap):
         try:
-            pixmap = image
             image = pixmap_to_pil_image(pixmap)
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
             os.makedirs(os.path.join(gs.output, "stills"), exist_ok=True)

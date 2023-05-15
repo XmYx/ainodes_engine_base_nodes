@@ -26,12 +26,13 @@ class ConditioningSetAreaWidget(QDMNodeContentWidget):
         self.strength = self.create_double_spin_box("strength", 0.01, 10.00, 0.01, 1.00)
 
 class ConditioningCombineWidget(QDMNodeContentWidget):
-    def initUI(self):
 
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(15,15,15,20)
-        layout.setSpacing(10)
-        self.setLayout(layout)
+    def initUI(self):
+        self.create_widgets()
+        self.create_main_layout()
+
+    def create_widgets(self):
+        self.strength = self.create_double_spin_box("Strength", 0.00, 10.00, 0.01, 0.00)
 
 
 
@@ -57,8 +58,10 @@ class ConditioningCombineNode(AiNode):
         self.busy = False
         self.input_socket_name = ["EXEC", "COND", "COND2"]
         self.output_socket_name = ["EXEC", "COND"]
+        self.content.eval_signal.connect(self.evalImplementation)
 
-    def evalImplementation(self, index=0):
+
+    def evalImplementation_thread(self, index=0):
         self.value = self.combine_conditioning()
         self.markDirty(False)
         self.markInvalid(False)
@@ -72,22 +75,48 @@ class ConditioningCombineNode(AiNode):
         self.value = None
     def combine_conditioning(self, progress_callback=None):
         try:
-            cond_1_node, index = self.getInput(1)
-            conditioning1 = cond_1_node.getOutput(index)
-            cond_2_node, index = self.getInput(0)
-            conditioning2 = cond_2_node.getOutput(index)
-            #c = self.combine(conditioning1, conditioning2)
-            c = conditioning1 + conditioning2
-            print("COND COMBINE NODE: Conditionings combined.")
-            return c
+
+            cond1_list = self.getInputData(1)
+            cond2_list = self.getInputData(0)
+            strength = self.content.strength.value()
+
+            if strength > 0:
+                c = self.addWeighted(cond1_list[0], cond2_list[0], strength)
+                print("COND COMBINE NODE: Conditionings weighted.")
+                return [c]
+            else:
+                c = cond1_list + cond2_list
+                print("COND COMBINE NODE: Conditionings combined.")
+                return c
+
+
         except Exception as e:
             print(f"COND COMBINE NODE: \nFailed: {e}")
             return None
+
+    def addWeighted(self, conditioning_to, conditioning_from, conditioning_to_strength):
+        out = []
+
+        if len(conditioning_from) > 1:
+            print("Warning: ConditioningAverage conditioning_from contains more than 1 cond, only the first one will actually be applied to conditioning_to.")
+
+        cond_from = conditioning_from[0][0]
+
+        for i in range(len(conditioning_to)):
+            t1 = conditioning_to[i][0]
+            t0 = cond_from[:,:t1.shape[1]]
+            if t0.shape[1] < t1.shape[1]:
+                t0 = torch.cat([t0] + [torch.zeros((1, (t1.shape[1] - t0.shape[1]), t1.shape[2]))], dim=1)
+
+            tw = torch.mul(t1, conditioning_to_strength) + torch.mul(t0, (1.0 - conditioning_to_strength))
+            n = [tw, conditioning_to[i][1].copy()]
+            out.append(n)
+        return out
+
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         # Update the node value and mark it as dirty
         self.value = result
-        self.scene.queue.task_finished.disconnect(self.onWorkerFinished)
         self.setOutput(0, result)
         self.markDirty(False)
         self.markInvalid(False)
@@ -99,6 +128,8 @@ class ConditioningCombineNode(AiNode):
         pass
     def combine(self, conditioning_1, conditioning_2):
         return [conditioning_1 + conditioning_2]
+
+
 @register_node(OP_NODE_CONDITIONING_SET_AREA)
 class ConditioningAreaNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/cond_comb.png"
