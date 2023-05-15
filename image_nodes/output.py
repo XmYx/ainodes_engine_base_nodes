@@ -93,32 +93,21 @@ class ImagePreviewWidget(AiNode):
             self.setOutput(0, [pixmap])
             self.index += 1
             self.resize()
-    @QtCore.Slot()
+
     def evalImplementation_thread(self, index=0):
         self.busy = True
-        if self.getInput(0) is not None:
-
-
-
-            input_node, other_index = self.getInput(0)
-            if not input_node:
-                self.grNode.setToolTip("Input is not connected")
-                self.markInvalid()
-                return
-            val = input_node.getOutput(other_index)
-            if val is None:
-                self.grNode.setToolTip("Input is NaN")
-                self.markInvalid()
-                return
-            for pixmap in val:
+        if len(self.getInputs(0)) > 0:
+            self.images.clear()
+            input_images = self.getInputData(0)
+            for pixmap in input_images:
                 self.content.preview_signal.emit(pixmap)
-                self.images = [pixmap]
+                self.images.append(pixmap)
                 time.sleep(0.04)
 
-        elif self.getInput(1) is not None:
+            return self.images
+        elif len(self.getInputs(1)) > 0:
             data_node, other_index = self.getInput(1)
             data = data_node.getOutput(other_index)
-            self.images = []
             for key, value in data.items():
                 if key[1] == 'list':
                     if key[0] == 'images':
@@ -126,10 +115,7 @@ class ImagePreviewWidget(AiNode):
                             self.images.append(image)
                             # Create a new QPixmap object with the same size as the original image
                             #print(key[0], image)
-            val = None
-        else:
-            val = self.value
-        self.busy = False
+
         return self.images
     @QtCore.Slot(object)
     def show_image(self, image):
@@ -137,9 +123,12 @@ class ImagePreviewWidget(AiNode):
         self.resize()
         if self.content.checkbox.isChecked() == True:
             self.save_image(image)
+
     @QtCore.Slot(object)
     def onWorkerFinished(self, val):
-        self.setOutput(0, val)
+
+        self.setOutput(0, self.images)
+        self.busy = False
         self.markInvalid(False)
         self.markDirty(False)
         if len(self.getOutputs(2)) > 0:
@@ -158,8 +147,7 @@ class ImagePreviewWidget(AiNode):
             print(f"IMAGE PREVIEW NODE: Image could not be saved because: {e}")
     def onInputChanged(self, socket=None):
         pass
-    def eval(self, index=0):
-        self.content.eval_signal.emit()
+
 
     def resize(self):
         self.grNode.setToolTip("")

@@ -76,16 +76,12 @@ class CNApplyNode(AiNode):
         style = self.content.control_net_selector.currentText()
         weight = self.content.strength.value()
         cfg_scale = self.content.cfg_scale.value()
-        print("CNET NODE")
-        print(style)
 
         if style == "reference":
 
-            print("CNET NODE", image_list)
 
             for image in image_list:
 
-                print("DEBUG IMAGE", image)
 
                 start = self.content.start.value()
                 stop = self.content.stop.value()
@@ -177,7 +173,6 @@ class CNApplyNode(AiNode):
         #print("ARRAY", array)
 
         image = np.array(image).astype(np.float32) / 255.0
-        print("IMAGE", image)
 
 
         image = torch.from_numpy(image)[None,]

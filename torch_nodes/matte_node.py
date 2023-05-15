@@ -50,12 +50,13 @@ class MatteNode(AiNode):
         self.grNode.width = 280
     @QtCore.Slot()
     def evalImplementation(self, index=0):
-        if self.getInput(0) != None:
-            node, index = self.getInput(0)
-            pixmaps = node.getOutput(index)
+
+        pixmaps = self.getInputData(0)
+
+        print(type(pixmaps))
 
 
-        if pixmaps:
+        if pixmaps is not None:
             for pixmap1 in pixmaps:
 
                 self.load_matte()
@@ -85,8 +86,8 @@ class MatteNode(AiNode):
                 bg_pixmap = pil_image_to_pixmap(bg_with_alpha)
                 fg_pixmap = pil_image_to_pixmap(fg_with_alpha)
 
-                self.setOutput(0, bg_pixmap)
-                self.setOutput(1, fg_pixmap)
+                self.setOutput(0, [bg_pixmap])
+                self.setOutput(1, [fg_pixmap])
 
 
 

@@ -51,18 +51,12 @@ class BlendNode(AiNode):
         self.grNode.height = 220
     @QtCore.Slot()
     def evalImplementation(self, index=0):
-        if self.getInput(1) != None:
-            node, index = self.getInput(1)
-            pixmap1 = node.getOutput(index)
-        else:
-            pixmap1 = None
-        if self.getInput(0) != None:
-            node, index = self.getInput(0)
-            pixmap2 = node.getOutput(index)
-        else:
-            pixmap2 = None
 
-        if pixmap1 != None and pixmap2 != None:
+        pixmap1 = self.getInputData(1)
+        pixmap2 = self.getInputData(0)
+
+
+        if pixmap1 is not None and pixmap2 is not None:
             method = self.content.composite_method.currentText()
             if method == 'blend':
                 blend = self.content.blend.value()
@@ -70,8 +64,8 @@ class BlendNode(AiNode):
                 print(f"BLEND NODE: Using both inputs with a blend value: {blend}")
             elif method == "composite":
                 # Create a new RGBA image with the same dimensions as the RGB image
-                image1 = pixmap_to_pil_image(pixmap1[0])
-                image2 = pixmap_to_pil_image(pixmap2[0])
+                image1 = pixmap_to_pil_image(pixmap1[0]).convert("RGBA")
+                image2 = pixmap_to_pil_image(pixmap2[0]).convert("RGBA")
 
                 result_image = Image.new("RGBA", image1.size, (0, 0, 0, 0))
 
@@ -79,7 +73,7 @@ class BlendNode(AiNode):
                 image = Image.composite(image1, result_image, image2)
                 value = pil_image_to_pixmap(image)
             elif method in pixmap_composite_method_list:
-                value = self.composite_pixmaps(pixmap1, pixmap2, method)
+                value = self.composite_pixmaps(pixmap1[0], pixmap2[0], method)
                 #print(self.value)
             self.setOutput(0, [value])
             self.markDirty(False)

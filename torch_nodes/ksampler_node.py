@@ -88,13 +88,10 @@ class KSamplerNode(AiNode):
     def evalImplementation_thread(self):
         # Add a task to the task queue
         cond_list = self.getInputData(3)
-        print("COND", cond_list)
         n_cond_list = self.getInputData(2)
-        print("N_COND", n_cond_list)
 
         latent_list = self.getInputData(1)
         data = self.getInputData(0)
-        print("DATA", data)
         last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
         short_steps = last_step - self.content.start_step.value()
         steps = self.content.steps.value()
@@ -142,9 +139,7 @@ class KSamplerNode(AiNode):
                         latent = latent_list[0]
                         if latent.shape[1] == 4:  # Checking if tensor has 4 channels
                             latent = latent[:, 1:, :, :]  # Stripping the first channel
-                        print(latent.shape)
                         image = gs.models["deepfloyd_3"](prompt=data["prompt"], image=latent, generator=generator, noise_level=100).images
-                        print(image)
                         gs.models["deepfloyd_3"].to("cpu")
 
                 if data["model"] not in ["deepfloyd_3"]:
@@ -238,7 +233,7 @@ class KSamplerNode(AiNode):
                 print(value)
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed)
+        print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed, "images", result[0])
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result[0])

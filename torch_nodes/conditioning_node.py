@@ -62,7 +62,6 @@ class ConditioningNode(AiNode):
                 if "model" in data:
                     if data["model"] == "deepfloyd_1":
                         result = [gs.models["deepfloyd_1"].encode_prompt(prompt)]
-                        print(result, data)
                 else:
 
                     result = [self.get_conditioning(prompt=prompt)]
@@ -95,14 +94,12 @@ class ConditioningNode(AiNode):
                     node.evalImplementation()
                     #print("Node found")"""
 
-        print("COND NODE DEBUG", gs.models["clip"])
 
         c = gs.models["clip"].encode(prompt)
         uc = {}
         return [[c, uc]]
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        print(result)
         self.setOutput(1, result[0])
         self.setOutput(0, result[1])
         self.markDirty(False)
