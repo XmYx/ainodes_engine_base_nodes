@@ -13,6 +13,7 @@ from ainodes_frontend.node_engine.utils import dumpException
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ..ainodes_backend.cnet_preprocessors.refonly.hook import ControlModelType, ControlParams, UnetHook
+from ..image_nodes.image_op_node import HWC3
 
 OP_NODE_CN_APPLY = get_next_opcode()
 class CNApplyWidget(QDMNodeContentWidget):
@@ -126,7 +127,12 @@ class CNApplyNode(AiNode):
 
         processor_res = int(image.size[0] // 8)
 
-        image = np.array(image).astype(np.float32) / 255.0
+        image = np.array(image) / 255.0
+
+        image = image.astype(np.uint8)
+
+        image = HWC3(image)
+
         image = torch.from_numpy(image)[None,]
         # c = []
         control_hint = image.movedim(-1, 1).to("cuda")
@@ -139,11 +145,18 @@ class CNApplyNode(AiNode):
 
         forward_params = []
 
+
+        model_free_preprocessors = [
+            "reference_only",
+            "reference_adain",
+            "reference_adain+attn"
+        ]
+
         model_net = dict(
-            name="reference_only",
+            name=model_free_preprocessors[0],
             preprocessor_resolution=processor_res,
             threshold_a=512,
-            threshold_b=512
+            threshold_b=64
         )
 
 

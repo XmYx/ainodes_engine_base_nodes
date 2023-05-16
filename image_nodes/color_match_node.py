@@ -18,6 +18,11 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 
 OP_NODE_COLORMATCH = get_next_opcode()
 
+class MatteWidget(QDMNodeContentWidget):
+    def initUI(self):
+        # Create a label to display the image
+        self.create_main_layout()
+
 
 @register_node(OP_NODE_COLORMATCH)
 class ColorMatch(AiNode):
@@ -35,18 +40,19 @@ class ColorMatch(AiNode):
 
         # Create a worker object
     def initInnerClasses(self):
+        self.content = MatteWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.height = 140
         self.grNode.width = 256
-    def evalImplementation(self, index=0):
-
-
+        self.content.eval_signal.connect(self.evalImplementation)
+    @QtCore.Slot()
+    def evalImplementation_thread(self, index=0):
 
         if self.getInput(0) != None and self.getInput(1) != None:
             node, index = self.getInput(0)
-            pixmap1 = node.getOutput(index)
+            pixmap1 = node.getOutput(index)[0]
             node, index = self.getInput(1)
-            pixmap2 = node.getOutput(index)
+            pixmap2 = node.getOutput(index)[0]
 
             pil_image_1 = pixmap_to_pil_image(pixmap1).convert('RGB')
             pil_image_2 = pixmap_to_pil_image(pixmap2).convert('RGB')
@@ -54,26 +60,29 @@ class ColorMatch(AiNode):
             np_image_1 = np.array(pil_image_1)
             np_image_2 = np.array(pil_image_2)
 
-            np_image_1 = cv2.cvtColor(np_image_1, cv2.COLOR_RGB2BGR)
-            np_image_2 = cv2.cvtColor(np_image_2, cv2.COLOR_RGB2BGR)
+            #np_image_1 = cv2.cvtColor(np_image_1, cv2.COLOR_RGB2BGR)
+            #np_image_2 = cv2.cvtColor(np_image_2, cv2.COLOR_RGB2BGR)
 
-            matched_image = maintain_colors(np_image_2, np_image_1, 'Match Frame 0 HSV')
-            matched_image = cv2.cvtColor(matched_image, cv2.COLOR_BGR2RGB)
+            matched_image = maintain_colors(np_image_2, np_image_1, 'LAB')
+            #matched_image = cv2.cvtColor(matched_image, cv2.COLOR_BGR2RGB)
 
             pil_image = Image.fromarray(matched_image)
             pixmap = pil_image_to_pixmap(pil_image)
 
-            self.setOutput(0, pixmap)
-            self.markDirty(False)
 
-            self.executeChild(output_index=1)
-            return None
+            return pixmap
         else:
             self.markDirty(True)
             return None
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+        if result is not None:
+            self.setOutput(0, [result])
+            self.markDirty(False)
+            self.executeChild(output_index=1)
 
-
-def maintain_colors(prev_img, color_match_sample, mode):
+def maintain_colors_old(prev_img, color_match_sample, mode):
     #prev_img = np.float32(prev_img)
     #color_match_sample = np.float32(color_match_sample)
     from skimage.exposure import match_histograms
@@ -88,4 +97,24 @@ def maintain_colors(prev_img, color_match_sample, mode):
         prev_img_lab = cv2.cvtColor(prev_img, cv2.COLOR_RGB2LAB)
         color_match_lab = cv2.cvtColor(color_match_sample, cv2.COLOR_RGB2LAB)
         matched_lab = match_histograms(prev_img_lab, color_match_lab, channel_axis=2)
+        return cv2.cvtColor(matched_lab, cv2.COLOR_LAB2RGB)
+
+
+def maintain_colors(prev_img, color_match_sample, mode):
+    #skimage_version = pkg_resources.get_distribution('scikit-image').version
+    #is_skimage_v20_or_higher = pkg_resources.parse_version(skimage_version) >= pkg_resources.parse_version('0.20.0')
+
+    match_histograms_kwargs = {'channel_axis': -1} # if is_skimage_v20_or_higher else {'multichannel': True}
+
+    if mode == 'RGB':
+        return match_histograms(prev_img, color_match_sample, **match_histograms_kwargs)
+    elif mode == 'HSV':
+        prev_img_hsv = cv2.cvtColor(prev_img, cv2.COLOR_RGB2HSV)
+        color_match_hsv = cv2.cvtColor(color_match_sample, cv2.COLOR_RGB2HSV)
+        matched_hsv = match_histograms(prev_img_hsv, color_match_hsv, **match_histograms_kwargs)
+        return cv2.cvtColor(matched_hsv, cv2.COLOR_HSV2RGB)
+    else:  # LAB
+        prev_img_lab = cv2.cvtColor(prev_img, cv2.COLOR_RGB2LAB)
+        color_match_lab = cv2.cvtColor(color_match_sample, cv2.COLOR_RGB2LAB)
+        matched_lab = match_histograms(prev_img_lab, color_match_lab, **match_histograms_kwargs)
         return cv2.cvtColor(matched_lab, cv2.COLOR_LAB2RGB)

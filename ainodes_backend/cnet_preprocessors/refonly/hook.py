@@ -244,6 +244,8 @@ class UnetHook(nn.Module):
                         gs.models["vae"].first_stage_model.cuda()
                         latent_hint = gs.models["vae"].encode(latent_hint[0])
                         latent_hint = gs.models["sd"].model.get_first_stage_encoding(latent_hint)
+
+
                         gs.models["vae"].first_stage_model.cpu()
                     latent_hint = torch.cat([latent_hint.clone() for _ in range(query_size)], dim=0)
                     latent_hint = latent_hint.type(x.dtype)
@@ -409,7 +411,6 @@ class UnetHook(nn.Module):
             # U-Net Output
             h = h.type(x.dtype)
             h = self.out(h)
-
             return h
 
         def forward_webui(*args, **kwargs):

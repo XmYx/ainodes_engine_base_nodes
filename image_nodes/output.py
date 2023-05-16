@@ -99,8 +99,9 @@ class ImagePreviewWidget(AiNode):
         self.busy = True
         if len(self.getInputs(0)) > 0:
             input_images = self.getInputData(0)
-            self.content.preview_signal.emit(input_images[0])
-            return input_images
+            if input_images is not None:
+                self.content.preview_signal.emit(input_images[0])
+                return input_images
 
         """elif len(self.getInputs(1)) > 0:
             data_node, other_index = self.getInput(1)
@@ -127,7 +128,6 @@ class ImagePreviewWidget(AiNode):
             #for image in val:
             self.save_image(result[0])
         self.setOutput(0, result)
-        pass
         self.markInvalid(False)
         self.markDirty(False)
         self.executeChild(2)
