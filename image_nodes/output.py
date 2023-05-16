@@ -94,17 +94,15 @@ class ImagePreviewWidget(AiNode):
             self.index += 1
             self.resize()
 
+    @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         self.busy = True
         if len(self.getInputs(0)) > 0:
-            self.images.clear()
             input_images = self.getInputData(0)
-            for pixmap in input_images:
+            self.content.preview_signal.emit(input_images[0])
+            return input_images
 
-                self.images.append(pixmap)
-
-            return self.images
-        elif len(self.getInputs(1)) > 0:
+        """elif len(self.getInputs(1)) > 0:
             data_node, other_index = self.getInput(1)
             data = data_node.getOutput(other_index)
             for key, value in data.items():
@@ -115,7 +113,7 @@ class ImagePreviewWidget(AiNode):
                             # Create a new QPixmap object with the same size as the original image
                             #print(key[0], image)
 
-        return self.images
+        return self.images"""
     @QtCore.Slot(object)
     def show_image(self, image):
         self.content.image.setPixmap(image)
@@ -124,19 +122,19 @@ class ImagePreviewWidget(AiNode):
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, val):
+
+        time.sleep(0.1)
+
+
         if self.content.checkbox.isChecked() == True:
-            for image in self.images:
-                self.save_image(image)
-        for image in self.images:
-
-            self.content.preview_signal.emit(image)
-
-        self.setOutput(0, self.images)
+            #for image in val:
+            self.save_image(val[0])
+        self.setOutput(0, val)
         self.busy = False
         self.markInvalid(False)
         self.markDirty(False)
-        if len(self.getOutputs(2)) > 0:
-            self.executeChild(2)
+        self.executeChild(2)
+
     def manual_save(self):
         for image in self.images:
             self.save_image(image)
@@ -152,6 +150,7 @@ class ImagePreviewWidget(AiNode):
                 print(f"IMAGE PREVIEW NODE: File saved at {filename}")
         except Exception as e:
             print(f"IMAGE PREVIEW NODE: Image could not be saved because: {e}")
+
     def onInputChanged(self, socket=None):
         pass
 

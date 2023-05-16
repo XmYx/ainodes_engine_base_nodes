@@ -101,8 +101,9 @@ class TorchLoaderNode(AiNode):
             gs.models["inpaint"] = None
             torch_gc()
 
+    @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
-        self.busy = False
+        self.busy = True
         model_name = self.content.dropdown.currentText()
         config_name = self.content.config_dropdown.currentText()
 
@@ -134,8 +135,8 @@ class TorchLoaderNode(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
-        if len(self.getOutputs(0)) > 0:
-            self.executeChild(output_index=0)
+        self.executeChild(0)
+
     def onInputChanged(self, socket=None):
         pass
 

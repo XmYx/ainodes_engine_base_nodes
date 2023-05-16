@@ -85,6 +85,8 @@ class KSamplerNode(AiNode):
 
     def onMarkedDirty(self):
         self.value = None
+
+    @QtCore.Slot()
     def evalImplementation_thread(self):
         self.busy = False
         # Add a task to the task queue
@@ -236,6 +238,9 @@ class KSamplerNode(AiNode):
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
+
+        time.sleep(0.1)
+
         if gs.logging:
             print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed, "images", result[0])
         self.markDirty(False)
@@ -244,7 +249,7 @@ class KSamplerNode(AiNode):
         self.setOutput(1, result[1])
 
 
-        self.content.progress_signal.emit(100)
+        #self.content.progress_signal.emit(100)
         self.progress_value = 0
         if len(self.getOutputs(2)) > 0:
             self.executeChild(output_index=2)

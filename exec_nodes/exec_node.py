@@ -48,14 +48,14 @@ class ExecNode(AiNode):
         self.content.setMinimumHeight(160)
         self.content.eval_signal.connect(self.evalImplementation)
 
-    def evalImplementation(self, index=0, *args, **kwargs):
-        if not self.interrupt:
-            super().evalImplementation(index)
+    def evalImplementation_thread(self, index=0, *args, **kwargs):
+        return True
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
         self.executeChild(0)
+
     def onMarkedDirty(self):
         self.value = None
 

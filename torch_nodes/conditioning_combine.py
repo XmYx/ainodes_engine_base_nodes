@@ -65,14 +65,9 @@ class ConditioningCombineNode(AiNode):
 
 
     def evalImplementation_thread(self, index=0):
-        self.value = self.combine_conditioning()
-        self.markDirty(False)
-        self.markInvalid(False)
-        self.setOutput(0, self.value)
-        #print(self.value)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
-        return self.value
+        cond = self.combine_conditioning()
+
+        return cond
 
     def onMarkedDirty(self):
         self.value = None
@@ -121,14 +116,12 @@ class ConditioningCombineNode(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         # Update the node value and mark it as dirty
-        self.value = result
         self.setOutput(0, result)
         self.markDirty(False)
         self.markInvalid(False)
         self.busy = False
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
-        return
+        self.executeChild(1)
+
     def onInputChanged(self, socket=None):
         pass
     def combine(self, conditioning_1, conditioning_2):
@@ -157,29 +150,29 @@ class ConditioningAreaNode(AiNode):
         self.input_socket_name = ["EXEC", "COND"]
         self.output_socket_name = ["EXEC", "COND"]
 
-    def evalImplementation(self, index=0):
+    @QtCore.Slot()
+    def evalImplementation_thread(self, index=0):
         #try:
         cond = self.append_conditioning()
-        self.setOutput(0, cond)
-        if gs.logging:
-            print("COND AREA NODE: Conditionings Area Set.")
-        self.markDirty(False)
-        self.executeChild(output_index=1)
+
         return cond
         #except:
         #    print("COND AREA NODE: Failed, please make sure that the conditioning is valid.")
         #    self.markDirty(True)
         #    return None
-    def onMarkedDirty(self):
-        self.value = None
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+
+        self.setOutput(0, result)
+        if gs.logging:
+            print("COND AREA NODE: Conditionings Area Set.")
+        self.markDirty(False)
+        self.executeChild(1)
+
+
     def onInputChanged(self, socket=None):
         pass
 
-    def exec(self):
-        self.markDirty(True)
-        self.markInvalid(True)
-        self.value = None
-        self.evalImplementation(0)
 
     def append_conditioning(self, progress_callback=None, min_sigma=0.0, max_sigma=99.0):
         cond_node, index = self.getInput(0)

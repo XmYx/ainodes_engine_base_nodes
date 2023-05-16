@@ -46,9 +46,9 @@ class ConditioningNode(AiNode):
         self.input_socket_name = ["EXEC"]
         self.output_socket_name = ["EXEC", "COND"]
 
+    @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         try:
-            self.markDirty(True)
             data = None
             prompt = self.content.prompt.toPlainText()
             if len(self.getInputs(0)) > 0:
@@ -73,20 +73,13 @@ class ConditioningNode(AiNode):
             if gs.logging:
                 print(f"CONDITIONING NODE: Applying conditioning with prompt: {prompt}")
 
-            self.setOutput(0, result)
-            self.markDirty(False)
-            self.markInvalid(False)
-            self.busy = False
+
             return result, data
         except Exception as e:
             print("ERROR:", e)
             self.busy = False
             return None
-    def eval(self, index=0):
-        self.markDirty(True)
-        self.content.eval_signal.emit()
-    def onMarkedDirty(self):
-        self.value = None
+
     def get_conditioning(self, prompt="", progress_callback=None):
 
         """if gs.loaded_models["loaded"] == []:
@@ -99,6 +92,7 @@ class ConditioningNode(AiNode):
         c = gs.models["clip"].encode(prompt)
         uc = {}
         return [[c, uc]]
+
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.setOutput(1, result[0])
@@ -108,15 +102,10 @@ class ConditioningNode(AiNode):
         self.busy = False
         if len(self.getOutputs(2)) > 0:
             self.executeChild(2)
-        return True
+
     def onInputChanged(self, socket=None):
         pass
 
-    def exec(self):
-        self.markDirty(True)
-        self.markInvalid(True)
-        self.value = None
-        self.eval(0)
 
 SCHEDULERS = ["karras", "normal", "simple", "ddim_uniform"]
 SAMPLERS = ["euler", "euler_ancestral", "heun", "dpm_2", "dpm_2_ancestral",
