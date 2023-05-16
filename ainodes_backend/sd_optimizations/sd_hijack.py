@@ -10,7 +10,7 @@ import ldm.modules.attention
 import ldm.modules.diffusionmodules.model
 import ldm.modules.diffusionmodules.util
 from ..devices import torch_gc, choose_torch_device
-from . import sd_hijack_optimizations
+from . import sd_hijack_optimizations, sd_hijack_unet
 from ..textual_inversion import prompt_parser, textual_inversion
 
 ddim_timesteps = ldm.modules.diffusionmodules.util.make_ddim_timesteps
@@ -23,11 +23,32 @@ from ainodes_frontend import singleton
 gs = singleton
 gs.embeddings_path = ""
 
+import ldm.modules.attention
+import ldm.modules.diffusionmodules.model
+import ldm.modules.diffusionmodules.openaimodel
+import ldm.models.diffusion.ddim
+import ldm.models.diffusion.plms
+import ldm.modules.encoders.modules
 
+attention_CrossAttention_forward = ldm.modules.attention.CrossAttention.forward
+diffusionmodules_model_nonlinearity = ldm.modules.diffusionmodules.model.nonlinearity
+diffusionmodules_model_AttnBlock_forward = ldm.modules.diffusionmodules.model.AttnBlock.forward
+
+# new memory efficient cross attention blocks do not support hypernets and we already
+# have memory efficient cross attention anyway, so this disables SD2.0's memory efficient cross attention
+ldm.modules.attention.MemoryEfficientCrossAttention = ldm.modules.attention.CrossAttention
+#ldm.modules.attention.BasicTransformerBlock.ATTENTION_MODES["softmax-xformers"] = ldm.modules.attention.CrossAttention
+
+
+# silence new console spam from SD2
+ldm.modules.attention.print = lambda *args: None
+ldm.modules.diffusionmodules.model.print = lambda *args: None
 def apply_optimizations():
     #undo_optimizations()
-    hijack_style = "sdp"
+    hijack_style = "sdp_quick"
     ldm.modules.diffusionmodules.model.nonlinearity = silu
+    ldm.modules.diffusionmodules.openaimodel.th = sd_hijack_unet.th
+
     if hijack_style == 'xformers':
         print("Applying xformers cross attention optimization.")
         if gs.system.xformer == True:
