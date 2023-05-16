@@ -24,8 +24,8 @@ class ConditioningSetAreaWidget(QDMNodeContentWidget):
     def create_widgets(self):
         self.width = self.create_spin_box("Width", 64, 4096, 512, 64)
         self.height = self.create_spin_box("Height", 64, 4096, 512, 64)
-        self.x_spinbox = self.create_spin_box("X", 64, 4096, 512, 64)
-        self.y_spinbox = self.create_spin_box("Y", 64, 4096, 512, 64)
+        self.x_spinbox = self.create_spin_box("X", 0, 4096, 0, 1)
+        self.y_spinbox = self.create_spin_box("Y", 0, 4096, 0, 1)
         self.strength = self.create_double_spin_box("strength", 0.01, 10.00, 0.01, 1.00)
 
 class ConditioningCombineWidget(QDMNodeContentWidget):
@@ -192,5 +192,6 @@ class ConditioningAreaNode(AiNode):
                 n[1]['max_sigma'] = max_sigma
                 c.append(n)
             return_list.append(c)
+        print(return_list)
         return return_list
 
