@@ -234,6 +234,7 @@ class KSamplerNode(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
 
+        super().onWorkerFinished(None)
 
         if gs.logging:
             print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed, "images", result[0])

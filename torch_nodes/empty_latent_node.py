@@ -48,7 +48,7 @@ class LatentNode(AiNode):
         self.grNode.height = 210
         self.grNode.width = 200
     @QtCore.Slot()
-    def evalImplementation(self, index=0):
+    def evalImplementation_thread(self, index=0):
         samples = []
         if self.getInput(0) != None:
             try:
@@ -117,14 +117,18 @@ class LatentNode(AiNode):
             if gs.logging:
                 print(f"{len(samples)}x Latents rescaled to: {samples[0].shape}")
         #print(samples[0].shape)
-        self.setOutput(0, samples)
-        self.markDirty(False)
-        self.markInvalid(False)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
-        return None
+
+        return samples
             #return self.value
 
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+        self.markDirty(False)
+        self.markInvalid(False)
+        self.setOutput(0, result)
+        if len(self.getOutputs(1)) > 0:
+            self.executeChild(output_index=1)
     def onMarkedDirty(self):
         self.value = None
     def encode_image(self, init_image=None):

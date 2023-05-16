@@ -239,6 +239,8 @@ class Text2VideoNode(AiNode):
             return return_pixmaps
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+
         self.setOutput(0, result)
         self.markDirty(True)
         self.markInvalid(False)

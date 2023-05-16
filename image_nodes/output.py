@@ -121,14 +121,12 @@ class ImagePreviewWidget(AiNode):
 
 
     @QtCore.Slot(object)
-    def onWorkerFinished(self, val):
-
-
-
+    def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
         if self.content.checkbox.isChecked() == True:
             #for image in val:
-            self.save_image(val[0])
-        self.setOutput(0, val)
+            self.save_image(result[0])
+        self.setOutput(0, result)
         self.busy = False
         self.markInvalid(False)
         self.markDirty(False)

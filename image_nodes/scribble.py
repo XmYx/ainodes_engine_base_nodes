@@ -172,6 +172,7 @@ class ScribbleNode(AiNode):
         self.grNode.width = 512
         self.images = []
         self.index = 0
+        self.content.eval_signal.connect(self.evalImplementation)
 
         self.content.dec_button.clicked.connect(self.content.image.dec_brush)
         self.content.inc_button.clicked.connect(self.content.image.inc_brush)
@@ -187,6 +188,8 @@ class ScribbleNode(AiNode):
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, pixmap):
+        super().onWorkerFinished(None)
+
         self.busy = False
         self.markDirty(False)
         self.markInvalid(False)
@@ -215,8 +218,6 @@ class ScribbleNode(AiNode):
     def onInputChanged(self, socket=None):
 
         pass
-    def eval(self):
-        self.evalImplementation(0)
 
     def resize(self):
         self.grNode.setToolTip("")

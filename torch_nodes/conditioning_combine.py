@@ -84,10 +84,10 @@ class ConditioningCombineNode(AiNode):
                     print("COND COMBINE NODE: Conditionings weighted.")
                 return [c]
             else:
-                c = cond1_list + cond2_list
+                c = cond1_list[0] + cond2_list[0]
                 if gs.logging:
                     print("COND COMBINE NODE: Conditionings combined.")
-                return c
+                return [c]
 
 
         except Exception as e:
@@ -162,6 +162,7 @@ class ConditioningAreaNode(AiNode):
         #    return None
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
 
         self.setOutput(0, result)
         if gs.logging:

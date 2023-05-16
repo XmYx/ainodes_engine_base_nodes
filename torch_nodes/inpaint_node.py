@@ -198,6 +198,8 @@ class InpaintNode(AiNode):
         return [pixmap, return_sample]
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+
         # Update the node value and mark it as dirty
         #self.value = result[0]
         if gs.logging:

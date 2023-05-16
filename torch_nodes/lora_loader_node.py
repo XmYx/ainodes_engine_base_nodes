@@ -1,5 +1,5 @@
 import os
-from qtpy import QtWidgets
+from qtpy import QtWidgets, QtCore
 
 from ..ainodes_backend.lora_loader import load_lora_for_models
 
@@ -53,17 +53,22 @@ class LoraLoaderNode(AiNode):
         self.grNode.height = 160
         self.content.setMinimumWidth(320)
 
-    def evalImplementation(self, index=0):
+    def evalImplementation_thread(self, index=0):
         file = self.content.dropdown.currentText()
 
         self.load_lora_to_ckpt(file)
+
+        return self.value
+
+
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+
+
         if len(self.getOutputs(0)) > 0:
             self.executeChild(output_index=0)
 
-        return self.value
-    def eval(self, index=0):
-        self.markDirty(True)
-        self.evalImplementation(0)
     def onInputChanged(self, socket=None):
         pass
 

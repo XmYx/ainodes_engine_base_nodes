@@ -196,6 +196,8 @@ class CNApplyNode(AiNode):
         return c
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+
         # Update the node value and mark it as dirty
         self.markDirty(False)
         self.markInvalid(False)

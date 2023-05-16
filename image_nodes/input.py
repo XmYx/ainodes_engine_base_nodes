@@ -200,6 +200,8 @@ class ImageInputNode(AiNode):
         return pixmap
     @QtCore.Slot(object)
     def onWorkerFinished(self, pixmap):
+        super().onWorkerFinished(None)
+
         self.setOutput(0, [pixmap])
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)

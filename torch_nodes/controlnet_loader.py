@@ -1,7 +1,7 @@
 import os
 import threading
 
-from qtpy import QtWidgets
+from qtpy import QtWidgets, QtCore
 
 from ..ainodes_backend import torch_gc, load_controlnet
 
@@ -74,31 +74,23 @@ class ControlnetLoaderNode(AiNode):
         if gs.models["loaded_controlnet"] != model_name:
             self.markInvalid()
             if model_name != "":
-                self.setOutput(0, "controlnet")
                 self.load_controlnet()
                 gs.models["loaded_controlnet"] = model_name
-                self.markDirty(False)
-                self.markInvalid(False)
-                if len(self.getOutputs(0)) > 0:
-                    self.executeChild(output_index=0)
                 self.busy = False
                 return self.value
             else:
-                if len(self.getOutputs(0)) > 0:
-                    self.executeChild(output_index=0)
-                self.busy = False
                 return self.value
         else:
-            self.markDirty(False)
-            self.markInvalid(False)
-            self.grNode.setToolTip("")
-            if len(self.getOutputs(0)) > 0:
-                self.executeChild(output_index=0)
-            self.busy = False
             return self.value
-    def eval(self, index=0):
-        self.markDirty(True)
-        self.content.eval_signal.emit()
+
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+        self.markDirty(False)
+        self.markInvalid(False)
+        self.setOutput(0, result)
+        if len(self.getOutputs(0)) > 0:
+            self.executeChild(output_index=0)
 
     def load_controlnet(self):
         #if "controlnet" not in gs.models:

@@ -16,13 +16,7 @@ OP_NODE_MATTE = get_next_opcode()
 class MatteWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image
-        self.text_label = QtWidgets.QLabel("Image Operator:")
-
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
-
-        self.setLayout(layout)
+        self.create_main_layout()
 
 
 
@@ -41,15 +35,19 @@ class MatteNode(AiNode):
         #self.content.eval_signal.connect(self.eval)
 
     def initInnerClasses(self):
-        #self.content = MatteWidget(self)
+        self.content = MatteWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.output_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
         self.input_socket_name = ["EXEC", "IMAGE"]
 
         self.grNode.height = 200
         self.grNode.width = 280
+        self.busy = False
+        self.content.eval_signal.connect(self.evalImplementation)
+
     @QtCore.Slot()
-    def evalImplementation(self, index=0):
+    def evalImplementation_thread(self, index=0):
+        self.busy = True
 
         pixmaps = self.getInputData(0)
         if gs.debug:
@@ -85,14 +83,11 @@ class MatteNode(AiNode):
                 bg_image = Image.fromarray(np_bg_image)
                 bg_pixmap = pil_image_to_pixmap(bg_with_alpha)
                 fg_pixmap = pil_image_to_pixmap(fg_with_alpha)
-
-                self.setOutput(0, [bg_pixmap])
-                self.setOutput(1, [fg_pixmap])
+                return([bg_pixmap, fg_pixmap])
 
 
 
-        if len(self.getOutputs(2)) > 0:
-            self.executeChild(output_index=2)
+
         return self.value
     def composite(self, background, foreground, alpha):
         composite = background * (1 - alpha / 255) + foreground * (alpha / 255)
@@ -116,11 +111,16 @@ class MatteNode(AiNode):
         )
         return shrunken_mask_3ch
 
-    def onMarkedDirty(self):
-        self.value = None
-    def eval(self):
-        self.markDirty(True)
-        self.evalImplementation()
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+        self.setOutput(0, [result[0]])
+        self.setOutput(1, [result[1]])
+
+        if len(self.getOutputs(2)) > 0:
+            self.executeChild(output_index=2)
+
+
     def image_op(self, pixmap1, pixmap2, blend):
         # Convert the QPixmap object to a PIL Image object
         image1 = pixmap_to_pil_image(pixmap1).convert("RGBA")

@@ -179,6 +179,8 @@ class ImageOpNode(AiNode):
         self.value = None
     @QtCore.Slot(object)
     def onWorkerFinished(self, pixmap_list):
+        super().onWorkerFinished(None)
+
         self.setOutput(0, pixmap_list)
         if len(self.getOutputs(2)) > 0:
             self.executeChild(2)

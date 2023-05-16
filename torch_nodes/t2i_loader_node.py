@@ -1,6 +1,6 @@
 import os
 
-from qtpy import QtWidgets
+from qtpy import QtWidgets, QtCore
 
 from ..ainodes_backend import torch_gc
 
@@ -51,7 +51,7 @@ class T2ILoaderNode(AiNode):
         self.grNode.width = 280
         self.grNode.height = 100
 
-    def evalImplementation(self, index=0):
+    def evalImplementation_thread(self, index=0):
         #self.executeChild()
         model_name = self.content.t2i.currentText()
         if gs.models["loaded_t2i"] != model_name:
@@ -60,27 +60,16 @@ class T2ILoaderNode(AiNode):
                 self.setOutput(0, "t2i")
                 self.load_t2i()
                 gs.models["loaded_t2i"] = model_name
-                self.markDirty(False)
-                self.markInvalid(False)
-                if len(self.getOutputs(0)) > 0:
-                    self.executeChild(output_index=0)
-                return self.value
-            else:
-                if len(self.getOutputs(0)) > 0:
-                    self.executeChild(output_index=0)
-
-                return self.value
         else:
-            self.markDirty(False)
-            self.markInvalid(False)
-            self.grNode.setToolTip("")
-            if len(self.getOutputs(0)) > 0:
-                self.executeChild(output_index=0)
-
             return self.value
-    def eval(self, index=0):
-        self.markDirty(True)
-        self.evalImplementation(0)
+
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+        self.markDirty(False)
+        self.markInvalid(False)
+        if len(self.getOutputs(0)) > 0:
+            self.executeChild(output_index=0)
 
 
     def load_t2i(self):

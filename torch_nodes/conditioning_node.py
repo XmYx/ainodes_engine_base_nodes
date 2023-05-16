@@ -95,6 +95,8 @@ class ConditioningNode(AiNode):
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+
         self.setOutput(1, result[0])
         self.setOutput(0, result[1])
         self.markDirty(False)
