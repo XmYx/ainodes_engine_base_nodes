@@ -190,7 +190,7 @@ class ScribbleNode(AiNode):
     def onWorkerFinished(self, pixmap):
         super().onWorkerFinished(None)
 
-        self.busy = False
+        pass
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, [pixmap])

@@ -41,7 +41,7 @@ class ConditioningNode(AiNode):
         self.grNode.width = 320
         self.content.setMinimumHeight(200)
         self.content.setMinimumWidth(320)
-        self.busy = False
+        pass
         self.content.button.clicked.connect(self.evalImplementation)
         self.input_socket_name = ["EXEC"]
         self.output_socket_name = ["EXEC", "COND"]
@@ -77,7 +77,7 @@ class ConditioningNode(AiNode):
             return result, data
         except Exception as e:
             print("ERROR:", e)
-            self.busy = False
+            pass
             return None
 
     def get_conditioning(self, prompt="", progress_callback=None):
@@ -101,7 +101,7 @@ class ConditioningNode(AiNode):
         self.setOutput(0, result[1])
         self.markDirty(False)
         self.markInvalid(False)
-        self.busy = False
+        pass
         if len(self.getOutputs(2)) > 0:
             self.executeChild(2)
 

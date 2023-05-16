@@ -62,7 +62,7 @@ class KandinskyNode(AiNode):
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,1])
         self.content.button.clicked.connect(self.evalImplementation)
-        self.busy = False
+        pass
 
         # Create a worker object
     def initInnerClasses(self):
@@ -168,7 +168,7 @@ class KandinskyNode(AiNode):
         self.markInvalid(False)
         self.setOutput(0, result)
 
-        self.busy = False
+        pass
         #self.content.progress_signal.emit(100)
         self.progress_value = 0
         if len(self.getOutputs(1)) > 0:

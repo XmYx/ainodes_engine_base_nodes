@@ -76,7 +76,7 @@ class ImageInputNode(AiNode):
         self.content = ImageInputWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.height = 220
-        self.busy = False
+        pass
         self.content.eval_signal.connect(self.evalImplementation)
         self.video = VideoPlayer()
         self.content_type = None
@@ -182,7 +182,7 @@ class ImageInputNode(AiNode):
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         #self.init_image()
-        self.busy = False
+        pass
         self.markDirty(False)
         self.markInvalid(False)
         self.grNode.setToolTip("")

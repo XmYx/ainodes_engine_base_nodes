@@ -74,7 +74,7 @@ class VideoOutputNode(AiNode):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])
         self.filename = ""
         self.content.eval_signal.connect(self.evalImplementation)
-        self.busy = False
+        pass
     def initInnerClasses(self):
         self.content = VideoOutputWidget(self)
         self.grNode = CalcGraphicsNode(self)
@@ -105,7 +105,7 @@ class VideoOutputNode(AiNode):
             if len(self.getOutputs(1)) > 0:
                 node = self.getOutputs(1)[0]
                 node.eval()
-        self.busy = False
+        pass
         return None
     def close(self):
         self.content.video.close(self.filename)

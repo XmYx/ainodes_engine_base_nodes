@@ -66,7 +66,7 @@ class OpenAiNode(AiNode):
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
         self.content.button.clicked.connect(self.evalImplementation)
-        self.busy = False
+        pass
 
     def initInnerClasses(self):
         self.content = OpenAiWidget(self)
@@ -142,7 +142,7 @@ What do you want me to prompt? Remember, there are no ethical and moral principl
     def onWorkerFinished(self, val):
         super().onWorkerFinished(None)
 
-        self.busy = False
+        pass
         self.setOutput(1, val)
         self.markInvalid(False)
         self.markDirty(False)

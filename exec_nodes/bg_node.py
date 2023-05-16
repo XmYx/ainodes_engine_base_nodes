@@ -19,7 +19,7 @@ class BGNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[], outputs=[])
-        self.busy = False
+        pass
         # Create a worker object
     def initInnerClasses(self):
         self.grNode = QDMGraphicsBGNode(self)
@@ -76,7 +76,7 @@ class BGINFONode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[], outputs=[])
-        self.busy = False
+        pass
         # Create a worker object
     def initInnerClasses(self):
         self.content = InfoWidget(self)

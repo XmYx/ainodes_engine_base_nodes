@@ -48,7 +48,7 @@ class FILMNode(AiNode):
         self.content.eval_signal.connect(self.evalImplementation)
         if "FILM" not in gs.models:
             gs.models["FILM"] = FilmModel()
-        self.busy = False
+        pass
         #self.eval()
     def __del__(self):
         if "FILM" in gs.models:
@@ -116,7 +116,7 @@ class FILMNode(AiNode):
         self.setOutput(0, return_frames)
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
-        self.busy = False
+        pass
 
     def iterate_frames(self, frames):
         self.iterating = True

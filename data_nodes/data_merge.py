@@ -44,7 +44,7 @@ class DataMergeNode(AiNode):
         self.grNode.height = 180
         self.content.setMinimumHeight(140)
         self.content.setMinimumWidth(340)
-        self.busy = False
+        pass
         self.content.eval_signal.connect(self.evalImplementation)
 
     def evalImplementation_thread(self, index=0):
@@ -79,7 +79,7 @@ class DataMergeNode(AiNode):
     def onWorkerFinished(self, result):
         self.markDirty(False)
         self.setOutput(0, result)
-        self.busy = False
+        pass
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
     def onInputChanged(self, socket=None):

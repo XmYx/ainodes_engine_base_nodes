@@ -63,7 +63,7 @@ class KSamplerNode(AiNode):
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[6,2,3,3,1], outputs=[5,2,1])
         self.content.button.clicked.connect(self.eval)
-        self.busy = False
+        pass
 
         # Create a worker object
     def initInnerClasses(self):
@@ -83,7 +83,7 @@ class KSamplerNode(AiNode):
 
     @QtCore.Slot()
     def evalImplementation_thread(self):
-        self.busy = False
+        pass
         # Add a task to the task queue
         cond_list = self.getInputData(3)
         n_cond_list = self.getInputData(2)

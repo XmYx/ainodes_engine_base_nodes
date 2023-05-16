@@ -55,7 +55,7 @@ class ExecNode(AiNode):
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
 
-        self.busy = False
+        pass
         self.executeChild(0)
 
     def onMarkedDirty(self):
@@ -67,7 +67,7 @@ class ExecNode(AiNode):
         return
     def start(self):
         self.interrupt = False
-        self.busy = False
+        pass
         self.eval()
         return
 

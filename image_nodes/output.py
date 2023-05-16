@@ -52,7 +52,7 @@ class ImagePreviewWidget(AiNode):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
         self.content.button.clicked.connect(self.manual_save)
         self.content.next_button.clicked.connect(self.show_next_image)
-        self.busy = False
+        pass
 
     def initInnerClasses(self):
         self.content = ImageOutputWidget(self)
@@ -127,7 +127,7 @@ class ImagePreviewWidget(AiNode):
             #for image in val:
             self.save_image(result[0])
         self.setOutput(0, result)
-        self.busy = False
+        pass
         self.markInvalid(False)
         self.markDirty(False)
         self.executeChild(2)

@@ -58,7 +58,7 @@ class ConditioningCombineNode(AiNode):
         self.grNode.width = 320
         #self.content.setMinimumHeight(200)
         #self.content.setMinimumWidth(320)
-        self.busy = False
+        pass
         self.input_socket_name = ["EXEC", "COND", "COND2"]
         self.output_socket_name = ["EXEC", "COND"]
         self.content.eval_signal.connect(self.evalImplementation)
@@ -119,7 +119,7 @@ class ConditioningCombineNode(AiNode):
         self.setOutput(0, result)
         self.markDirty(False)
         self.markInvalid(False)
-        self.busy = False
+        pass
         self.executeChild(1)
 
     def onInputChanged(self, socket=None):
@@ -145,7 +145,7 @@ class ConditioningAreaNode(AiNode):
         self.grNode.width = 320
         self.content.setMinimumHeight(200)
         self.content.setMinimumWidth(320)
-        self.busy = False
+        pass
         #self.content.button.clicked.connect(self.exec)
         self.input_socket_name = ["EXEC", "COND"]
         self.output_socket_name = ["EXEC", "COND"]

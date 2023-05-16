@@ -50,7 +50,7 @@ class RIFENode(AiNode):
         if "rife" not in gs.models:
             gs.models["rife"] = RIFEModel()
         self.iterating = False
-        self.busy = False
+        pass
 
     def initInnerClasses(self):
         self.content = RIFEWidget(self)
@@ -126,14 +126,14 @@ class RIFENode(AiNode):
                 pass
         if len(self.getOutputs(2)) > 0:
             self.executeChild(output_index=2)
-        self.busy = False
+        pass
         return None
     @QtCore.Slot(object)
     def onWorkerFinished(self, return_frames):
         self.setOutput(0, return_frames)
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
-        self.busy = False
+        pass
 
     def iterate_frames(self, frames):
         for frame in frames:

@@ -54,7 +54,7 @@ class ControlnetLoaderNode(AiNode):
         self.grNode.width = 280
         self.grNode.height = 100
         self.content.setMinimumWidth(260)
-        self.busy = False
+        pass
         self.content.eval_signal.connect(self.evalImplementation)
 
     def resize(self):
@@ -76,7 +76,7 @@ class ControlnetLoaderNode(AiNode):
             if model_name != "":
                 self.load_controlnet()
                 gs.models["loaded_controlnet"] = model_name
-                self.busy = False
+                pass
                 return self.value
             else:
                 return self.value

@@ -21,7 +21,7 @@ class ExecSplitterNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[1,1])
-        self.busy = False
+        pass
         # Create a worker object
     def initInnerClasses(self):
         self.grNode = CalcGraphicsNode(self)
@@ -31,7 +31,7 @@ class ExecSplitterNode(AiNode):
     def evalImplementation(self, index=0, *args, **kwargs):
         self.markDirty(True)
         self.markInvalid(True)
-        self.busy = False
+        pass
         self.executeChild(1)
         self.executeChild(0)
         return None

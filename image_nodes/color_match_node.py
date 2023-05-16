@@ -31,7 +31,7 @@ class ColorMatch(AiNode):
                 "Please refer to Deforum guide"
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[5,5,1], outputs=[5,1])
-        self.busy = False
+        pass
 
         # Create a worker object
     def initInnerClasses(self):

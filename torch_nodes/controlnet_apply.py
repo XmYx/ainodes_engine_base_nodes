@@ -48,7 +48,7 @@ class CNApplyNode(AiNode):
 
         self.content.button.clicked.connect(self.evalImplementation)
         self.content.cleanup_button.clicked.connect(self.clean)
-        self.busy = False
+        pass
         self.latest_network = None
         # Create a worker object
     def initInnerClasses(self):
@@ -201,7 +201,7 @@ class CNApplyNode(AiNode):
         # Update the node value and mark it as dirty
         self.markDirty(False)
         self.markInvalid(False)
-        self.busy = False
+        pass
         self.setOutput(0, result)
         if len(self.getOutputs(1)) > 0:
             self.executeChild(1)

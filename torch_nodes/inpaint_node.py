@@ -83,7 +83,7 @@ class InpaintNode(AiNode):
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,5,1], outputs=[5,1])
         self.content.button.clicked.connect(self.evalImplementation)
-        self.busy = False
+        pass
         # Create a worker object
     def initInnerClasses(self):
         self.content = InpaintWidget(self)
@@ -192,7 +192,7 @@ class InpaintNode(AiNode):
             torch_gc()
             self.onWorkerFinished([pixmap, return_sample])
         except:
-            self.busy = False
+            pass
             if len(self.getOutputs(2)) > 0:
                 self.executeChild(output_index=2)
         return [pixmap, return_sample]
@@ -208,7 +208,7 @@ class InpaintNode(AiNode):
         self.markInvalid(False)
         self.setOutput(0, result[0])
         self.setOutput(1, result[1])
-        self.busy = False
+        pass
         #self.worker.autoDelete()
         #self.scene.queue.task_finished.disconnect(self.onWorkerFinished)
         if len(self.getOutputs(2)) > 0:

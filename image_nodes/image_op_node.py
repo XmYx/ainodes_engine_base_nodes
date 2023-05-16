@@ -147,7 +147,7 @@ class ImageOpNode(AiNode):
         self.grNode.width = 280
         self.content.setMinimumHeight(130)
         self.content.setMinimumWidth(260)
-        self.busy = False
+        pass
     def eval(self, index=0):
         self.markDirty(True)
         self.content.eval_signal.emit()
@@ -184,7 +184,7 @@ class ImageOpNode(AiNode):
         self.setOutput(0, pixmap_list)
         if len(self.getOutputs(2)) > 0:
             self.executeChild(2)
-        self.busy = False
+        pass
         self.markDirty(False)
         self.markInvalid(False)
         return True

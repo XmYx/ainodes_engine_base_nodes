@@ -38,7 +38,6 @@ class LatentNode(AiNode):
 
         super().__init__(scene, inputs=[2,5,1], outputs=[2,1])
         #self.eval()
-        #self.content.eval_signal.connect(self.eval)
 
     def initInnerClasses(self):
         self.content = LatentWidget(self)
@@ -47,6 +46,8 @@ class LatentNode(AiNode):
         self.output_socket_name = ["EXEC", "LATENT"]
         self.grNode.height = 210
         self.grNode.width = 200
+        self.content.eval_signal.connect(self.evalImplementation)
+
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         samples = []
@@ -144,9 +145,6 @@ class LatentNode(AiNode):
         latent = torch.zeros([batch_size, 4, height // 8, width // 8])
         return latent
 
-    def eval(self):
-        self.markDirty(True)
-        self.evalImplementation(0)
 class LatentCompositeWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image

@@ -66,7 +66,7 @@ class TorchLoaderNode(AiNode):
         self.grNode.height = 180
         self.content.setMinimumHeight(140)
         self.content.setMinimumWidth(340)
-        self.busy = False
+        pass
         self.content.eval_signal.connect(self.evalImplementation)
 
     def evalImplementation_thread(self, index=0):
@@ -148,7 +148,7 @@ class TorchLoaderNode(AiNode):
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
 
-        self.busy = False
+        pass
         if result:
             self.setOutput(0, result)
             self.markDirty(False)
