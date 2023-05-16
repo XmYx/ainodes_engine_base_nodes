@@ -58,7 +58,6 @@ class ConditioningCombineNode(AiNode):
         self.grNode.width = 320
         #self.content.setMinimumHeight(200)
         #self.content.setMinimumWidth(320)
-        pass
         self.input_socket_name = ["EXEC", "COND", "COND2"]
         self.output_socket_name = ["EXEC", "COND"]
         self.content.eval_signal.connect(self.evalImplementation)
@@ -115,11 +114,12 @@ class ConditioningCombineNode(AiNode):
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+
         # Update the node value and mark it as dirty
         self.setOutput(0, result)
         self.markDirty(False)
         self.markInvalid(False)
-        pass
         self.executeChild(1)
 
     def onInputChanged(self, socket=None):
@@ -145,10 +145,11 @@ class ConditioningAreaNode(AiNode):
         self.grNode.width = 320
         self.content.setMinimumHeight(200)
         self.content.setMinimumWidth(320)
-        pass
         #self.content.button.clicked.connect(self.exec)
         self.input_socket_name = ["EXEC", "COND"]
         self.output_socket_name = ["EXEC", "COND"]
+        self.content.eval_signal.connect(self.evalImplementation)
+
 
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
@@ -170,9 +171,6 @@ class ConditioningAreaNode(AiNode):
         self.markDirty(False)
         self.executeChild(1)
 
-
-    def onInputChanged(self, socket=None):
-        pass
 
 
     def append_conditioning(self, progress_callback=None, min_sigma=0.0, max_sigma=99.0):

@@ -62,11 +62,11 @@ class DeepFloydLoaderNode(AiNode):
         self.grNode.height = 180
         self.content.setMinimumHeight(140)
         self.content.setMinimumWidth(340)
-        pass
+        #pass
         self.content.eval_signal.connect(self.evalImplementation)
 
     def evalImplementation_thread(self, index=0):
-        pass
+        #pass
         model = ""
         if gs.token == "":
             token = self.content.token.text()
@@ -116,7 +116,7 @@ class DeepFloydLoaderNode(AiNode):
         self.content.update()
         data = {"model":result}
         self.setOutput(0, data)
-        pass
+        #pass
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
     def onInputChanged(self, socket=None):

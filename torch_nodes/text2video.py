@@ -90,7 +90,7 @@ class Text2VideoNode(AiNode):
         self.grNode.height = 600
         self.content.setMinimumHeight(400)
         self.content.setMinimumWidth(340)
-        pass
+        #pass
         self.iterating = False
         self.index = 0
         self.prompts = [
@@ -246,7 +246,7 @@ class Text2VideoNode(AiNode):
         self.markInvalid(False)
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
-        pass
+        #pass
 
     def eval(self, index=0):
         self.markDirty(True)

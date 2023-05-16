@@ -42,7 +42,7 @@ class MatteNode(AiNode):
 
         self.grNode.height = 200
         self.grNode.width = 280
-        pass
+        #pass
         self.content.eval_signal.connect(self.evalImplementation)
 
     @QtCore.Slot()
