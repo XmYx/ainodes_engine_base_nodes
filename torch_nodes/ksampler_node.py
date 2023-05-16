@@ -62,7 +62,7 @@ class KSamplerNode(AiNode):
     category = "Sampling"
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[6,2,3,3,1], outputs=[5,2,1])
-        self.content.button.clicked.connect(self.evalImplementation)
+        self.content.button.clicked.connect(self.eval)
         self.busy = False
 
         # Create a worker object
@@ -79,12 +79,7 @@ class KSamplerNode(AiNode):
         self.content.progress_signal.connect(self.setProgress)
         self.progress_value = 0
         self.content.eval_signal.connect(self.evalImplementation)
-    def eval(self, index=0):
-        self.markDirty(True)
-        self.content.eval_signal.emit()
 
-    def onMarkedDirty(self):
-        self.value = None
 
     @QtCore.Slot()
     def evalImplementation_thread(self):
@@ -239,7 +234,6 @@ class KSamplerNode(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
 
-        time.sleep(0.1)
 
         if gs.logging:
             print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed, "images", result[0])

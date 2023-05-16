@@ -50,8 +50,12 @@ class BlendNode(AiNode):
         self.output_socket_name = ["EXEC", "IMAGE"]
         self.input_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
         self.grNode.height = 220
+        self.content.eval_signal.connect(self.evalImplementation)
+
+
+
     @QtCore.Slot()
-    def evalImplementation(self, index=0):
+    def evalImplementation_thread(self, index=0):
 
         pixmap1 = self.getInputData(1)
         pixmap2 = self.getInputData(0)
@@ -75,11 +79,16 @@ class BlendNode(AiNode):
                 image = Image.composite(image1, result_image, image2)
                 value = pil_image_to_pixmap(image)
             elif method in pixmap_composite_method_list:
-                value = self.composite_pixmaps(pixmap1[0], pixmap2[0], method)
+                pixmap_1, pixmap_2 = None, None
+                pixmap_1 = pixmap1[0]
+                pixmap_2 = pixmap2[0]
+
+                value = self.composite_pixmaps(pixmap_1, pixmap_2, method)
+            return value
                 #print(self.value)
-            self.setOutput(0, [value])
-            self.markDirty(False)
-            self.markInvalid(False)
+            #self.setOutput(0, [value])
+            #self.markDirty(False)
+            #self.markInvalid(False)
         elif pixmap2 != None:
             try:
                 self.setOutput(0, pixmap2)
@@ -94,13 +103,16 @@ class BlendNode(AiNode):
                     print(f"BLEND NODE: Using only Second input")
             except:
                 pass
-        self.executeChild(output_index=1)
+
         return None
-    def onMarkedDirty(self):
-        self.value = None
-    def eval(self):
-        self.markDirty(True)
-        self.evalImplementation()
+
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+        self.busy = False
+        self.setOutput(0, [result])
+        self.executeChild(output_index=1)
+
+
     def image_op(self, pixmap1, pixmap2, blend):
         # Convert the QPixmap object to a PIL Image object
         image1 = pixmap_to_pil_image(pixmap1).convert("RGBA")
@@ -134,7 +146,14 @@ class BlendNode(AiNode):
         #self.setOutput(0, self.result_pixmap)
         #self.result_pixmap = QtGui.QPixmap(pixmap1.size())
 
-        self.painter.begin(pixmap2)
+        pixmap2_copy = pixmap2.copy()
+
+        #pixmap2.fill(QtGui.Qt.transparent)
+        self.painter.begin(pixmap2_copy)
+
+
+
+
 
         # Set the compositing mode based on the specified method
         if method == 'source_over':
@@ -193,4 +212,4 @@ class BlendNode(AiNode):
             # End painting
             self.painter.end()
 
-        return pixmap2
+        return pixmap2_copy

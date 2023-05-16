@@ -123,7 +123,6 @@ class ImagePreviewWidget(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, val):
 
-        time.sleep(0.1)
 
 
         if self.content.checkbox.isChecked() == True:
