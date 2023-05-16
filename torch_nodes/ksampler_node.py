@@ -151,11 +151,11 @@ class KSamplerNode(AiNode):
             qimage = ImageQt(img)
             pixmap = QPixmap().fromImage(qimage)
 
-            if len(self.getOutputs(0)) > 0:
-                node = self.getOutputs(0)[0]
-                if hasattr(node.content, "preview_signal"):
-                    # print("emitting")
-                    node.content.preview_signal.emit(pixmap)
+            #if len(self.getOutputs(0)) > 0:
+            #    node = self.getOutputs(0)[0]
+            #    if hasattr(node.content, "preview_signal"):
+            #        # print("emitting")
+            #        node.content.preview_signal.emit(pixmap)
             self.content.progress_signal.emit(0)
             return_pixmaps.append(pixmap)
             return_samples.append(image)
@@ -210,11 +210,11 @@ class KSamplerNode(AiNode):
             qimage = ImageQt(image)
             pixmap = QPixmap().fromImage(qimage)
 
-            if len(self.getOutputs(0)) > 0:
-                node = self.getOutputs(0)[0]
-                if hasattr(node.content, "preview_signal"):
-                    #print("emitting")
-                    node.content.preview_signal.emit(pixmap)
+            #if len(self.getOutputs(0)) > 0:
+            #    node = self.getOutputs(0)[0]
+            #    if hasattr(node.content, "preview_signal"):
+            #        #print("emitting")
+            #        node.content.preview_signal.emit(pixmap)
             self.content.progress_signal.emit(0)
             return_pixmaps.append(pixmap)
             x+=1
@@ -233,6 +233,7 @@ class KSamplerNode(AiNode):
         for key, value in tensors.items():
             if key == 'i':
                 print(value)
+
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         if gs.logging:
@@ -248,7 +249,6 @@ class KSamplerNode(AiNode):
         if len(self.getOutputs(2)) > 0:
             self.executeChild(output_index=2)
 
-        return True
     @QtCore.Slot()
     def setSeed(self):
         self.content.seed.setText(str(self.seed))
