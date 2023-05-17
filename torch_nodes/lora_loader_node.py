@@ -22,6 +22,11 @@ class LoraLoaderWidget(QDMNodeContentWidget):
             print(f"LORA LOADER NODE: No model file found at {os.getcwd()}/models/loras,")
             print(f"LORA LOADER NODE: please download your favorite ckpt before Evaluating this node.")
         self.dropdown = self.create_combo_box(lora_files, "Lora")
+
+        self.force_load = self.create_check_box("Force Load")
+        self.model_weight = self.create_double_spin_box("Model Weight", 0.0, 1.0, 0.1, 1.0)
+        self.clip_weight = self.create_double_spin_box("Clip Weight", 0.0, 1.0, 0.1, 1.0)
+
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
     def __init__(self, parent=None):
         super().__init__(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -50,15 +55,21 @@ class LoraLoaderNode(AiNode):
         self.content = LoraLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.width = 340
-        self.grNode.height = 160
+        self.grNode.height = 200
         self.content.setMinimumWidth(320)
         self.content.eval_signal.connect(self.evalImplementation)
+        self.current_lora = ""
 
     def evalImplementation_thread(self, index=0):
         file = self.content.dropdown.currentText()
 
-        self.load_lora_to_ckpt(file)
-
+        if gs.loaded_loras == []:
+            self.current_lora = ""
+        if self.current_lora != file or self.content.force_load.isChecked() == True:
+            if file not in gs.loaded_loras or self.content.force_load.isChecked() == True:
+                self.load_lora_to_ckpt(file)
+                gs.loaded_loras.append(file)
+                self.current_lora = file
         return self.value
 
 
@@ -75,8 +86,8 @@ class LoraLoaderNode(AiNode):
 
     def load_lora_to_ckpt(self, lora_name):
         lora_path = os.path.join(gs.loras, lora_name)
-        strength_model = 1.0
-        strength_clip = 1.0
+        strength_model = self.content.model_weight.value()
+        strength_clip = self.content.clip_weight.value()
         load_lora_for_models(lora_path, strength_model, strength_clip)
 
 

@@ -48,6 +48,8 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         self.vae_dropdown.addItem("default")
         self.vae_dropdown.setCurrentText("default")
 
+        self.force_reload = self.create_check_box("Force Reload")
+
 
 
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
@@ -83,6 +85,7 @@ class TorchLoaderNode(AiNode):
         self.content.setMinimumWidth(340)
         self.content.eval_signal.connect(self.evalImplementation)
     def clean_sd(self):
+        gs.loaded_loras = []
         if "sd" in gs.models:
             try:
                 gs.models["sd"].cpu()
@@ -110,7 +113,7 @@ class TorchLoaderNode(AiNode):
 
         inpaint = True if "inpaint" in model_name else False
         m = "sd_model" if not inpaint else "inpaint"
-        if gs.loaded_sd != model_name:
+        if gs.loaded_sd != model_name or self.content.force_reload.isChecked() == True:
             self.clean_sd()
             self.loader.load_model(model_name, config_name, inpaint)
             gs.loaded_sd = model_name
