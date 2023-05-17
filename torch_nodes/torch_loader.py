@@ -81,7 +81,6 @@ class TorchLoaderNode(AiNode):
         self.grNode.height = 180
         self.content.setMinimumHeight(140)
         self.content.setMinimumWidth(340)
-        #pass
         self.content.eval_signal.connect(self.evalImplementation)
     def clean_sd(self):
         if "sd" in gs.models:

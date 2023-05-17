@@ -52,6 +52,7 @@ class LoraLoaderNode(AiNode):
         self.grNode.width = 340
         self.grNode.height = 160
         self.content.setMinimumWidth(320)
+        self.content.eval_signal.connect(self.evalImplementation)
 
     def evalImplementation_thread(self, index=0):
         file = self.content.dropdown.currentText()
