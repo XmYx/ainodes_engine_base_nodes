@@ -63,12 +63,15 @@ class LoraLoaderNode(AiNode):
     def evalImplementation_thread(self, index=0):
         file = self.content.dropdown.currentText()
 
+        force = None if self.content.force_load.isChecked() == False else True
+
         if gs.loaded_loras == []:
             self.current_lora = ""
-        if self.current_lora != file or self.content.force_load.isChecked() == True:
-            if file not in gs.loaded_loras or self.content.force_load.isChecked() == True:
+        if self.current_lora != file or force:
+            if file not in gs.loaded_loras or force:
                 self.load_lora_to_ckpt(file)
-                gs.loaded_loras.append(file)
+                if file not in gs.loaded_loras:
+                    gs.loaded_loras.append(file)
                 self.current_lora = file
         return self.value
 

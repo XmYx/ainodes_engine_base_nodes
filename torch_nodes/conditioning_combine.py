@@ -19,14 +19,24 @@ class ConditioningSetAreaWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
         self.create_main_layout()
-        # Create a label to display the image
-        #self.text_label = QtWidgets.QLabel("Diffusers:")
+
     def create_widgets(self):
         self.width = self.create_spin_box("Width", 64, 4096, 512, 64)
         self.height = self.create_spin_box("Height", 64, 4096, 512, 64)
-        self.x_spinbox = self.create_spin_box("X", 0, 4096, 0, 1)
-        self.y_spinbox = self.create_spin_box("Y", 0, 4096, 0, 1)
+        self.x_spinbox = self.create_spin_box("X", 0, 4096, 0, 64)
+        self.y_spinbox = self.create_spin_box("Y", 0, 4096, 0, 64)
         self.strength = self.create_double_spin_box("strength", 0.01, 10.00, 0.01, 1.00)
+
+        self.resolution_label = self.create_label("Result resolution: 512 x 512")
+
+        self.width.valueChanged.connect(self.update_resolution_label)
+        self.height.valueChanged.connect(self.update_resolution_label)
+        self.x_spinbox.valueChanged.connect(self.update_resolution_label)
+        self.y_spinbox.valueChanged.connect(self.update_resolution_label)
+
+    def update_resolution_label(self):
+        resolution = f"{self.width.value() + self.x_spinbox.value()} x {self.height.value() + self.y_spinbox.value()}"
+        self.resolution_label.setText(f"Result resolution: {resolution}")
 
 class ConditioningCombineWidget(QDMNodeContentWidget):
 

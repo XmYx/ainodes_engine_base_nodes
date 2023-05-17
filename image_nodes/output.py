@@ -100,7 +100,10 @@ class ImagePreviewWidget(AiNode):
         if len(self.getInputs(0)) > 0:
             input_images = self.getInputData(0)
             if input_images is not None:
-                self.content.preview_signal.emit(input_images[0])
+                for image in input_images:
+                    self.content.preview_signal.emit(image)
+                    if len(input_images) > 1:
+                        time.sleep(0.1)
                 return input_images
 
         """elif len(self.getInputs(1)) > 0:
