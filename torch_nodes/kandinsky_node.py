@@ -1,27 +1,15 @@
-import inspect
-import random
-import secrets
-import threading
-import time
-
-import numpy as np
-from einops import rearrange
 
 from .ksampler_node import get_fixed_seed
-from ..ainodes_backend import common_ksampler, torch_gc, pil_image_to_pixmap, pixmap_to_pil_image
+from ..ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image
 
 import torch
-from PIL import Image
-from PIL.ImageQt import ImageQt
 from qtpy import QtWidgets, QtCore, QtGui
-from qtpy.QtGui import QPixmap
 
 from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 
-from queue import Queue
 
 from kandinsky2 import get_kandinsky2
 
@@ -62,7 +50,6 @@ class KandinskyNode(AiNode):
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,1])
         self.content.button.clicked.connect(self.evalImplementation)
-        #pass
 
         # Create a worker object
     def initInnerClasses(self):
@@ -73,25 +60,19 @@ class KandinskyNode(AiNode):
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(256)
         self.seed = ""
-        #self.content.fix_seed_button.clicked.connect(self.setSeed)
         self.content.seed_signal.connect(self.setSeed)
         self.content.progress_signal.connect(self.setProgress)
         self.progress_value = 0
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.text_signal.connect(self.set_prompt)
+        self.busy = False
+
     @QtCore.Slot(str)
     def set_prompt(self, text):
         self.content.prompt.setText(text)
 
-    def eval(self, index=0):
-        self.markDirty(True)
-        self.content.eval_signal.emit()
-
-    def onMarkedDirty(self):
-        self.value = None
 
     def evalImplementation_thread(self):
-
         if "kandinsky" not in gs.models:
             gs.models["kandinsky"] = get_kandinsky2('cuda', task_type='text2img', model_version='2.1', use_flash_attention=False)
         images = self.getInputData(0)
@@ -152,36 +133,24 @@ class KandinskyNode(AiNode):
             return_images.append(pixmap)
         return return_images
 
-    def callback(self, tensors):
-        self.setProgress()
-        return
-        for key, value in tensors.items():
-            if key == 'i':
-                print(value)
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
-
-        if gs.logging:
-            print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed)
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result)
-
-        #self.content.progress_signal.emit(100)
         self.progress_value = 0
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
+        self.executeChild(output_index=1)
 
-        return True
     @QtCore.Slot()
     def setSeed(self):
         self.content.seed.setText(str(self.seed))
+
     @QtCore.Slot()
     def setProgress(self, progress=None):
         if progress != 100 and progress != 0:
             self.progress_value = self.progress_value + self.single_step
-        #print(self.progress_value)
         self.content.progress_bar.setValue(self.progress_value)
+
     def onInputChanged(self, socket=None):
         pass

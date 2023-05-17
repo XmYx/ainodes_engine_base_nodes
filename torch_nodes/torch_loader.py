@@ -1,7 +1,4 @@
 import os
-import threading
-
-from PySide6.QtWebEngineCore import QWebEnginePage
 from qtpy import QtCore
 from qtpy import QtWidgets
 
@@ -137,8 +134,6 @@ class TorchLoaderNode(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
-
-        #pass
         self.executeChild(0)
 
     def onInputChanged(self, socket=None):
