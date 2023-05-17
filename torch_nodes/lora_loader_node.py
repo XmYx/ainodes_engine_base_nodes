@@ -1,6 +1,10 @@
 import os
+
+import requests
+from PySide6.QtCore import QObject, Signal
 from qtpy import QtWidgets, QtCore
 
+from ..ainodes_backend.hash import sha256
 from ..ainodes_backend.lora_loader import load_lora_for_models
 
 from ainodes_frontend.base import register_node, get_next_opcode
@@ -27,6 +31,8 @@ class LoraLoaderWidget(QDMNodeContentWidget):
         self.model_weight = self.create_double_spin_box("Model Weight", 0.0, 1.0, 0.1, 1.0)
         self.clip_weight = self.create_double_spin_box("Clip Weight", 0.0, 1.0, 0.1, 1.0)
 
+        self.help_prompt = self.create_label("Trained Words:")
+
 class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
     def __init__(self, parent=None):
         super().__init__(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -37,6 +43,21 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
         self.setHorizontalPolicy(QtWidgets.QSizePolicy.Expanding)
         self.setVerticalPolicy(QtWidgets.QSizePolicy.Expanding)
         #self.parent.setAlignment(Qt.AlignCenter)
+
+
+class APIHandler(QObject):
+    response_received = Signal(dict)
+
+    def get_response(self, hash_value):
+        url = f"https://civitai.com/api/v1/model-versions/by-hash/{hash_value}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            self.response_received.emit(data)
+        else:
+            # Handle error
+            self.response_received.emit({})
+
 
 @register_node(OP_NODE_LORA_LOADER)
 class LoraLoaderNode(AiNode):
@@ -55,13 +76,21 @@ class LoraLoaderNode(AiNode):
         self.content = LoraLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.width = 340
-        self.grNode.height = 200
+        self.grNode.height = 300
         self.content.setMinimumWidth(320)
         self.content.eval_signal.connect(self.evalImplementation)
         self.current_lora = ""
+        self.apihandler = APIHandler()
 
     def evalImplementation_thread(self, index=0):
         file = self.content.dropdown.currentText()
+
+        sha = sha256(os.path.join(gs.loras, file))
+
+        print("SHA", sha)
+
+        self.apihandler.response_received.connect(self.handle_response)
+        self.apihandler.get_response(sha)
 
         force = None if self.content.force_load.isChecked() == False else True
 
@@ -74,7 +103,13 @@ class LoraLoaderNode(AiNode):
                     gs.loaded_loras.append(file)
                 self.current_lora = file
         return self.value
+    @QtCore.Slot(object)
+    def handle_response(self, data):
+        # Process the received data
+        if "trainedWords" in data:
 
+            words = "\n".join(data["trainedWords"])
+            self.content.help_prompt.setText(f"Trained Words:\n{words}")
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):

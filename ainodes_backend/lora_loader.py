@@ -181,7 +181,8 @@ def load_lora(path, to_load):
         if x not in loaded_keys:
             print("lora key not loaded", x)
         else:
-            print("Lora loaded")
+            pass
+            #print("Lora loaded")
     return patch_dict
 
 
