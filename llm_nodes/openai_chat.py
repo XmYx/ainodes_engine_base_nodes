@@ -2,7 +2,7 @@ import datetime
 import os
 import time
 
-from PySide6.QtWidgets import QLineEdit
+from qtpy.QtWidgets import QLineEdit
 from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
 from qtpy import QtWidgets, QtGui, QtCore

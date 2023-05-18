@@ -1,14 +1,12 @@
 import json
 import os
 import time
-import zlib
 
-import pyexiv2
 import requests
 from PIL import Image
 from PIL.ImageQt import ImageQt
-from PySide6.QtCore import QUrl
-from PySide6.QtGui import QImage
+from qtpy.QtCore import QUrl
+from qtpy.QtGui import QImage
 from qtpy import QtGui
 from qtpy import QtCore, QtWidgets
 from qtpy.QtWidgets import QLabel, QFileDialog, QVBoxLayout
@@ -34,7 +32,8 @@ class ImageInputWidget(QDMNodeContentWidget):
         self.image = self.create_label("Image")
         self.open_button = QtWidgets.QPushButton("Open New Image")
         self.open_button.clicked.connect(self.openFileDialog)
-        self.create_button_layout([self.open_button])
+        self.open_graph_button = QtWidgets.QPushButton("Open Graph")
+        self.create_button_layout([self.open_button, self.open_graph_button])
         self.firstRun_done = None
 
     def load_image(self):
@@ -80,6 +79,7 @@ class ImageInputNode(AiNode):
         self.grNode = CalcGraphicsNode(self)
         self.grNode.height = 220
         self.content.eval_signal.connect(self.evalImplementation)
+        self.content.open_graph_button.clicked.connect(self.tryOpenGraph)
         self.video = VideoPlayer()
         self.content_type = None
 
@@ -198,9 +198,6 @@ class ImageInputNode(AiNode):
 
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
-
-        self.tryOpenGraph()
-
         self.markDirty(False)
         self.markInvalid(False)
         self.grNode.setToolTip("")

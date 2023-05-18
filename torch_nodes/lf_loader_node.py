@@ -1,7 +1,7 @@
 import os
 import threading
 
-from PySide6.QtWidgets import QLineEdit
+from qtpy.QtWidgets import QLineEdit
 from qtpy import QtCore
 from qtpy import QtWidgets
 

@@ -1,14 +1,7 @@
 import datetime
-import json
 import os
-import shutil
 import time
-import zlib
 
-import cv2
-import numpy as np
-import png
-import pyexiv2
 from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
 from qtpy import QtWidgets, QtGui, QtCore
@@ -132,6 +125,7 @@ class ImagePreviewNode(AiNode):
     def show_image(self, image):
         self.content.image.setPixmap(image)
         self.resize()
+        self.resize()
 
 
     @QtCore.Slot(object)
@@ -172,7 +166,7 @@ class ImagePreviewNode(AiNode):
 
     def resize(self):
         self.grNode.setToolTip("")
-        self.grNode.height = self.content.image.pixmap().size().height() + 155
+        self.grNode.height = self.content.image.pixmap().size().height() + 190
         self.grNode.width = self.content.image.pixmap().size().width() + 32
         self.content.image.setMinimumHeight(self.content.image.pixmap().size().height())
         self.content.image.setMinimumWidth(self.content.image.pixmap().size().width())

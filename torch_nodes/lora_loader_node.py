@@ -1,7 +1,7 @@
 import os
 
 import requests
-from PySide6.QtCore import QObject, Signal
+from qtpy.QtCore import QObject, Signal
 from qtpy import QtWidgets, QtCore
 
 from ..ainodes_backend.hash import sha256
