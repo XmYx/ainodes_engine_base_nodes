@@ -12,7 +12,8 @@ from .general_utils import get_deforum_version, clean_gradio_path_strings
 #import modules.shared as sh
 #import logging
 
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 def get_keys_to_exclude():
     return ["n_batch", "seed_enable_extras", "scale", "subseed", "subseed_strength", "init_sample",

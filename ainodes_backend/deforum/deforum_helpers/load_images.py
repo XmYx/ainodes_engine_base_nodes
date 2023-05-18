@@ -8,7 +8,8 @@ import torchvision.transforms.functional as TF
 #from modules.shared import opts
 from .general_utils import clean_gradio_path_strings
 
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 def load_img(path : str, shape=None, use_alpha_as_mask=False):
     # use_alpha_as_mask: Read the alpha channel of the image as the mask image

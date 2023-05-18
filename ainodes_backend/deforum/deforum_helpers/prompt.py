@@ -2,7 +2,8 @@ import re
 import numexpr
 #from modules.shared import opts
 
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 def check_is_number(value):
     float_pattern = r'^(?=.)([+-]?([0-9]*)(\.([0-9]+))?)$'

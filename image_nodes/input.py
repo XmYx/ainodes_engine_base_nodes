@@ -1,6 +1,9 @@
+import json
 import os
 import time
+import zlib
 
+import pyexiv2
 import requests
 from PIL import Image
 from PIL.ImageQt import ImageQt
@@ -76,7 +79,6 @@ class ImageInputNode(AiNode):
         self.content = ImageInputWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.height = 220
-        pass
         self.content.eval_signal.connect(self.evalImplementation)
         self.video = VideoPlayer()
         self.content_type = None
@@ -93,7 +95,7 @@ class ImageInputNode(AiNode):
                     print("LOCAL")
                 if file_ext in ['.png', '.jpg', '.jpeg']:
 
-                    print("PATH", url.toLocalFile())
+                    self.url = url.toLocalFile()
 
                     image = Image.open(url.toLocalFile())
                     pixmap = pil_image_to_pixmap(image)
@@ -114,6 +116,7 @@ class ImageInputNode(AiNode):
                 file_path = os.path.join(temp_path, f"frame_{i:04}.png")
                 self.poormanswget(url.url(), file_path)
                 i += 1
+                self.url = file_path
 
     def poormanswget(self, url, filepath):
         response = requests.get(url, stream=True)
@@ -179,10 +182,25 @@ class ImageInputNode(AiNode):
 
     def onMarkedDirty(self):
         self.content.fileName = None
+
+
+    def tryOpenGraph(self):
+        # Extract the filename from the URL
+        filename = os.path.basename(self.url)
+        # Strip the extension from the filename
+        filename_without_extension = os.path.splitext(filename)[0]
+        meta = os.path.join(gs.metas, f"{filename_without_extension}.json")
+
+        self.scene.getView().parent().window().file_open_signal.emit(meta)
+
+
+
+
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
-        #self.init_image()
-        pass
+
+        self.tryOpenGraph()
+
         self.markDirty(False)
         self.markInvalid(False)
         self.grNode.setToolTip("")

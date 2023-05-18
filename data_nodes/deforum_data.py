@@ -1,10 +1,13 @@
 import json
 import os
 import re
+import shutil
 import sys
 import time
+from functools import partial
 from types import SimpleNamespace
 
+import numpy as np
 from qtpy import QtCore
 from qtpy import QtWidgets
 
@@ -13,10 +16,57 @@ from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap
+from custom_nodes.ainodes_engine_base_nodes.image_nodes.output import ImagePreviewNode
+from custom_nodes.ainodes_engine_base_nodes.video_nodes.video_save_node import VideoOutputNode
 
 OP_NODE_DEFORUM_DATA = get_next_opcode()
 OP_NODE_DEFORUM_ARGS_DATA = get_next_opcode()
 OP_NODE_DEFORUM_PROMPT = get_next_opcode()
+
+def get_os():
+    import platform
+    return {"Windows": "Windows", "Linux": "Linux", "Darwin": "Mac"}.get(platform.system(), "Unknown")
+
+def custom_placeholder_format(value_dict, placeholder_match):
+    key = placeholder_match.group(1).lower()
+    value = value_dict.get(key, key) or "_"
+    if isinstance(value, dict) and value:
+        first_key = list(value.keys())[0]
+        value = str(value[first_key][0]) if isinstance(value[first_key], list) and value[first_key] else str(value[first_key])
+    return str(value)[:50]
+
+def test_long_path_support(base_folder_path):
+    long_folder_name = 'A' * 300
+    long_path = os.path.join(base_folder_path, long_folder_name)
+    try:
+        os.makedirs(long_path)
+        shutil.rmtree(long_path)
+        return True
+    except OSError:
+        return False
+def get_max_path_length(base_folder_path):
+    if get_os() == 'Windows':
+        return (32767 if test_long_path_support(base_folder_path) else 260) - len(base_folder_path) - 1
+    return 4096 - len(base_folder_path) - 1
+
+def substitute_placeholders(template, arg_list, base_folder_path):
+    import re
+    # Find and update timestring values if resume_from_timestring is True
+    resume_from_timestring = next((arg_obj.resume_from_timestring for arg_obj in arg_list if hasattr(arg_obj, 'resume_from_timestring')), False)
+    resume_timestring = next((arg_obj.resume_timestring for arg_obj in arg_list if hasattr(arg_obj, 'resume_timestring')), None)
+
+    if resume_from_timestring and resume_timestring:
+        for arg_obj in arg_list:
+            if hasattr(arg_obj, 'timestring'):
+                arg_obj.timestring = resume_timestring
+
+    max_length = get_max_path_length(base_folder_path)
+    values = {attr.lower(): getattr(arg_obj, attr)
+              for arg_obj in arg_list
+              for attr in dir(arg_obj) if not callable(getattr(arg_obj, attr)) and not attr.startswith('__')}
+    formatted_string = re.sub(r"{(\w+)}", lambda m: custom_placeholder_format(values, m), template)
+    formatted_string = re.sub(r'[<>:"/\\|?*\s,]', '_', formatted_string)
+    return formatted_string[:max_length]
 
 deforum_args_layout = {
                 "animation_mode": {
@@ -753,31 +803,31 @@ class DeforumPromptWidget(QDMNodeContentWidget):
         return res
 
     def deserialize(self, data, hashmap={}, restore_id:bool=True):
-        self.clear_rows()
+        #self.clear_rows()
 
 
         for value, text in data.items():
             row_widget = QtWidgets.QWidget()
             row_layout = QtWidgets.QHBoxLayout(row_widget)
-            print(value, text)
             spinbox = QtWidgets.QSpinBox()
             spinbox.setRange(0, 10000)
             spinbox.setValue(int(value))
             row_layout.addWidget(spinbox)
 
             textedit = QtWidgets.QTextEdit()
-            #decoded_text = json.loads(text)
             textedit.setPlainText(text.replace("\"", ""))
             row_layout.addWidget(textedit)
 
             removeButton = QtWidgets.QPushButton("Remove")
-            removeButton.clicked.connect(lambda: self.remove_row(row_widget))
+            removeButton.clicked.connect(partial(self.remove_row, row_widget))
             row_layout.addWidget(removeButton)
 
             self.row_widgets.append(row_widget)
             self.layout.insertWidget(self.layout.count() - 1, row_widget)
+        super().deserialize(data, hashmap={}, restore_id=True)
 
     def remove_row(self, row_widget):
+
         self.row_widgets.remove(row_widget)
         self.layout.removeWidget(row_widget)
         row_widget.deleteLater()
@@ -839,17 +889,8 @@ class DeforumPromptWidget(QDMNodeContentWidget):
 
         if dialog.exec_() == QtWidgets.QDialog.Accepted:
             json_data = textedit.toPlainText()
-            #try:
-            #print("data", json_data)
-
-            #print(json_data)
-
             data = json.loads(json_data)
-
-            #print(data)
             self.deserialize(data)
-            #except json.JSONDecodeError:
-            #    QtWidgets.QMessageBox.warning(self, "Invalid JSON", "The entered data is not a valid JSON string.")
 
 class DeforumDataWidget(QDMNodeContentWidget):
     def initUI(self):
@@ -863,7 +904,7 @@ class DeforumDataWidget(QDMNodeContentWidget):
             if t == "dropdown":
                 self.create_combo_box(value["choices"], f"{key}_value_combobox", accessible_name=key)
             elif t == "checkbox":
-                self.create_check_box(key, accessible_name=f"{key}_value_checkbox")
+                self.create_check_box(key, accessible_name=f"{key}_value_checkbox", checked=value['default'])
             elif t == "lineedit":
                 self.create_line_edit(key, accessible_name=f"{key}_value_lineedit", default=value['default'])
             elif t == "spinbox":
@@ -1078,10 +1119,6 @@ class DeforumDataNode(AiNode):
         deforum_folder_name = "custom_nodes/ainodes_backend_base_nodes/ainodes_backend/deforum"
         sys.path.extend([os.path.join(deforum_folder_name, 'scripts', 'deforum_helpers', 'src')])
 
-
-
-
-
     def evalImplementation_thread(self, index=0):
         self.busy = True
 
@@ -1110,7 +1147,6 @@ class DeforumDataNode(AiNode):
         loop_args = SimpleNamespace(**loop_args_dict)
         root = SimpleNamespace(**root_dict)
 
-        args.timestring = time.strftime('%Y%m%d%H%M%S')
 
 
 
@@ -1141,8 +1177,6 @@ class DeforumDataNode(AiNode):
 
         for key, value in anim_args.__dict__.items():
             if key in data:
-                if key == "max_frames":
-                    print("MAX_FRAMES", data[key])
                 if data[key] == "" and "schedule" not in key:
                     val = None
                 else:
@@ -1160,9 +1194,12 @@ class DeforumDataNode(AiNode):
 
         animation_prompts = root.animation_prompts
 
-        print("ANIM", animation_prompts)
-        print("SEED SCHED", anim_args.seed_schedule)
-
+        args.timestring = time.strftime('%Y%m%d%H%M%S')
+        current_arg_list = [args, anim_args, video_args, parseq_args]
+        full_base_folder_path = os.path.join(os.getcwd(), "output/deforum")
+        root.raw_batch_name = args.batch_name
+        args.batch_name = substitute_placeholders(args.batch_name, current_arg_list, full_base_folder_path)
+        args.outdir = os.path.join(full_base_folder_path, str(args.batch_name))
         test = render_animation(self, args, anim_args, video_args, parseq_args, loop_args, controlnet_args, animation_prompts, root, callback=self.handle_callback)
 
         return True
@@ -1176,8 +1213,14 @@ class DeforumDataNode(AiNode):
 
     def handle_callback(self, image):
         pixmap = pil_image_to_pixmap(image)
-        img_node = self.getOutputs(0)[0]
-        img_node.content.preview_signal.emit(pixmap)
+        for node in self.getOutputs(0):
+            if isinstance(node, ImagePreviewNode):
+                node.content.preview_signal.emit(pixmap)
+            elif isinstance(node, VideoOutputNode):
+                frame = np.array(image)
+                node.content.video.add_frame(frame, dump=node.content.dump_at.value())
+
+
 
 
 

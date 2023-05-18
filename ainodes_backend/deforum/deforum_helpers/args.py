@@ -1191,6 +1191,8 @@ def process_args(args_dict_main, run_id):
     if root.raw_seed != -1:
         root.raw_seed = args.seed
     args.timestring = time.strftime('%Y%m%d%H%M%S')
+
+    args.outdir = os.path.join(p.outpath_samples, str(args.batch_name))
     args.strength = max(0.0, min(1.0, args.strength))
     args.prompts = json.loads(args_dict_main['animation_prompts'])
     args.positive_prompts = args_dict_main['animation_prompts_positive']

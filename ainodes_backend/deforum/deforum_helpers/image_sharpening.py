@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
 
 def unsharp_mask(img, kernel_size=(5, 5), sigma=1.0, amount=1.0, threshold=0, mask=None):
     if amount == 0:

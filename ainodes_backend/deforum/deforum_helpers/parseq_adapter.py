@@ -15,7 +15,8 @@ from .rich import console
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 class ParseqAnimKeys():
     def __init__(self, parseq_args, anim_args, video_args, mute=False):

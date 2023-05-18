@@ -1,5 +1,6 @@
 import random
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 def next_seed(args):
     try:

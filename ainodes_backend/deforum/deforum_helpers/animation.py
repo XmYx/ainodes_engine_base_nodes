@@ -11,7 +11,8 @@ from .general_utils import debug_print
 # Webui
 #from modules.shared import state, opts
 
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 def sample_from_cv2(sample: np.ndarray) -> torch.Tensor:
     sample = ((sample.astype(float) / 255.0) * 2) - 1

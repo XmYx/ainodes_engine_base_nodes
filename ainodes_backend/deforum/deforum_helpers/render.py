@@ -348,7 +348,7 @@ def DeforumOutputArgs():
 
 def render_animation(node, args, anim_args, video_args, parseq_args, loop_args, controlnet_args, animation_prompts, root, callback=None):
 
-    DEBUG_MODE = True
+    DEBUG_MODE = gs.debug
     save_as_srt = None
     lowvram = None
     medvram = None
@@ -951,7 +951,6 @@ def generate(node, args, keys, anim_args, loop_args, controlnet_args, root, fram
     #if args.reroll_blank_frames == 'ignore':
     #    return generate_inner(node, args, keys, anim_args, loop_args, controlnet_args, root, frame, return_sample,
     #                          sampler_name)
-    print("args.prompt", args.prompt)
     image, caught_vae_exception = generate_with_nans_check(node, args, keys, anim_args, loop_args, controlnet_args, root,
                                                            frame, return_sample, sampler_name)
 
@@ -1073,12 +1072,12 @@ def generate_inner(node, args, keys, anim_args, loop_args, controlnet_args, root
         'dpm++ 2m karras': 'DPM++ 2M Karras',
         'dpm++ sde karras': 'DPM++ SDE Karras'
     }
-    if sampler_name is not None:
+    """if sampler_name is not None:
         if sampler_name in available_samplers.keys():
             p.sampler_name = available_samplers[sampler_name]
         else:
             raise RuntimeError(
-                f"Sampler name '{sampler_name}' is invalid. Please check the available sampler list in the 'Run' tab")
+                f"Sampler name '{sampler_name}' is invalid. Please check the available sampler list in the 'Run' tab")"""
 
     #if args.checkpoint is not None:
     #    info = sd_models.get_closet_checkpoint_match(args.checkpoint)
@@ -1181,17 +1180,13 @@ def generate_inner(node, args, keys, anim_args, loop_args, controlnet_args, root
     #    root.initial_seed = processed.seed
     #    root.initial_info = processed.info
 
-    #if root.first_frame == None:
-    #    root.first_frame = processed.images[0]
+    if root.first_frame == None:
+        root.first_frame = processed
 
     return processed
 def encode_latent_ainodes(init_image):
     gs.models["vae"].first_stage_model.cuda()
-
-    print("INIT DEBUG", init_image)
-
     image = init_image
-
     image = image.convert("RGB")
 
 

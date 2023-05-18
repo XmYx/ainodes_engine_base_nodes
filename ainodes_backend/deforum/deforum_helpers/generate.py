@@ -19,7 +19,8 @@ import requests
 import numexpr
 from .prompt import check_is_number
 
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 def load_mask_latent(mask_input, shape):
     # mask_input (str or PIL Image.Image): Path to the mask image or a PIL Image object

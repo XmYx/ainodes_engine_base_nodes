@@ -4,7 +4,8 @@ import numpy as np, os, torch
 from PIL import Image
 from torchvision.utils import make_grid
 import time
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 
 def get_output_folder(output_path, batch_folder):

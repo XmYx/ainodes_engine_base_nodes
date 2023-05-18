@@ -5,7 +5,8 @@ from PIL import ImageOps
 import math
 from .animation import sample_to_cv2
 import cv2
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 deforum_noise_gen = torch.Generator(device='cpu')
 

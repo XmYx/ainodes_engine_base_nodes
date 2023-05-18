@@ -18,7 +18,8 @@ from .word_masking import get_word_mask
 from torch import Tensor
 import PIL
 from PIL import Image, ImageChops
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 # val_masks: name, PIL Image mask
 # Returns an image in mode '1' (needed for bool ops), convert to 'L' in the sender function

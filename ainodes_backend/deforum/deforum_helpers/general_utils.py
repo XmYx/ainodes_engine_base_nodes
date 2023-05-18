@@ -4,7 +4,8 @@ import hashlib
 from basicsr.utils.download_util import load_file_from_url
 
 def debug_print(message):
-    DEBUG_MODE = True
+    from ainodes_frontend import singleton as gs
+    DEBUG_MODE = gs.debug
     if DEBUG_MODE:
         print(message)
             

@@ -121,7 +121,8 @@ class UnetAdaptiveBins(nn.Module):
 
     @classmethod
     def build(cls, n_bins, **kwargs):
-        DEBUG_MODE = True
+        from ainodes_frontend import singleton as gs
+        DEBUG_MODE = gs.debug
         basemodel_name = 'tf_efficientnet_b5_ap'
         
         print('Loading AdaBins model...')

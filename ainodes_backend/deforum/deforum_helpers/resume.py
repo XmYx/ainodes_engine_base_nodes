@@ -10,7 +10,8 @@ import cv2
 #   in order to work with cadence properly and feed it the prev_img/next_img
 
 def get_resume_vars(folder, timestring, cadence):
-    DEBUG_MODE = True
+    from ainodes_frontend import singleton as gs
+    DEBUG_MODE = gs.debug
     # count previous frames
     frame_count = 0
     for item in os.listdir(folder):

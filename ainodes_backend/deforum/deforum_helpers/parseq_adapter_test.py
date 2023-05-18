@@ -10,7 +10,8 @@ from unittest.mock import MagicMock, PropertyMock
 
 from types import SimpleNamespace
 
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 class TestParseqAnimKeys(unittest.TestCase):
 

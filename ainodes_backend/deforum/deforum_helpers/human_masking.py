@@ -2,7 +2,8 @@ import os, cv2
 import torch
 from pathlib import Path
 from multiprocessing import freeze_support
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 def extract_frames(input_video_path, output_imgs_path):
     # Open the video file

@@ -4,7 +4,8 @@ from .src.rife.inference_video import run_rife_new_video_infer
 from .video_audio_utilities import get_quick_vid_info, vid2frames, media_file_has_audio, extract_number, ffmpeg_stitch_video
 from .src.film_interpolation.film_inference import run_film_interp_infer
 from .general_utils import duplicate_pngs_from_folder, checksum, convert_images_from_list
-DEBUG_MODE = True
+from ainodes_frontend import singleton as gs
+DEBUG_MODE = gs.debug
 
 # gets 'RIFE v4.3', returns: 'RIFE43'   
 def extract_rife_name(string):

@@ -102,12 +102,16 @@ class KandinskyNode(AiNode):
         return_pil_images = []
         strength = 0.65
         if prompt_override is not None:
+            num_steps = args.steps
             images = init_image
             prompt = prompt_override
             strength = args.strength
             guidance_scale = int(args.scale)
             h = args.H
             w = args.W
+            #strength = 1.0 - strength
+            print(prompt, strength, guidance_scale, num_steps)
+
 
         if images is not None:
             for image in images:
