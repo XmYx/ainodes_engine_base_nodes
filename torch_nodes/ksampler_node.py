@@ -199,6 +199,8 @@ class KSamplerNode(AiNode):
                     steps = args.steps
                     cfg = args.scale
 
+                    print("OVERRIDE", steps, cfg, denoise)
+
 
 
                 sample = common_ksampler(device="cuda",
