@@ -1009,7 +1009,7 @@ class DeforumPromptNode(AiNode):
     op_code = OP_NODE_DEFORUM_PROMPT
     op_title = "Deforum Prompt Node"
     content_label_objname = "deforum_prompt_node"
-    category = "Data"
+    category = "DeForum"
 
 
     # output_socket_name = ["EXEC", "MODEL"]
@@ -1056,7 +1056,7 @@ class DeforumArgsDataNode(AiNode):
     op_code = OP_NODE_DEFORUM_ARGS_DATA
     op_title = "Deforum Args Node"
     content_label_objname = "deforum_args_node"
-    category = "Data"
+    category = "DeForum"
 
     custom_input_socket_name = ["DATA", "COND", "SAMPLER", "EXEC"]
     output_socket_name = ["IMAGE", "EXEC"]
@@ -1099,7 +1099,7 @@ class DeforumDataNode(AiNode):
     op_code = OP_NODE_DEFORUM_DATA
     op_title = "Deforum Node"
     content_label_objname = "deforum_node"
-    category = "Data"
+    category = "DeForum"
 
     custom_input_socket_name = ["DATA", "COND", "SAMPLER", "EXEC"]
     output_socket_name = ["IMAGE", "EXEC"]

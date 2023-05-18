@@ -1204,25 +1204,20 @@ def encode_latent_ainodes(init_image):
     return latent
 
 def generate_with_node(node, prompt, negative_prompt, args, root, frame, init_images=None):
-
-    latent = None
-    if init_images is not None:
-        latent = encode_latent_ainodes(init_images[0])
-    else:
-        latent = torch.zeros([1, 4, args.H // 8, args.W // 8])
-    cond_node, index = node.getInput(1)
-    conds, _ = cond_node.evalImplementation_thread(prompt_override=prompt)
-    n_conds, _ = cond_node.evalImplementation_thread(prompt_override=negative_prompt)
     sampler_node, _ = node.getInput(2)
-
     if isinstance(sampler_node, KSamplerNode):
-
+        latent = None
+        if init_images is not None:
+            latent = encode_latent_ainodes(init_images[0])
+        else:
+            latent = torch.zeros([1, 4, args.H // 8, args.W // 8])
+        cond_node, index = node.getInput(1)
+        conds, _ = cond_node.evalImplementation_thread(prompt_override=prompt)
+        n_conds, _ = cond_node.evalImplementation_thread(prompt_override=negative_prompt)
         pixmaps, _ = sampler_node.evalImplementation_thread(cond_override=[conds, n_conds], args=args, latent_override=latent)
     elif isinstance(sampler_node, KandinskyNode):
         if init_images is not None:
             init_images[0] = pil_image_to_pixmap(init_images[0])
         pixmaps = sampler_node.evalImplementation_thread(prompt_override=prompt, args=args, init_image=init_images)
-
     image = pixmap_to_pil_image(pixmaps[0])
-
     return image
