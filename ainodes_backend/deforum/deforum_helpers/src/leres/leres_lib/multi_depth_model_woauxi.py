@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from ..lib import network_auxi as network
-from ..lib.net_tools import get_func
+from ..leres_lib import network_auxi as network
+from ..leres_lib.net_tools import get_func
 
 class RelDepthModel(nn.Module):
     def __init__(self, backbone='resnet50'):
