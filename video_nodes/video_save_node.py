@@ -192,6 +192,9 @@ class GifRecorder:
             cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
                    'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-an',
                    filename]
+            cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
+                   'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'h264', '-preset', 'medium', '-crf', '23', '-an',
+                   f'{filename}.mov']
             video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
             for frame in self.frames:
                 #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)

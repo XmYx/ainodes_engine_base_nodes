@@ -26,7 +26,7 @@ class KandinskyWidget(QDMNodeContentWidget):
     text_signal = QtCore.Signal(str)
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
     def create_widgets(self):
         self.prompt = self.create_text_edit("Prompt:")
         self.seed = self.create_line_edit("Seed:")

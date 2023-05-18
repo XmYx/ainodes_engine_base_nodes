@@ -17,6 +17,7 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 from ainodes_frontend import singleton as gs
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap
 from custom_nodes.ainodes_engine_base_nodes.image_nodes.output import ImagePreviewNode
+from custom_nodes.ainodes_engine_base_nodes.torch_nodes.ksampler_node import get_fixed_seed
 from custom_nodes.ainodes_engine_base_nodes.video_nodes.video_save_node import VideoOutputNode
 
 OP_NODE_DEFORUM_DATA = get_next_opcode()
@@ -1200,6 +1201,13 @@ class DeforumDataNode(AiNode):
         root.raw_batch_name = args.batch_name
         args.batch_name = substitute_placeholders(args.batch_name, current_arg_list, full_base_folder_path)
         args.outdir = os.path.join(full_base_folder_path, str(args.batch_name))
+
+        if args.seed == -1:
+            root.raw_seed = -1
+        args.seed = get_fixed_seed(args.seed)
+        if root.raw_seed != -1:
+            root.raw_seed = args.seed
+
         test = render_animation(self, args, anim_args, video_args, parseq_args, loop_args, controlnet_args, animation_prompts, root, callback=self.handle_callback)
 
         return True

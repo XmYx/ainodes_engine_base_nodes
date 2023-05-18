@@ -34,7 +34,7 @@ class KSamplerWidget(QDMNodeContentWidget):
     progress_signal = QtCore.Signal(int)
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
     def create_widgets(self):
         self.schedulers = self.create_combo_box(SCHEDULERS, "Scheduler:")
         self.sampler = self.create_combo_box(SAMPLERS, "Sampler:")
@@ -69,7 +69,7 @@ class KSamplerNode(AiNode):
     def initInnerClasses(self):
         self.content = KSamplerWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 550
+        self.grNode.height = 600
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(256)
