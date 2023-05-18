@@ -191,7 +191,7 @@ class KSamplerNode(AiNode):
                 steps = self.content.steps.value()
                 cfg = self.content.guidance_scale.value()
                 if cond_override is not None:
-                    denoise = 1 if args.strength == 0 else args.strength
+                    denoise = 1 if args.strength == 0 or args.use_init == False else args.strength
                     if latent_override is not None:
                         latent = latent_override
 
@@ -199,7 +199,7 @@ class KSamplerNode(AiNode):
                     steps = args.steps
                     cfg = args.scale
 
-                    print("OVERRIDE", steps, cfg, denoise)
+                    print("OVERRIDE", steps, cfg, denoise, args.use_init)
 
 
 
