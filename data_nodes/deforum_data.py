@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import secrets
 import shutil
 import sys
 import time
@@ -1203,10 +1204,11 @@ class DeforumDataNode(AiNode):
         args.outdir = os.path.join(full_base_folder_path, str(args.batch_name))
 
         if args.seed == -1:
-            root.raw_seed = -1
-        args.seed = get_fixed_seed(args.seed)
-        if root.raw_seed != -1:
+            args.seed = secrets.randbelow(999999999999999999)
+
+
             root.raw_seed = args.seed
+
 
         test = render_animation(self, args, anim_args, video_args, parseq_args, loop_args, controlnet_args, animation_prompts, root, callback=self.handle_callback)
 

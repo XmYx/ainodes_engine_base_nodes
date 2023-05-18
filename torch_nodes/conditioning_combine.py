@@ -18,7 +18,7 @@ OP_NODE_CONDITIONING_SET_AREA = get_next_opcode()
 class ConditioningSetAreaWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
     def create_widgets(self):
         self.width = self.create_spin_box("Width", 64, 4096, 512, 64)
@@ -42,7 +42,7 @@ class ConditioningCombineWidget(QDMNodeContentWidget):
 
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
     def create_widgets(self):
         self.strength = self.create_double_spin_box("Strength", 0.00, 10.00, 0.01, 0.00)
