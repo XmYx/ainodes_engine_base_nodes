@@ -102,7 +102,7 @@ class ControlnetLoaderNode(AiNode):
                 gs.models["controlnet"] = None
             except:
                 pass
-        load_controlnet(controlnet_path)
+        load_controlnet(controlnet_path, gs.models["sd"])
         torch_gc()
         #gs.models["controlnet"].control_model.cuda()
         return "controlnet"

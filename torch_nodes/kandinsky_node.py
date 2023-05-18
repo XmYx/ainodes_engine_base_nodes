@@ -72,7 +72,7 @@ class KandinskyNode(AiNode):
         self.content.prompt.setText(text)
 
 
-    def evalImplementation_thread(self):
+    def evalImplementation_thread(self, prompt_override=None, args=None, init_image=None):
         if "kandinsky" not in gs.models:
             gs.models["kandinsky"] = get_kandinsky2('cuda', task_type='text2img', model_version='2.1', use_flash_attention=False)
         images = self.getInputData(0)
@@ -100,13 +100,22 @@ class KandinskyNode(AiNode):
         torch.manual_seed(self.seed)
         return_images = []
         return_pil_images = []
+        strength = 0.65
+        if prompt_override is not None:
+            images = init_image
+            prompt = prompt_override
+            strength = args.strength
+            guidance_scale = int(args.scale)
+            h = args.H
+            w = args.W
+
         if images is not None:
             for image in images:
                 pil_img = pixmap_to_pil_image(image)
                 return_pil_images = gs.models["kandinsky"].generate_img2img(
                     prompt,
                     pil_img,
-                    strength=0.7,
+                    strength=strength,
                     num_steps=num_steps,
                     batch_size=1,
                     guidance_scale=guidance_scale,

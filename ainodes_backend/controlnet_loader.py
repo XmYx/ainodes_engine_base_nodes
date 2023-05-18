@@ -4,9 +4,98 @@ import torch
 
 from . import cldm
 from ainodes_frontend import singleton as gs
+from .t2i import load_t2i_adapter
 
 
 def load_controlnet(ckpt_path, model=None):
+    controlnet_data = load_torch_file(ckpt_path)
+    pth_key = 'control_model.input_blocks.1.1.transformer_blocks.0.attn2.to_k.weight'
+    pth = False
+    sd2 = False
+    key = 'input_blocks.1.1.transformer_blocks.0.attn2.to_k.weight'
+    if pth_key in controlnet_data:
+        pth = True
+        key = pth_key
+    elif key in controlnet_data:
+        pass
+    else:
+        net = load_t2i_adapter(controlnet_data)
+        if net is None:
+            print("error checkpoint does not contain controlnet or t2i adapter data", ckpt_path)
+        return net
+
+    context_dim = controlnet_data[key].shape[1]
+
+    #use_fp16 = False
+    #if model_management.should_use_fp16() and controlnet_data[key].dtype == torch.float16:
+    use_fp16 = True
+
+    if context_dim == 768:
+        #SD1.x
+        control_model = cldm.ControlNet(image_size=32,
+                                        in_channels=4,
+                                        hint_channels=3,
+                                        model_channels=320,
+                                        attention_resolutions=[ 4, 2, 1 ],
+                                        num_res_blocks=2,
+                                        channel_mult=[ 1, 2, 4, 4 ],
+                                        num_heads=8,
+                                        use_spatial_transformer=True,
+                                        transformer_depth=1,
+                                        context_dim=context_dim,
+                                        use_checkpoint=True,
+                                        legacy=False,
+                                        use_fp16=use_fp16)
+    else:
+        #SD2.x
+        control_model = cldm.ControlNet(image_size=32,
+                                        in_channels=4,
+                                        hint_channels=3,
+                                        model_channels=320,
+                                        attention_resolutions=[ 4, 2, 1 ],
+                                        num_res_blocks=2,
+                                        channel_mult=[ 1, 2, 4, 4 ],
+                                        num_head_channels=64,
+                                        use_spatial_transformer=True,
+                                        use_linear_in_transformer=True,
+                                        transformer_depth=1,
+                                        context_dim=context_dim,
+                                        use_checkpoint=True,
+                                        legacy=False,
+                                        use_fp16=use_fp16)
+    if pth:
+        if 'difference' in controlnet_data:
+            if model is not None:
+                m = model.patch_model()
+                model_sd = m.state_dict()
+                for x in controlnet_data:
+                    c_m = "control_model."
+                    if x.startswith(c_m):
+                        sd_key = "model.diffusion_model.{}".format(x[len(c_m):])
+                        if sd_key in model_sd:
+                            cd = controlnet_data[x]
+                            cd += model_sd[sd_key].type(cd.dtype).to(cd.device)
+                model.unpatch_model()
+            else:
+                print("WARNING: Loaded a diff controlnet without a model. It will very likely not work.")
+
+        class WeightsLoader(torch.nn.Module):
+            pass
+        w = WeightsLoader()
+        w.control_model = control_model
+        w.load_state_dict(controlnet_data, strict=False)
+    else:
+        control_model.load_state_dict(controlnet_data, strict=False)
+
+    if use_fp16:
+        control_model = control_model.half()
+
+    gs.models["controlnet"] = ControlNet(control_model)
+    del controlnet_data
+    del control_model
+
+
+def load_controlnet_old(ckpt_path, model=None):
     controlnet_data = load_torch_file(ckpt_path)
     pth_key = 'control_model.input_blocks.1.1.transformer_blocks.0.attn2.to_k.weight'
     pth = False
