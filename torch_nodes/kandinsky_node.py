@@ -96,7 +96,7 @@ class KandinskyNode(AiNode):
             self.seed = int(self.seed)
         except:
             self.seed = get_fixed_seed('')
-        torch.manual_seed(self.seed)
+
         return_images = []
         return_pil_images = []
         strength = 0.65
@@ -110,7 +110,9 @@ class KandinskyNode(AiNode):
             w = args.W
             #strength = 1.0 - strength
             print(prompt, strength, guidance_scale, num_steps)
+            self.seed = args.seed
 
+        torch.manual_seed(self.seed)
 
         if images is not None:
             for image in images:
