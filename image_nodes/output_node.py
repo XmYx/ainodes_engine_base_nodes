@@ -1,7 +1,9 @@
 import datetime
+import json
 import os
 import time
 
+from PIL.PngImagePlugin import PngInfo
 from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
 from qtpy import QtWidgets, QtGui, QtCore
@@ -149,12 +151,24 @@ class ImagePreviewNode(AiNode):
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
             os.makedirs(os.path.join(gs.output, "stills"), exist_ok=True)
             filename = f"{gs.output}/stills/{timestamp}.png"
-            image.save(filename)
+
             meta_save = self.content.meta_checkbox.isChecked()
             if meta_save:
-                os.makedirs(os.path.join(gs.output, "metas"), exist_ok=True)
-                filename = f"{gs.output}/metas/{timestamp}.json"
-                self.scene.saveToFile(filename)
+
+                metadata = PngInfo()
+
+                json_data = self.scene.serialize()
+
+                metadata.add_text("graph", json.dumps(json_data))
+
+
+                image.save(filename, pnginfo=metadata, compress_level=4)
+            else:
+                image.save(filename)
+
+                #os.makedirs(os.path.join(gs.output, "metas"), exist_ok=True)
+                #filename = f"{gs.output}/metas/{timestamp}.json"
+                #self.scene.saveToFile(filename)
             if gs.logging:
                 print(f"IMAGE PREVIEW NODE: File saved at {filename}")
         except Exception as e:

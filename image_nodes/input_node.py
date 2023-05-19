@@ -28,6 +28,7 @@ class ImageInputWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
         self.create_main_layout()
+
     def create_widgets(self):
         self.image = self.create_label("Image")
         self.open_button = QtWidgets.QPushButton("Open New Image")
@@ -84,6 +85,7 @@ class ImageInputNode(AiNode):
         self.content_type = None
 
     def add_urls(self, url_list):
+
         i = 0
         for url in url_list:
             file_name = url.fileName()
@@ -98,6 +100,17 @@ class ImageInputNode(AiNode):
                     self.url = url.toLocalFile()
 
                     image = Image.open(url.toLocalFile())
+
+                    metadata = image.info
+
+                    print("META", metadata)
+                    # Check if the image has metadata
+                    if metadata != {}:
+                        self.content.open_graph_button.setVisible(True)
+                    else:
+                        self.content.open_graph_button.setVisible(False)
+
+
                     pixmap = pil_image_to_pixmap(image)
                     self.images.append(pixmap)
                     self.content.image.setPixmap(pixmap)
@@ -183,21 +196,48 @@ class ImageInputNode(AiNode):
     def onMarkedDirty(self):
         self.content.fileName = None
 
-
     def tryOpenGraph(self):
-        # Extract the filename from the URL
-        filename = os.path.basename(self.url)
-        # Strip the extension from the filename
-        filename_without_extension = os.path.splitext(filename)[0]
-        meta = os.path.join(gs.metas, f"{filename_without_extension}.json")
+        image = Image.open(self.url)
+        # Get the metadata from the image
+        metadata = image.info
+        # Check if the image has metadata
+        if metadata is not None:
+            if 'graph' in metadata:
+                json_data = metadata['graph']
+                # Deserialize the JSON data
+                deserialized_data = json.loads(json_data)
+                print("GREAT SUCCESS", deserialized_data)
+                # Save the deserialized data as the next available numbered temp file
+                os.makedirs("temp", exist_ok=True)
+                temp_dir = "temp"
+                count = 1
+                while True:
+                    temp_filename = os.path.join(temp_dir, f"temp{count}.json")
+                    if not os.path.exists(temp_filename):
+                        break
+                    count += 1
 
-        self.scene.getView().parent().window().file_open_signal.emit(meta)
+                with open(temp_filename, 'w') as file:
+                    json.dump(deserialized_data, file)
+                meta = temp_filename
+
+                # Extract the filename from the URL
+                #filename = os.path.basename(self.url)
+                # Strip the extension from the filename
+                #filename_without_extension = os.path.splitext(filename)[0]
+                #meta = os.path.join(gs.metas, f"{filename_without_extension}.json")
+
+                self.scene.getView().parent().window().file_open_signal.emit(temp_filename)
 
 
 
 
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
+
+
+
+
         self.markDirty(False)
         self.markInvalid(False)
         self.grNode.setToolTip("")
