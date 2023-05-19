@@ -135,7 +135,6 @@ class ImageOpNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
-        self.content.eval_signal.connect(self.evalImplementation)
 
     def initInnerClasses(self):
         self.content = ImageOpsWidget(self)
@@ -147,47 +146,30 @@ class ImageOpNode(AiNode):
         self.grNode.width = 280
         self.content.setMinimumHeight(130)
         self.content.setMinimumWidth(260)
-        pass
-    def eval(self, index=0):
-        self.markDirty(True)
-        self.content.eval_signal.emit()
-    @QtCore.Slot()
-    def evalImplementation(self):
-        if self.busy == False:
-            self.busy = True
-            worker = Worker(self.evalImplementation_thread)
-            worker.signals.result.connect(self.onWorkerFinished)
-            self.scene.threadpool.start(worker)
-            #thread0 = threading.Thread(target=self.evalImplementation_thread)
-            #thread0.start()
-        return None
+        self.content.eval_signal.connect(self.evalImplementation)
 
     @QtCore.Slot()
     def evalImplementation_thread(self):
         return_pixmap = None
+        return_pixmap_list = []
         if self.getInput(0) != None:
             node, index = self.getInput(0)
             if node != None:
                 pixmap_list = node.getOutput(index)
                 method = self.content.dropdown.currentText()
-                return_pixmap_list = []
                 for pixmap in pixmap_list:
                     return_pixmap = self.image_op(pixmap, method)
                     return_pixmap_list.append(return_pixmap)
         return return_pixmap_list
-    def onMarkedDirty(self):
-        self.value = None
+
     @QtCore.Slot(object)
     def onWorkerFinished(self, pixmap_list):
         super().onWorkerFinished(None)
-
         self.setOutput(0, pixmap_list)
         if len(self.getOutputs(2)) > 0:
             self.executeChild(2)
-        pass
         self.markDirty(False)
         self.markInvalid(False)
-        return True
 
     def image_op(self, pixmap, method):
         # Convert the QPixmap object to a PIL Image object
@@ -278,9 +260,6 @@ class ImageOpNode(AiNode):
                         args[key[1]] = value
             np_image = anim_frame_warp_3d(device, image, tensor, args["translation_x"], args["translation_y"], args["translation_z"], args["rotation_3d_x"], args["rotation_3d_y"], args["rotation_3d_z"])
             image = Image.fromarray(np_image)
-
-
-
 
         elif method == 'normal':
             image = np.array(image)

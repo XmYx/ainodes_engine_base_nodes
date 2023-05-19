@@ -103,7 +103,6 @@ class ImageInputNode(AiNode):
 
                     metadata = image.info
 
-                    print("META", metadata)
                     # Check if the image has metadata
                     if metadata != {}:
                         self.content.open_graph_button.setVisible(True)
@@ -206,7 +205,6 @@ class ImageInputNode(AiNode):
                 json_data = metadata['graph']
                 # Deserialize the JSON data
                 deserialized_data = json.loads(json_data)
-                print("GREAT SUCCESS", deserialized_data)
                 # Save the deserialized data as the next available numbered temp file
                 os.makedirs("temp", exist_ok=True)
                 temp_dir = "temp"
@@ -234,10 +232,6 @@ class ImageInputNode(AiNode):
 
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
-
-
-
-
         self.markDirty(False)
         self.markInvalid(False)
         self.grNode.setToolTip("")

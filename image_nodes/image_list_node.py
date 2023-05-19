@@ -102,6 +102,7 @@ class ImageListNode(AiNode):
         self.images = []
         self.index = 0
         self.content.image.pixmap_selected.connect(self.set_pixmap)
+        self.content.eval_signal.connect(self.evalImplementation)
 
     @QtCore.Slot(object)
     def set_pixmap(self, pixmap):
@@ -114,21 +115,16 @@ class ImageListNode(AiNode):
             self.content.image.list_widget.setCurrentRow(0)
         else:
             self.content.image.list_widget.setCurrentRow(current_row + 1)
-    def evalImplementation(self, index=0):
-        self.grNode.toggleHelp()
+    def evalImplementation_thread(self, index=0):
+        #self.grNode.toggleHelp()
         pixmap = self.pixmap
         self.markDirty(False)
-        self.setOutput(0, [pixmap])
-        self.executeChild(2)
         self.select_next_item()
-    def onMarkedDirty(self):
-        pass
-    def onMarkedInvalid(self):
-        self.content.image.image.fill(Qt.black)
-    def onInputChanged(self, socket=None):
-        pass
-    def eval(self):
-        self.evalImplementation(0)
+        return pixmap
+
+    def onWorkerFinished(self, result):
+        self.setOutput(0, [result])
+        self.executeChild(2)
 
     def resize(self):
         self.grNode.setToolTip("")

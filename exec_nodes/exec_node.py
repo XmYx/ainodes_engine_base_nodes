@@ -39,9 +39,11 @@ class ExecNode(AiNode):
         self.content.run_button.clicked.connect(self.start)
         self.content.stop_button.clicked.connect(self.stop)
         self.interrupt = False
+
     def initInnerClasses(self):
         self.content = ExecWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
         self.grNode.height = 200
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
@@ -54,22 +56,14 @@ class ExecNode(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
-
-        pass
         self.executeChild(0)
-
-    def onMarkedDirty(self):
-        self.value = None
 
     def stop(self):
         self.interrupt = True
-        self.markDirty(True)
-        return
+
     def start(self):
         self.interrupt = False
-        pass
-        self.eval()
-        return
+        self.content.eval_signal.emit()
 
 
 

@@ -188,6 +188,7 @@ class KSamplerNode(AiNode):
                     denoise = self.content.denoise.value()
                     steps = self.content.steps.value()
                     cfg = self.content.guidance_scale.value()
+                    start_step = self.content.start_step.value()
                     if cond_override is not None:
                         denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
                         if latent_override is not None:
@@ -196,6 +197,7 @@ class KSamplerNode(AiNode):
                         self.seed = args.seed
                         steps = args.steps
                         cfg = args.scale
+                        start_step = 0
 
                         print("SD SAMPLER NODE OVERRIDE", steps, cfg, denoise, args.use_init)
 
@@ -204,7 +206,7 @@ class KSamplerNode(AiNode):
                     sample = common_ksampler(device="cuda",
                                              seed=self.seed,
                                              steps=steps,
-                                             start_step=self.content.start_step.value(),
+                                             start_step=start_step,
                                              last_step=last_step,
                                              cfg=cfg,
                                              sampler_name=self.content.sampler.currentText(),
