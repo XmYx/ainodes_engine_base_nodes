@@ -6,7 +6,7 @@ import time
 import cv2
 import imageio
 import numpy as np
-from qtpy import QtWidgets
+from qtpy import QtWidgets, QtGui
 from qtpy.QtWidgets import QPushButton, QVBoxLayout
 
 from ..ainodes_backend import pixmap_to_pil_image
@@ -48,6 +48,12 @@ class VideoOutputWidget(QDMNodeContentWidget):
 
         self.dump_at = self.create_spin_box("Dump at every:", 0, 20000, 0, 1)
 
+        self.checkbox = QtWidgets.QCheckBox("Keep Buffer")
+
+        palette = QtGui.QPalette()
+        palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
+        palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
+        self.checkbox.setPalette(palette)
 
         layout = QVBoxLayout()
         layout.addWidget(self.type_select)
@@ -56,6 +62,7 @@ class VideoOutputWidget(QDMNodeContentWidget):
         #layout.addWidget(self.height_value)
         layout.addWidget(self.fps)
         layout.addWidget(self.dump_at)
+        layout.addWidget(self.checkbox)
 
         self.setLayout(layout)
 
@@ -84,8 +91,11 @@ class VideoOutputNode(AiNode):
 
         self.content.setGeometry(0, 0, 260, 230)
         self.markInvalid(True)
-    def evalImplementation(self, index=0):
+        self.content.eval_signal.connect(self.evalImplementation)
+
+    def evalImplementation_thread(self, index=0):
         self.busy = True
+        pixmap_list = []
         if self.getInput(0) is not None:
             input_node, other_index = self.getInput(0)
             if not input_node:
@@ -101,17 +111,22 @@ class VideoOutputNode(AiNode):
                 #self.markDirty(True)
                 self.content.video.add_frame(frame, dump=self.content.dump_at.value())
             print(f"VIDEO SAVE NODE: Image added to frame buffer, current frames: {len(self.content.video.frames)}")
-            self.setOutput(0, pixmap_list)
-            if len(self.getOutputs(1)) > 0:
-                node = self.getOutputs(1)[0]
-                node.eval()
-        pass
-        return None
+        return pixmap_list
+
+    def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
+        self.setOutput(0, result)
+        self.executeChild(1)
+
     def close(self):
         self.content.video.close(self.filename)
         self.markDirty(False)
         self.markInvalid(False)
         self.start_new_video()
+
+        if not self.content.checkbox.isChecked() == True:
+            self.content.video.frames = []
+
     def resize(self):
         self.content.setMinimumHeight(self.content.label.pixmap().size().height())
         self.content.setMinimumWidth(self.content.label.pixmap().size().width())
@@ -122,18 +137,20 @@ class VideoOutputNode(AiNode):
             socket.setSocketPosition()
         self.updateConnectedEdges()
 
-    def eval(self):
-        self.markDirty(True)
-        self.content.eval_signal.emit()
-
     def start_new_video(self):
         self.markDirty(True)
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         self.filename = f"output/gifs/{timestamp}.gif"
         fps = self.content.fps.value()
         type = self.content.type_select.currentText()
-        self.content.video.close(timestamp, fps, type)
-        print(f"VIDEO SAVE NODE: Done. The frame buffer is now empty.")
+
+        dump = not self.content.checkbox.isChecked()
+
+        self.content.video.close(timestamp, fps, type, dump)
+        if dump:
+            print(f"VIDEO SAVE NODE: Done. The frame buffer is now empty.")
+        else:
+            print(f"VIDEO SAVE NODE: Done. The frame buffer still has {len(self.content.video.frames)} Frames.")
 
 class VideoRecorder:
 
@@ -181,7 +198,7 @@ class GifRecorder:
             self.filename = filename
             self.fps = fps
             print(f"VIDEO SAVE NODE: Video saving {len(self.frames)} frames at {self.fps}fps as {self.filename}")
-            imageio.mimsave(self.filename, self.frames, fps=self.fps)
+            imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), subrectangles=True, quantizer='nq')
         elif type == 'mp4_ffmpeg':
             os.makedirs("output/mp4s", exist_ok=True)
             filename = f"output/mp4s/{timestamp}.mp4"
@@ -209,3 +226,5 @@ class GifRecorder:
             video_writer.release()
         if dump == True:
             self.frames = []
+
+

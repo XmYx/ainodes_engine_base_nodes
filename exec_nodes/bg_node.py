@@ -68,7 +68,7 @@ OP_NODE_BG_INFO = get_next_opcode()
 
 @register_node(OP_NODE_BG_INFO)
 class BGINFONode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/bg.png"
+    icon = "ainodes_frontend/icons/base_nodes/info.png"
     op_code = OP_NODE_BG_INFO
     op_title = "Bg Node Info"
     content_label_objname = "bg_node_info"
