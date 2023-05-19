@@ -16,17 +16,19 @@ from PIL import Image
 
 OP_NODE_IMG_PREVIEW = get_next_opcode()
 
-class ImageOutputWidget(QDMNodeContentWidget):
+class ImagePreviewWidget(QDMNodeContentWidget):
     preview_signal = QtCore.Signal(object)
     def initUI(self):
         self.image = QLabel(self)
         self.image.setAlignment(Qt.AlignRight)
         self.image.setObjectName(self.node.content_label_objname)
         self.checkbox = QtWidgets.QCheckBox("Autosave")
+        self.meta_checkbox = QtWidgets.QCheckBox("Metasave as json")
         palette = QtGui.QPalette()
         palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
         palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
         self.checkbox.setPalette(palette)
+        self.meta_checkbox.setPalette(palette)
         self.button = QtWidgets.QPushButton("Save Image")
         self.next_button = QtWidgets.QPushButton("Show Next")
         button_layout = QtWidgets.QHBoxLayout()
@@ -36,11 +38,12 @@ class ImageOutputWidget(QDMNodeContentWidget):
         layout.setContentsMargins(15, 30, 15, 35)
         layout.addWidget(self.image)
         layout.addWidget(self.checkbox)
+        layout.addWidget(self.meta_checkbox)
         layout.addLayout(button_layout)
         self.setLayout(layout)
 
 @register_node(OP_NODE_IMG_PREVIEW)
-class ImagePreviewWidget(AiNode):
+class ImagePreviewNode(AiNode):
     icon = "icons/out.png"
     op_code = OP_NODE_IMG_PREVIEW
     op_title = "Image Preview"
@@ -55,9 +58,9 @@ class ImagePreviewWidget(AiNode):
         pass
 
     def initInnerClasses(self):
-        self.content = ImageOutputWidget(self)
+        self.content = ImagePreviewWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 200
+        self.grNode.height = 220
         self.grNode.width = 320
         self.images = []
         self.index = 0
@@ -122,6 +125,7 @@ class ImagePreviewWidget(AiNode):
     def show_image(self, image):
         self.content.image.setPixmap(image)
         self.resize()
+        self.resize()
 
 
     @QtCore.Slot(object)
@@ -144,8 +148,13 @@ class ImagePreviewWidget(AiNode):
             image = pixmap_to_pil_image(pixmap)
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
             os.makedirs(os.path.join(gs.output, "stills"), exist_ok=True)
-            filename = f"{gs.output}/{timestamp}.png"
+            filename = f"{gs.output}/stills/{timestamp}.png"
             image.save(filename)
+            meta_save = self.content.meta_checkbox.isChecked()
+            if meta_save:
+                os.makedirs(os.path.join(gs.output, "metas"), exist_ok=True)
+                filename = f"{gs.output}/metas/{timestamp}.json"
+                self.scene.saveToFile(filename)
             if gs.logging:
                 print(f"IMAGE PREVIEW NODE: File saved at {filename}")
         except Exception as e:
@@ -157,7 +166,7 @@ class ImagePreviewWidget(AiNode):
 
     def resize(self):
         self.grNode.setToolTip("")
-        self.grNode.height = self.content.image.pixmap().size().height() + 155
+        self.grNode.height = self.content.image.pixmap().size().height() + 190
         self.grNode.width = self.content.image.pixmap().size().width() + 32
         self.content.image.setMinimumHeight(self.content.image.pixmap().size().height())
         self.content.image.setMinimumWidth(self.content.image.pixmap().size().width())
@@ -166,4 +175,3 @@ class ImagePreviewWidget(AiNode):
         for socket in self.outputs + self.inputs:
             socket.setSocketPosition()
         self.updateConnectedEdges()
-

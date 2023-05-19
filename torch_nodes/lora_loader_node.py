@@ -1,7 +1,7 @@
 import os
 
 import requests
-from PySide6.QtCore import QObject, Signal
+from qtpy.QtCore import QObject, Signal
 from qtpy import QtWidgets, QtCore
 
 from ..ainodes_backend.hash import sha256
@@ -127,6 +127,3 @@ class LoraLoaderNode(AiNode):
         strength_model = self.content.model_weight.value()
         strength_clip = self.content.clip_weight.value()
         load_lora_for_models(lora_path, strength_model, strength_clip)
-
-
-

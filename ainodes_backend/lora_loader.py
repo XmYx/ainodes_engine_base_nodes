@@ -184,5 +184,3 @@ def load_lora(path, to_load):
             pass
             #print("Lora loaded")
     return patch_dict
-
-

@@ -6,6 +6,7 @@ from qtpy import QtWidgets, QtCore
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
+from ainodes_frontend.node_engine.utils import dumpException
 
 from ainodes_frontend import singleton as gs
 
@@ -44,10 +45,12 @@ class ConditioningNode(AiNode):
         self.output_socket_name = ["EXEC", "COND"]
 
     @QtCore.Slot()
-    def evalImplementation_thread(self, index=0):
+    def evalImplementation_thread(self, index=0, prompt_override=None):
         try:
             data = None
             prompt = self.content.prompt.toPlainText()
+            if prompt_override is not None:
+                prompt = prompt_override
             if len(self.getInputs(0)) > 0:
                 data_node, index = self.getInput(0)
                 data = data_node.getOutput(index)
@@ -60,7 +63,8 @@ class ConditioningNode(AiNode):
                     if data["model"] == "deepfloyd_1":
                         result = [gs.models["deepfloyd_1"].encode_prompt(prompt)]
                 else:
-
+                    if prompt_override is not None:
+                        prompt = prompt_override
                     result = [self.get_conditioning(prompt=prompt)]
 
             else:

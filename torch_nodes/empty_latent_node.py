@@ -20,7 +20,7 @@ class LatentWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
     def create_widgets(self):
         self.width = self.create_spin_box("Width", 64, 4096, 512, 64)

@@ -34,7 +34,7 @@ class KSamplerWidget(QDMNodeContentWidget):
     progress_signal = QtCore.Signal(int)
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
     def create_widgets(self):
         self.schedulers = self.create_combo_box(SCHEDULERS, "Scheduler:")
         self.sampler = self.create_combo_box(SAMPLERS, "Sampler:")
@@ -69,7 +69,7 @@ class KSamplerNode(AiNode):
     def initInnerClasses(self):
         self.content = KSamplerWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 550
+        self.grNode.height = 600
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(256)
@@ -82,7 +82,7 @@ class KSamplerNode(AiNode):
 
 
     @QtCore.Slot()
-    def evalImplementation_thread(self):
+    def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
         #pass
         # Add a task to the task queue
         cond_list = self.getInputData(3)
@@ -160,6 +160,11 @@ class KSamplerNode(AiNode):
 
 
             else:
+
+                if cond_override is not None:
+                    cond_list = cond_override[0]
+                    n_cond_list = cond_override[1]
+
                 if len(cond_list) < len(latent_list):
                     new_cond_list = []
                     for x in range(len(latent_list)):
@@ -180,12 +185,28 @@ class KSamplerNode(AiNode):
                         if 'control_hint' in i[1]:
                             cond = self.apply_control_net(cond)
 
+                    denoise = self.content.denoise.value()
+                    steps = self.content.steps.value()
+                    cfg = self.content.guidance_scale.value()
+                    if cond_override is not None:
+                        denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
+                        if latent_override is not None:
+                            latent = latent_override
+
+                        self.seed = args.seed
+                        steps = args.steps
+                        cfg = args.scale
+
+                        print("SD SAMPLER NODE OVERRIDE", steps, cfg, denoise, args.use_init)
+
+
+
                     sample = common_ksampler(device="cuda",
                                              seed=self.seed,
-                                             steps=self.content.steps.value(),
+                                             steps=steps,
                                              start_step=self.content.start_step.value(),
                                              last_step=last_step,
-                                             cfg=self.content.guidance_scale.value(),
+                                             cfg=cfg,
                                              sampler_name=self.content.sampler.currentText(),
                                              scheduler=self.content.schedulers.currentText(),
                                              positive=cond,
@@ -193,7 +214,7 @@ class KSamplerNode(AiNode):
                                              latent=latent,
                                              disable_noise=self.content.disable_noise.isChecked(),
                                              force_full_denoise=self.content.force_denoise.isChecked(),
-                                             denoise=self.content.denoise.value(),
+                                             denoise=denoise,
                                              callback=self.callback)
 
                     for c in cond:
@@ -212,9 +233,11 @@ class KSamplerNode(AiNode):
                 #    if hasattr(node.content, "preview_signal"):
                 #        #print("emitting")
                 #        node.content.preview_signal.emit(pixmap)
+
                 self.content.progress_signal.emit(0)
                 return_pixmaps.append(pixmap)
                 x+=1
+            return [return_pixmaps, return_samples]
         except Exception as e:
             return_pixmaps, return_samples = None, None
             print(e)
