@@ -53,16 +53,11 @@ class UpscalerLoader(torch.nn.Module):
             load = True
 
         if load:
-
             state_dict = load_torch_file(file)
             gs.models[name] = model_loading.load_state_dict(state_dict).eval().to("cuda")
             self.loaded_model = name
 
         return self.loaded_model
-
-
-
-
 
 class ModelLoader(torch.nn.Module):
     """
@@ -78,13 +73,6 @@ class ModelLoader(torch.nn.Module):
 
 
     def load_model(self, file=None, config_name=None, inpaint=False, verbose=False):
-
-        #print(file, gs.loaded_models["loaded"], file not in gs.loaded_models["loaded"])
-
-        #if file not in gs.loaded_models["loaded"]:
-        #    gs.loaded_models["loaded"] = [file]
-            #gs.loaded_models["loaded"].append(file)
-            #print(file, gs.loaded_models["loaded"], file not in gs.loaded_models["loaded"])
         ckpt_path = f"models/checkpoints/{file}"
         config_path = os.path.join('models/configs', config_name)
         config = OmegaConf.load(config_path)
