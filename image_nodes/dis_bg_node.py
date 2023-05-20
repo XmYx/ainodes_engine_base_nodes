@@ -58,4 +58,4 @@ class DISBGNode(AiNode):
         self.setOutput(1, [result[1]])
         self.setOutput(2, [result[2]])
         if len(self.getOutputs(3)) > 0:
-            self.executeChild(output_index=2)
+            self.executeChild(output_index=3)
