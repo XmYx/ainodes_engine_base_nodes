@@ -33,6 +33,7 @@ class KandinskyWidget(QDMNodeContentWidget):
         self.cfg_scale = self.create_spin_box("Guidance Scale:", 0, 1000, 4)
         self.w_param = self.create_spin_box("Width:", 64, 2048, 512, 64)
         self.h_param = self.create_spin_box("Height:", 64, 2048, 512, 64)
+        self.strength = self.create_double_spin_box("Strength:", 0.00, 1.00, 0.01, 0.84)
         self.sampler = self.create_combo_box(["p_sampler", "ddim_sampler", "plms_sampler"], "Sampler:")
         self.prior_cf_scale = self.create_spin_box("Prior Scale:", 0, 1000, 4)
         self.prior_steps = self.create_spin_box("Prior Scale:", 0, 1000, 5)
@@ -99,7 +100,7 @@ class KandinskyNode(AiNode):
 
         return_images = []
         return_pil_images = []
-        strength = 0.65
+        strength = self.content.strength.value()
         if prompt_override is not None:
             num_steps = args.steps
             images = init_image
@@ -108,7 +109,6 @@ class KandinskyNode(AiNode):
             guidance_scale = int(args.scale)
             h = args.H
             w = args.W
-            #strength = 1.0 - strength
             print(prompt, strength, guidance_scale, num_steps)
             self.seed = args.seed
 
