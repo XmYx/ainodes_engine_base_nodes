@@ -247,17 +247,20 @@ class ImageInputNode(AiNode):
             if gs.debug:
                 print("GETTING VIDEO FRAME")
             pixmap = self.video.get_frame()
-            self.content.image.setPixmap(pixmap)
+            if pixmap is not None:
+                self.content.image.setPixmap(pixmap)
         else:
             pixmap = self.content.image.pixmap()
         return pixmap
     @QtCore.Slot(object)
     def onWorkerFinished(self, pixmap):
         super().onWorkerFinished(None)
-
-        self.setOutput(0, [pixmap])
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
+        if pixmap is not None:
+            self.setOutput(0, [pixmap])
+            if len(self.getOutputs(1)) > 0:
+                self.executeChild(output_index=1)
+        else:
+            print("End of Video or No Image loaded, stopping execution at", self)
 
 
     def openFileDialog(self):
@@ -291,12 +294,14 @@ class VideoPlayer:
         # Skip frames based on the specified interval
         for _ in range(skip - 1):
             self.video_capture.grab()
-
-        # Read the next frame and convert it to a pixmap
-        ret, frame = self.video_capture.read()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        image = Image.fromarray(frame)
-        pixmap = pil_image_to_pixmap(image)
+        try:
+            # Read the next frame and convert it to a pixmap
+            ret, frame = self.video_capture.read()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image = Image.fromarray(frame)
+            pixmap = pil_image_to_pixmap(image)
+        except:
+            ret = None
 
         # Return the pixmap if the read was successful
         if ret:
