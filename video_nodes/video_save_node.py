@@ -195,35 +195,48 @@ class GifRecorder:
         if type == 'GIF':
             os.makedirs("output/gifs", exist_ok=True)
             filename = f"output/gifs/{timestamp}.gif"
-            self.filename = filename
-            self.fps = fps
-            print(f"VIDEO SAVE NODE: Video saving {len(self.frames)} frames at {self.fps}fps as {self.filename}")
-            imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), subrectangles=True, quantizer='nq')
+            if len(self.frames) > 0:
+
+                self.filename = filename
+                self.fps = fps
+                print(f"VIDEO SAVE NODE: Video saving {len(self.frames)} frames at {self.fps}fps as {self.filename}")
+                imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), subrectangles=True, quantizer='nq')
+            else:
+                print("The buffer is empty, cannot save.")
         elif type == 'mp4_ffmpeg':
             os.makedirs("output/mp4s", exist_ok=True)
             filename = f"output/mp4s/{timestamp}.mp4"
-            width = self.frames[0].shape[1]
-            height = self.frames[0].shape[0]
+            if len(self.frames) > 0:
+                width = self.frames[0].shape[1]
+                height = self.frames[0].shape[0]
 
-            #print(width, height)
-            cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
-                   'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-an',
-                   filename]
-            video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-            for frame in self.frames:
-                #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                video_writer.stdin.write(frame.tobytes())
-            video_writer.communicate()
+                #print(width, height)
+                cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
+                       'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-an',
+                       filename]
+                video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+                for frame in self.frames:
+                    #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                    video_writer.stdin.write(frame.tobytes())
+                video_writer.communicate()
+            else:
+                print("The buffer is empty, cannot save.")
+
         elif type == 'mp4_fourcc':
             os.makedirs("output/mp4s", exist_ok=True)
             filename = f"output/mp4s/{timestamp}.mp4"
-            width = self.frames[0].shape[0]
-            height = self.frames[0].shape[1]
-            video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
-            for frame in self.frames:
-                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                video_writer.write(frame)
-            video_writer.release()
+            if len(self.frames) > 0:
+
+                width = self.frames[0].shape[0]
+                height = self.frames[0].shape[1]
+                video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+                for frame in self.frames:
+                    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                    video_writer.write(frame)
+                video_writer.release()
+            else:
+                print("The buffer is empty, cannot save.")
+
         if dump == True:
             self.frames = []
 
