@@ -80,11 +80,10 @@ class InpaintNode(AiNode):
     op_title = "InPaint Alpha"
     content_label_objname = "inpaint_sampling_node"
     category = "Sampling"
+    custom_input_socket_names = ["MASK", "IMAGE", "EXEC"]
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,5,1], outputs=[5,1])
-        self.content.button.clicked.connect(self.evalImplementation)
-        #pass
-        # Create a worker object
+
     def initInnerClasses(self):
         self.content = InpaintWidget(self)
         self.grNode = CalcGraphicsNode(self)
@@ -92,18 +91,12 @@ class InpaintNode(AiNode):
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(256)
-        self.input_socket_name = ["EXEC", "IMAGE", "IMAGE"]
-        self.output_socket_name = ["EXEC", "IMAGE"]
         self.seed = ""
         self.content.fix_seed_button.clicked.connect(self.setSeed)
-        #self.content.setMinimumHeight(400)
-        #self.content.setMinimumWidth(256)
-        #self.content.image.changeEvent.connect(self.onInputChanged)
-
-    def onMarkedDirty(self):
-        self.value = None
+        self.content.eval_signal.connect(self.evalImplementation)
 
     def evalImplementation_thread(self):
+        pixmap = None
         try:
             image_input_node, index = self.getInput(1)
             image_pixmap = image_input_node.getOutput(index)
@@ -114,111 +107,37 @@ class InpaintNode(AiNode):
             mask_pixmap = mask_input_node.getOutput(index)
         except Exception as e:
             print(e)
+        if image_pixmap is not None and mask_pixmap is not None:
+            init_image = pixmap_to_pil_image(image_pixmap[0])
+            mask_image = pixmap_to_pil_image(mask_pixmap[0])
 
-        init_image = pixmap_to_pil_image(image_pixmap)
-        mask_image = pixmap_to_pil_image(mask_pixmap)
+            prompt = self.content.prompt.toPlainText()
+            try:
+                seed = self.content.seed.text()
+                seed = int(seed)
+            except:
+                seed = secrets.randbelow(99999999)
+            scale = self.content.guidance_scale.value()
+            steps = self.content.steps.value()
+            blend_mask = 5
+            mask_blur = 5
+            recons_blur = 5
 
-        prompt = self.content.prompt.toPlainText()
-        try:
-            seed = self.content.seed.text()
-            seed = int(seed)
-        except:
-            seed = secrets.randbelow(99999999)
-        scale = self.content.guidance_scale.value()
-        steps = self.content.steps.value()
-        blend_mask = 5
-        mask_blur = 5
-        recons_blur = 5
+            result = run_inpaint(init_image, mask_image, prompt, seed, scale, steps, blend_mask, mask_blur, recons_blur)
 
-        result = run_inpaint(init_image, mask_image, prompt, seed, scale, steps, blend_mask, mask_blur, recons_blur)
-        pixmap = pil_image_to_pixmap(result)
-        self.setOutput(0, pixmap)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
+            print("RESULT", result)
+            pixmap = pil_image_to_pixmap(result)
+            return pixmap
 
-
-    def k_sampling(self, progress_callback=None):
-        try:
-            cond_node, index = self.getInput(2)
-            cond = cond_node.getOutput(index)
-        except Exception as e:
-            print(e)
-            cond = None
-        try:
-            n_cond_node, index = self.getInput(1)
-            n_cond = n_cond_node.getOutput(index)
-        except:
-            n_cond = None
-        try:
-            latent_node, index = self.getInput(0)
-            latent = latent_node.getOutput(index)
-        except:
-            latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
-        self.seed = self.content.seed.text()
-        try:
-            self.seed = int(self.seed)
-        except:
-            self.seed = secrets.randbelow(99999999)
-        try:
-            last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
-            sample = common_ksampler(device="cuda",
-                                     seed=self.seed,
-                                     steps=self.content.steps.value(),
-                                     start_step=self.content.start_step.value(),
-                                     last_step=last_step,
-                                     cfg=self.content.guidance_scale.value(),
-                                     sampler_name=self.content.sampler.currentText(),
-                                     scheduler=self.content.schedulers.currentText(),
-                                     positive=cond,
-                                     negative=n_cond,
-                                     latent=latent,
-                                     disable_noise=self.content.disable_noise.isChecked(),
-                                     force_full_denoise=self.content.force_denoise.isChecked(),
-                                     denoise=self.content.denoise.value())
-
-            return_sample = sample.cpu().half()
-
-            x_samples = gs.models["sd"].decode_first_stage(sample.half())
-            x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
-            x_sample = 255. * rearrange(x_samples[0].cpu().numpy(), 'c h w -> h w c')
-            image = Image.fromarray(x_sample.astype(np.uint8))
-            qimage = ImageQt(image)
-            pixmap = QPixmap().fromImage(qimage)
-            self.value = pixmap
-            del sample
-            del x_samples
-            x_samples = None
-            sample = None
-            torch_gc()
-            self.onWorkerFinished([pixmap, return_sample])
-        except:
-            #pass
-            if len(self.getOutputs(2)) > 0:
-                self.executeChild(output_index=2)
-        return [pixmap, return_sample]
-    @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
+        if result is not None:
+            self.setOutput(0, [result])
+            if len(self.getOutputs(1)) > 0:
+                self.executeChild(output_index=1)
+        else:
+            self.markDirty(True)
 
-        # Update the node value and mark it as dirty
-        #self.value = result[0]
-        if gs.logging:
-            print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed)
-        self.markDirty(False)
-        self.markInvalid(False)
-        self.setOutput(0, result[0])
-        self.setOutput(1, result[1])
-        #pass
-        #self.worker.autoDelete()
-        #self.scene.queue.task_finished.disconnect(self.onWorkerFinished)
-        if len(self.getOutputs(2)) > 0:
-            self.executeChild(output_index=2)
-        return
-        #self.markDescendantsDirty()
-        #self.evalChildren()
     def setSeed(self):
         self.content.seed.setText(str(self.seed))
-    def onInputChanged(self, socket=None):
-        pass
-        #self.eval()
 

@@ -1,3 +1,5 @@
+import numpy as np
+
 from .ksampler_node import get_fixed_seed
 from ..ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image
 
@@ -27,6 +29,7 @@ class KandinskyWidget(QDMNodeContentWidget):
         self.create_widgets()
         self.create_main_layout(grid=1)
     def create_widgets(self):
+        self.task = self.create_combo_box(["TXT2IMG", "INPAINT"], "Task")
         self.prompt = self.create_text_edit("Prompt:")
         self.seed = self.create_line_edit("Seed:")
         self.steps = self.create_spin_box("Steps:", 1, 10000, 25)
@@ -48,7 +51,7 @@ class KandinskyNode(AiNode):
     content_label_objname = "kandinsky_node"
     category = "Sampling"
     def __init__(self, scene, inputs=[], outputs=[]):
-        super().__init__(scene, inputs=[5,6,1], outputs=[5,1])
+        super().__init__(scene, inputs=[5,5,6,1], outputs=[5,1])
         self.content.button.clicked.connect(self.evalImplementation)
 
         # Create a worker object
@@ -66,6 +69,7 @@ class KandinskyNode(AiNode):
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.text_signal.connect(self.set_prompt)
         self.busy = False
+        self.task = None
 
     @QtCore.Slot(str)
     def set_prompt(self, text):
@@ -73,12 +77,21 @@ class KandinskyNode(AiNode):
 
 
     def evalImplementation_thread(self, prompt_override=None, args=None, init_image=None):
-        if "kandinsky" not in gs.models:
-            gs.models["kandinsky"] = get_kandinsky2('cuda', task_type='text2img', model_version='2.1', use_flash_attention=False)
-        images = self.getInputData(0)
-        data = self.getInputData(1)
-        prompt = self.content.prompt.toPlainText()
 
+        task = self.content.task.currentText()
+        if task == "TXT2IMG":
+            task_type = 'text2img'
+        else:
+            task_type = 'inpainting'
+
+        if f"kandinsky" not in gs.models or self.task != task_type:
+            gs.models["kandinsky"] = get_kandinsky2('cuda', task_type=task_type, model_version='2.1', use_flash_attention=False)
+            self.task = task_type
+        masks = self.getInputData(0)
+        images = self.getInputData(1)
+        data = self.getInputData(2)
+
+        prompt = self.content.prompt.toPlainText()
         if data:
             if "prompt" in data:
                 prompt = data["prompt"]
@@ -97,7 +110,6 @@ class KandinskyNode(AiNode):
             self.seed = int(self.seed)
         except:
             self.seed = get_fixed_seed('')
-
         return_images = []
         return_pil_images = []
         strength = self.content.strength.value()
@@ -111,25 +123,55 @@ class KandinskyNode(AiNode):
             w = args.W
             print(prompt, strength, guidance_scale, num_steps)
             self.seed = args.seed
-
         torch.manual_seed(self.seed)
 
         if images is not None:
             for image in images:
-                pil_img = pixmap_to_pil_image(image)
-                return_pil_images = gs.models["kandinsky"].generate_img2img(
-                    prompt,
-                    pil_img,
-                    strength=strength,
-                    num_steps=num_steps,
-                    batch_size=1,
-                    guidance_scale=guidance_scale,
-                    h=h,
-                    w=w,
-                    sampler=sampler,
-                    prior_cf_scale=prior_cf_scale,
-                    prior_steps=str(prior_steps),
-                )
+
+                if task_type == "text2img":
+
+                    pil_img = pixmap_to_pil_image(image)
+                    return_pil_images = gs.models["kandinsky"].generate_img2img(
+                        prompt,
+                        pil_img,
+                        strength=strength,
+                        num_steps=num_steps,
+                        batch_size=1,
+                        guidance_scale=guidance_scale,
+                        h=h,
+                        w=w,
+                        sampler=sampler,
+                        prior_cf_scale=prior_cf_scale,
+                        prior_steps=str(prior_steps),
+                    )
+                else:
+                    pil_img = pixmap_to_pil_image(image)
+                    img_mask = pixmap_to_pil_image(masks[0]).convert("L")
+
+                    # Get the original dimensions
+                    #original_height, original_width = img_mask.size
+
+                    # Calculate the new dimensions
+                    #new_width = int(original_width // 8)
+                    #new_height = int(original_height // 8)
+
+                    # Resize the image
+                    resized_img_mask = img_mask.resize(pil_img.size)
+
+                    return_pil_images = gs.models["kandinsky"].generate_inpainting(prompt,
+                                                                                    pil_img,
+                                                                                    np.array(resized_img_mask),
+                                                                                    num_steps=num_steps,
+                                                                                    batch_size=1,
+                                                                                    guidance_scale=guidance_scale,
+                                                                                    h=pil_img.size[1],
+                                                                                    w=pil_img.size[0],
+                                                                                    sampler="ddim_sampler",
+                                                                                    prior_cf_scale=prior_cf_scale,
+                                                                                    prior_steps=str(prior_steps),
+                                                                                    negative_prior_prompt="",
+                                                                                    negative_decoder_prompt="",
+                    )
         else:
             return_pil_images = gs.models["kandinsky"].generate_text2img(
                 prompt,
@@ -141,7 +183,6 @@ class KandinskyNode(AiNode):
                 prior_cf_scale=prior_cf_scale,
                 prior_steps=str(prior_steps)
             )
-
         for image in return_pil_images:
             pixmap = pil_image_to_pixmap(image)
             return_images.append(pixmap)

@@ -3,6 +3,7 @@ from qtpy import QtWidgets
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
+from ainodes_frontend.base.settings import handle_ainodes_exception
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
 
@@ -71,7 +72,7 @@ class DataMergeNode(AiNode):
                 print("NEW DATA", new_data)
             return new_data
         except Exception as e:
-            print(e)
+            deno = handle_ainodes_exception()
             return new_data
 
 

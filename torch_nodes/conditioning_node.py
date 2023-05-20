@@ -5,6 +5,7 @@ from qtpy import QtWidgets, QtCore
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
+from ainodes_frontend.base.settings import handle_ainodes_exception
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
 
@@ -77,8 +78,12 @@ class ConditioningNode(AiNode):
 
             return result, data
         except Exception as e:
-            print("ERROR:", e)
-            #pass
+            done = handle_ainodes_exception()
+
+            if type(e) is KeyError and 'clip' in str(e):
+                print("Clip / SD Model not loaded yet, please place and validate a Torch loader node")
+            else:
+                print(repr(e))
             return None
 
     def get_conditioning(self, prompt="", progress_callback=None):
@@ -97,14 +102,13 @@ class ConditioningNode(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
-
-        self.setOutput(1, result[0])
-        self.setOutput(0, result[1])
-        self.markDirty(False)
-        self.markInvalid(False)
-        #pass
-        if len(self.getOutputs(2)) > 0:
-            self.executeChild(2)
+        if result is not None:
+            self.setOutput(1, result[0])
+            self.setOutput(0, result[1])
+            self.markDirty(False)
+            self.markInvalid(False)
+            if len(self.getOutputs(2)) > 0:
+                self.executeChild(2)
 
     def onInputChanged(self, socket=None):
         pass
