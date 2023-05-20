@@ -21,8 +21,10 @@ class DISBGNode(AiNode):
     content_label_objname = "image_disbg_node"
     category = "Image"
 
+    custom_output_socket_name = ["FG", "BG", "MASK", "EXEC"]
+
     def __init__(self, scene):
-        super().__init__(scene, inputs=[5,1], outputs=[5,5,1])
+        super().__init__(scene, inputs=[5,1], outputs=[5,5,5,1])
 
     def initInnerClasses(self):
         self.content = DISBGWidget(self)
@@ -42,10 +44,11 @@ class DISBGNode(AiNode):
         if pixmaps is not None:
             for pixmap1 in pixmaps:
                 image = pixmap_to_pil_image(pixmap1)
-                img, mask = self.model.inference(image)
+                img, bg, mask = self.model.inference(image)
                 fg_pixmap = pil_image_to_pixmap(img)
-                bg_pixmap = pil_image_to_pixmap(mask)
-                return([bg_pixmap, fg_pixmap])
+                bg_pixmap = pil_image_to_pixmap(bg)
+                mask_pixmap = pil_image_to_pixmap(mask)
+                return([bg_pixmap, fg_pixmap, mask_pixmap])
         return self.value
 
     @QtCore.Slot(object)
@@ -53,5 +56,6 @@ class DISBGNode(AiNode):
         super().onWorkerFinished(None)
         self.setOutput(0, [result[0]])
         self.setOutput(1, [result[1]])
-        if len(self.getOutputs(2)) > 0:
+        self.setOutput(2, [result[2]])
+        if len(self.getOutputs(3)) > 0:
             self.executeChild(output_index=2)

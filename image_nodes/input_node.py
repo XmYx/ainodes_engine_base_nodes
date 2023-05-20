@@ -196,36 +196,40 @@ class ImageInputNode(AiNode):
         self.content.fileName = None
 
     def tryOpenGraph(self):
-        image = Image.open(self.url)
-        # Get the metadata from the image
-        metadata = image.info
-        # Check if the image has metadata
-        if metadata is not None:
-            if 'graph' in metadata:
-                json_data = metadata['graph']
-                # Deserialize the JSON data
-                deserialized_data = json.loads(json_data)
-                # Save the deserialized data as the next available numbered temp file
-                os.makedirs("temp", exist_ok=True)
-                temp_dir = "temp"
-                count = 1
-                while True:
-                    temp_filename = os.path.join(temp_dir, f"temp{count}.json")
-                    if not os.path.exists(temp_filename):
-                        break
-                    count += 1
+        try:
 
-                with open(temp_filename, 'w') as file:
-                    json.dump(deserialized_data, file)
-                meta = temp_filename
+            image = Image.open(self.url)
+            # Get the metadata from the image
+            metadata = image.info
+            # Check if the image has metadata
+            if metadata is not None:
+                if 'graph' in metadata:
+                    json_data = metadata['graph']
+                    # Deserialize the JSON data
+                    deserialized_data = json.loads(json_data)
+                    # Save the deserialized data as the next available numbered temp file
+                    os.makedirs("temp", exist_ok=True)
+                    temp_dir = "temp"
+                    count = 1
+                    while True:
+                        temp_filename = os.path.join(temp_dir, f"temp{count}.json")
+                        if not os.path.exists(temp_filename):
+                            break
+                        count += 1
 
-                # Extract the filename from the URL
-                #filename = os.path.basename(self.url)
-                # Strip the extension from the filename
-                #filename_without_extension = os.path.splitext(filename)[0]
-                #meta = os.path.join(gs.metas, f"{filename_without_extension}.json")
+                    with open(temp_filename, 'w') as file:
+                        json.dump(deserialized_data, file)
+                    meta = temp_filename
 
-                self.scene.getView().parent().window().file_open_signal.emit(temp_filename)
+                    # Extract the filename from the URL
+                    #filename = os.path.basename(self.url)
+                    # Strip the extension from the filename
+                    #filename_without_extension = os.path.splitext(filename)[0]
+                    #meta = os.path.join(gs.metas, f"{filename_without_extension}.json")
+
+                    self.scene.getView().parent().window().file_open_signal.emit(temp_filename)
+        except Exception as e:
+            print(e)
 
 
 

@@ -61,7 +61,7 @@ class DISRemoval():
         bg_rgba = im_rgb.copy()
         bg_rgba.putalpha(ImageOps.invert(pil_mask))
 
-        return [im_rgba, bg_rgba]
+        return [im_rgba, bg_rgba, pil_mask]
 
 class GOSNormalize(object):
     '''
