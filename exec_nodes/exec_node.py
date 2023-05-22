@@ -59,7 +59,8 @@ class ExecNode(AiNode):
         self.executeChild(0)
 
     def stop(self):
-        self.interrupt = True
+        print("Interrupting Execution of Graph")
+        gs.should_run = None
 
     def start(self):
         self.interrupt = False
