@@ -185,19 +185,25 @@ class KSamplerNode(AiNode):
                         if 'control_hint' in i[1]:
                             cond = self.apply_control_net(cond)
 
-                    denoise = self.content.denoise.value()
-                    steps = self.content.steps.value()
-                    cfg = self.content.guidance_scale.value()
-                    start_step = self.content.start_step.value()
+                    self.denoise = self.content.denoise.value()
+                    self.steps = self.content.steps.value()
+                    self.cfg = self.content.guidance_scale.value()
+                    self.start_step = self.content.start_step.value()
+                    self.sampler_name = self.content.sampler.currentText()
+                    self.scheduler = self.content.schedulers.currentText()
+
+                    if data is not None:
+                        self.update_vars(data)
+
                     if cond_override is not None:
                         denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
                         if latent_override is not None:
                             latent = latent_override
 
                         self.seed = args.seed
-                        steps = args.steps
-                        cfg = args.scale
-                        start_step = 0
+                        self.steps = args.steps
+                        self.cfg = args.scale
+                        self.start_step = 0
 
                         print("SD SAMPLER NODE OVERRIDE", steps, cfg, denoise, args.use_init)
 
@@ -205,18 +211,18 @@ class KSamplerNode(AiNode):
 
                     sample = common_ksampler(device="cuda",
                                              seed=self.seed,
-                                             steps=steps,
-                                             start_step=start_step,
-                                             last_step=last_step,
-                                             cfg=cfg,
-                                             sampler_name=self.content.sampler.currentText(),
-                                             scheduler=self.content.schedulers.currentText(),
+                                             steps=self.steps,
+                                             start_step=self.start_step,
+                                             last_step=self.last_step,
+                                             cfg=self.cfg,
+                                             sampler_name=self.sampler_name,
+                                             scheduler=self.scheduler,
                                              positive=cond,
                                              negative=n_cond,
                                              latent=latent,
                                              disable_noise=self.content.disable_noise.isChecked(),
                                              force_full_denoise=self.content.force_denoise.isChecked(),
-                                             denoise=denoise,
+                                             denoise=self.denoise,
                                              callback=self.callback)
 
                     for c in cond:
