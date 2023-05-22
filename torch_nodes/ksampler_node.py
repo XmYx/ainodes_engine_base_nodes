@@ -90,10 +90,10 @@ class KSamplerNode(AiNode):
 
         latent_list = self.getInputData(1)
         data = self.getInputData(0)
-        last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
-        short_steps = last_step - self.content.start_step.value()
+        self.last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
+        short_steps = self.last_step - self.content.start_step.value()
         self.steps = self.content.steps.value()
-        self.single_step = 100 / self.steps if self.content.start_step.value() == 0 and last_step == self.steps else short_steps
+        self.single_step = 100 / self.steps if self.content.start_step.value() == 0 and self.last_step == self.steps else short_steps
         self.progress_value = 0
 
 
@@ -156,8 +156,6 @@ class KSamplerNode(AiNode):
                     self.steps = args.steps
                     self.cfg = args.scale
                     self.start_step = 0
-
-                    print("SD SAMPLER NODE OVERRIDE", steps, cfg, denoise, args.use_init)
 
 
 
