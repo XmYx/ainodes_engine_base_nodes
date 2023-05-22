@@ -92,8 +92,8 @@ class KSamplerNode(AiNode):
         data = self.getInputData(0)
         last_step = self.content.steps.value() if self.content.stop_early.isChecked() == False else self.content.last_step.value()
         short_steps = last_step - self.content.start_step.value()
-        steps = self.content.steps.value()
-        self.single_step = 100 / steps if self.content.start_step.value() == 0 and last_step == steps else short_steps
+        self.steps = self.content.steps.value()
+        self.single_step = 100 / self.steps if self.content.start_step.value() == 0 and last_step == self.steps else short_steps
         self.progress_value = 0
 
 
@@ -113,138 +113,90 @@ class KSamplerNode(AiNode):
         generator = torch.manual_seed(self.seed)
         try:
             x=0
-            if data:
-                if "model" in data:
-                    from diffusers.utils import pt_to_pil
+            if cond_override is not None:
+                cond_list = cond_override[0]
+                n_cond_list = cond_override[1]
 
-                    if data["model"] == "deepfloyd_1":
+            if len(cond_list) < len(latent_list):
+                new_cond_list = []
+                for x in range(len(latent_list)):
+                    new_cond_list.append(cond_list[0])
+                # cond_list = len(latent_list) * cond_list[0]
+                cond_list = new_cond_list
 
-
-                        image = gs.models["deepfloyd_1"](prompt_embeds=cond_list[0][0], negative_prompt_embeds=n_cond_list[0][0],
-                                                         generator=generator, output_type="pt", num_inference_steps=steps).images
-                        gs.models["deepfloyd_1"].to("cpu")
-
-                    elif data["model"] == "deepfloyd_2":
-                        generator = torch.manual_seed(self.seed)
-                        image = gs.models["deepfloyd_2"](
-                            image=latent_list[0], prompt_embeds=cond_list[0][0], negative_prompt_embeds=n_cond_list[0][0],
-                            generator=generator, output_type="pt"
-                        ).images
-                        gs.models["deepfloyd_2"].to("cpu")
-
-                    elif data["model"] == "deepfloyd_3":
-                        if gs.logging:
-                            print("UPSCALE X4")
-                        latent = latent_list[0]
-                        if latent.shape[1] == 4:  # Checking if tensor has 4 channels
-                            latent = latent[:, 1:, :, :]  # Stripping the first channel
-                        image = gs.models["deepfloyd_3"](prompt=data["prompt"], image=latent, generator=generator, noise_level=100).images
-                        gs.models["deepfloyd_3"].to("cpu")
-
-                if data["model"] not in ["deepfloyd_3"]:
-                    img = pt_to_pil(image)[0]
+            for cond in cond_list:
+                if len(latent_list) == len(cond_list):
+                    latent = latent_list[x]
                 else:
-                    img = image[0]
-                qimage = ImageQt(img)
-                pixmap = QPixmap().fromImage(qimage)
+                    latent = latent_list[0]
+                if len(n_cond_list) == len(cond_list):
+                    n_cond = n_cond_list[x]
+                else:
+                    n_cond = n_cond_list[0]
+                for i in cond:
+                    if 'control_hint' in i[1]:
+                        cond = self.apply_control_net(cond)
 
-                #if len(self.getOutputs(0)) > 0:
-                #    node = self.getOutputs(0)[0]
-                #    if hasattr(node.content, "preview_signal"):
-                #        # print("emitting")
-                #        node.content.preview_signal.emit(pixmap)
-                self.content.progress_signal.emit(0)
-                return_pixmaps.append(pixmap)
-                return_samples.append(image)
+                self.denoise = self.content.denoise.value()
+                self.steps = self.content.steps.value()
+                self.cfg = self.content.guidance_scale.value()
+                self.start_step = self.content.start_step.value()
+                self.sampler_name = self.content.sampler.currentText()
+                self.scheduler = self.content.schedulers.currentText()
 
-
-
-            else:
+                if data is not None:
+                    self.update_vars(data)
 
                 if cond_override is not None:
-                    cond_list = cond_override[0]
-                    n_cond_list = cond_override[1]
+                    denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
+                    if latent_override is not None:
+                        latent = latent_override
 
-                if len(cond_list) < len(latent_list):
-                    new_cond_list = []
-                    for x in range(len(latent_list)):
-                        new_cond_list.append(cond_list[0])
-                    # cond_list = len(latent_list) * cond_list[0]
-                    cond_list = new_cond_list
+                    self.seed = args.seed
+                    self.steps = args.steps
+                    self.cfg = args.scale
+                    self.start_step = 0
 
-                for cond in cond_list:
-                    if len(latent_list) == len(cond_list):
-                        latent = latent_list[x]
-                    else:
-                        latent = latent_list[0]
-                    if len(n_cond_list) == len(cond_list):
-                        n_cond = n_cond_list[x]
-                    else:
-                        n_cond = n_cond_list[0]
-                    for i in cond:
-                        if 'control_hint' in i[1]:
-                            cond = self.apply_control_net(cond)
-
-                    self.denoise = self.content.denoise.value()
-                    self.steps = self.content.steps.value()
-                    self.cfg = self.content.guidance_scale.value()
-                    self.start_step = self.content.start_step.value()
-                    self.sampler_name = self.content.sampler.currentText()
-                    self.scheduler = self.content.schedulers.currentText()
-
-                    if data is not None:
-                        self.update_vars(data)
-
-                    if cond_override is not None:
-                        denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
-                        if latent_override is not None:
-                            latent = latent_override
-
-                        self.seed = args.seed
-                        self.steps = args.steps
-                        self.cfg = args.scale
-                        self.start_step = 0
-
-                        print("SD SAMPLER NODE OVERRIDE", steps, cfg, denoise, args.use_init)
+                    print("SD SAMPLER NODE OVERRIDE", steps, cfg, denoise, args.use_init)
 
 
 
-                    sample = common_ksampler(device="cuda",
-                                             seed=self.seed,
-                                             steps=self.steps,
-                                             start_step=self.start_step,
-                                             last_step=self.last_step,
-                                             cfg=self.cfg,
-                                             sampler_name=self.sampler_name,
-                                             scheduler=self.scheduler,
-                                             positive=cond,
-                                             negative=n_cond,
-                                             latent=latent,
-                                             disable_noise=self.content.disable_noise.isChecked(),
-                                             force_full_denoise=self.content.force_denoise.isChecked(),
-                                             denoise=self.denoise,
-                                             callback=self.callback)
+                sample = common_ksampler(device="cuda",
+                                         seed=self.seed,
+                                         steps=self.steps,
+                                         start_step=self.start_step,
+                                         last_step=self.last_step,
+                                         cfg=self.cfg,
+                                         sampler_name=self.sampler_name,
+                                         scheduler=self.scheduler,
+                                         positive=cond,
+                                         negative=n_cond,
+                                         latent=latent,
+                                         disable_noise=self.content.disable_noise.isChecked(),
+                                         force_full_denoise=self.content.force_denoise.isChecked(),
+                                         denoise=self.denoise,
+                                         callback=self.callback)
 
-                    for c in cond:
-                        if "control" in c[1]:
-                            del c[1]["control"]
+                for c in cond:
+                    if "control" in c[1]:
+                        del c[1]["control"]
 
-                    return_sample = sample.detach().cpu().half()
-                    return_samples.append(return_sample)
-                    x_sample = self.decode_sample(sample)
-                    image = Image.fromarray(x_sample.astype(np.uint8))
-                qimage = ImageQt(image)
-                pixmap = QPixmap().fromImage(qimage)
+                return_sample = sample.detach().cpu().half()
+                return_samples.append(return_sample)
+                x_sample = self.decode_sample(sample)
+                image = Image.fromarray(x_sample.astype(np.uint8))
+            qimage = ImageQt(image)
+            pixmap = QPixmap().fromImage(qimage)
 
-                #if len(self.getOutputs(0)) > 0:
-                #    node = self.getOutputs(0)[0]
-                #    if hasattr(node.content, "preview_signal"):
-                #        #print("emitting")
-                #        node.content.preview_signal.emit(pixmap)
+            #if len(self.getOutputs(0)) > 0:
+            #    node = self.getOutputs(0)[0]
+            #    if hasattr(node.content, "preview_signal"):
+            #        #print("emitting")
+            #        node.content.preview_signal.emit(pixmap)
 
-                self.content.progress_signal.emit(0)
-                return_pixmaps.append(pixmap)
-                x+=1
+            self.content.progress_signal.emit(0)
+            return_pixmaps.append(pixmap)
+            x+=1
             return [return_pixmaps, return_samples]
         except Exception as e:
             return_pixmaps, return_samples = None, None
