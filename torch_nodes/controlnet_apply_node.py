@@ -216,8 +216,10 @@ class CNApplyNode(AiNode):
         self.markInvalid(False)
         #pass
         self.setOutput(0, result)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(1)
+        if gs.should_run:
+
+            if len(self.getOutputs(1)) > 0:
+                self.executeChild(1)
         return
     def onInputChanged(self, socket=None):
         pass

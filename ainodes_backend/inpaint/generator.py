@@ -10,7 +10,7 @@ from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.inpaint.ddim_sampler
 def run_inpaint(init_image, mask_img, prompt, seed, scale, steps, blend_mask, mask_blur, recons_blur):
     #print(gs.models)
     torch_gc()
-    sampler = DDIMSampler(gs.models["inpaint"].model)
+    sampler = DDIMSampler(gs.models["sd"].model)
     image_guide = image_to_torch(init_image, "cuda")[0]
     mask = mask_img
     # Convert the image to grayscale
@@ -29,8 +29,8 @@ def run_inpaint(init_image, mask_img, prompt, seed, scale, steps, blend_mask, ma
 
 
     image = init_image
-    h = image.size[0]
-    w = image.size[1]
+    h = image.size[1]
+    w = image.size[0]
 
     #try:
     result = inpaint(
@@ -64,16 +64,22 @@ def inpaint(sampler, image, mask, prompt, seed, scale, ddim_steps, device, mask_
         with torch.autocast("cuda"):
             batch = make_batch_sd(image, mask, txt=prompt, device=device, num_samples=num_samples)
 
-            c = gs.models["inpaint"].model.cond_stage_model.encode(batch["txt"])
+            c = gs.models["clip"].encode(prompt)
+
+            c = c.to("cuda")
 
             c_cat = list()
-            for ck in gs.models["inpaint"].model.concat_keys:
+            for ck in gs.models["sd"].model.concat_keys:
                 cc = batch[ck].float()
-                if ck != gs.models["inpaint"].model.masked_image_key:
+                if ck != gs.models["sd"].model.masked_image_key:
                     bchw = [num_samples, 4, h // 8, w // 8]
                     cc = torch.nn.functional.interpolate(cc, size=bchw[-2:])
                 else:
-                    cc = gs.models["inpaint"].model.get_first_stage_encoding(gs.models["inpaint"].model.encode_first_stage(cc))
+                    gs.models["vae"].first_stage_model.cuda()
+                    cc = gs.models["sd"].model.get_first_stage_encoding(gs.models["vae"].encode(cc))
+                    gs.models["vae"].first_stage_model.cpu()
+                cc = cc.to("cuda")
+
                 c_cat.append(cc)
             c_cat = torch.cat(c_cat, dim=1)
 
@@ -81,33 +87,40 @@ def inpaint(sampler, image, mask, prompt, seed, scale, ddim_steps, device, mask_
             cond = {"c_concat": [c_cat], "c_crossattn": [c]}
 
             # uncond cond
-            uc_cross = gs.models["inpaint"].model.get_unconditional_conditioning(num_samples, "")
+            uc_cross = gs.models["sd"].model.get_unconditional_conditioning(num_samples, "")
+
+            uc_cross = uc_cross.to("cuda")
+            c_cat = c_cat.to("cuda")
+
             uc_full = {"c_concat": [c_cat], "c_crossattn": [uc_cross]}
 
-            shape = [gs.models["inpaint"].model.channels, h // 8, w // 8]
+            shape = [gs.models["sd"].model.channels, h // 8, w // 8]
+
+
+            gs.models["sd"].model.cuda()
+
             samples_cfg, intermediates = sampler.sample(
                 ddim_steps,
                 num_samples,
                 shape,
                 cond,
                 verbose=False,
-                eta=1.0,
+                eta=0.0,
                 unconditional_guidance_scale=scale,
                 unconditional_conditioning=uc_full,
                 x_T=start_code,
                 img_callback=callback,
             )
-            x_samples = encoded_to_torch_image(
-                gs.models["inpaint"].model, samples_cfg)  # [1, 3, 512, 512]
-            all_samples = []
-            if masked_image_for_blend is not None:
-                x_samples = mask_for_reconstruction * x_samples + masked_image_for_blend
 
-            all_samples.append(x_samples)
+            print(samples_cfg)
+            gs.models["sd"].model.cpu()
+            #x_samples = encoded_to_torch_image(
+            #    gs.models["sd"].model, samples_cfg)  # [1, 3, 512, 512]
 
-            for x_sample in x_samples:
-                image = sampleToImage(x_sample)
-                result = [image]
+            x_samples = gs.models["vae"].decode(samples_cfg.half())
+            x_samples = 255. * x_samples[0].detach().numpy()
+            result = [Image.fromarray(x_samples.astype(np.uint8))]
+            print("END", x_samples[0].shape, mask_for_reconstruction.shape, masked_image_for_blend.shape)
     return result
 
 
@@ -179,9 +192,8 @@ def get_mask_for_latent_blending(device, mask_image, blur = 0, recons_blur=0):
     mask = 1 - mask
 
     mask = torch.from_numpy(mask)
-
-    mask = torch.stack([mask, mask, mask, mask], 1).to(device)  # FIXME
+    #mask = torch.stack([mask, mask, mask, mask], 1).to(device)  # FIXME
     return [mask_for_reconstruction, mask]
 def sampleToImage (sample):
-    sample = 255. * rearrange(sample.cpu().numpy(), 'c h w -> h w c')
+    #sample = 255. * rearrange(sample.cpu().numpy(), 'c h w -> h w c')
     return Image.fromarray(sample.astype(np.uint8))

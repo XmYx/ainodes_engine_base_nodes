@@ -154,7 +154,7 @@ class Text2VideoNode(AiNode):
     def evalImplementation_thread(self, index=0):
         if "t2v" not in gs.models:
             #gs.models["t2v"] = TextToVideoSynthesis(model_dir="models/t2v")
-            from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler
+            from diffusers import DPMSolverMultistepScheduler
             import torch
             from diffusers import TextToVideoSDPipeline
             gs.models["t2v"] = TextToVideoSDPipeline.from_pretrained("strangeman3107/animov-0.1.1", torch_dtype=torch.float16,

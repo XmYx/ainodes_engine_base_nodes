@@ -16,7 +16,7 @@ from qtpy import QtWidgets, QtCore, QtGui
 from qtpy.QtGui import QPixmap
 
 from ainodes_frontend import singleton as gs
-from ainodes_frontend.base import register_node, get_next_opcode
+from ainodes_frontend.base import register_node, get_next_opcode, handle_ainodes_exception
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 
@@ -27,11 +27,11 @@ OP_NODE_K_SAMPLER = get_next_opcode()
 SCHEDULERS = ["karras", "normal", "simple", "ddim_uniform"]
 SAMPLERS = ["euler", "euler_ancestral", "heun", "dpm_2", "dpm_2_ancestral",
             "lms", "dpm_fast", "dpm_adaptive", "dpmpp_2s_ancestral", "dpmpp_sde",
-            "dpmpp_2m", "ddim", "uni_pc", "uni_pc_bh2"]
+            "dpmpp_2m", "dpmpp_2m_alt", "ddim", "uni_pc", "uni_pc_bh2"]
 
 class KSamplerWidget(QDMNodeContentWidget):
     seed_signal = QtCore.Signal()
-    progress_signal = QtCore.Signal(int)
+    #progress_signal = QtCore.Signal(int)
     def initUI(self):
         self.create_widgets()
         self.create_main_layout(grid=1)
@@ -62,7 +62,6 @@ class KSamplerNode(AiNode):
     category = "Sampling"
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[6,2,3,3,1], outputs=[5,2,1])
-        self.content.button.clicked.connect(self.eval)
         #pass
 
         # Create a worker object
@@ -76,9 +75,11 @@ class KSamplerNode(AiNode):
         self.seed = ""
         self.content.fix_seed_button.clicked.connect(self.setSeed)
         self.content.seed_signal.connect(self.setSeed)
-        self.content.progress_signal.connect(self.setProgress)
+        #self.content.progress_signal.connect(self.setProgress)
         self.progress_value = 0
         self.content.eval_signal.connect(self.evalImplementation)
+        self.content.button.clicked.connect(self.content.eval_signal)
+
 
 
     @QtCore.Slot()
@@ -191,21 +192,22 @@ class KSamplerNode(AiNode):
             #        #print("emitting")
             #        node.content.preview_signal.emit(pixmap)
 
-            self.content.progress_signal.emit(0)
+            #self.content.progress_signal.emit(0)
             return_pixmaps.append(pixmap)
             x+=1
             return [return_pixmaps, return_samples]
         except Exception as e:
+            handle_ainodes_exception()
             return_pixmaps, return_samples = None, None
             print(e)
         return [return_pixmaps, return_samples]
     def decode_sample(self, sample):
         x_sample = gs.models["vae"].decode(sample.half())
-        x_sample = 255. * x_sample[0].detach().numpy()
+        x_sample = 255. * x_sample[0].detach().cpu().numpy()
         return x_sample
 
     def callback(self, tensors):
-        self.setProgress()
+        #self.setProgress()
         return
         for key, value in tensors.items():
             if key == 'i':
@@ -216,8 +218,8 @@ class KSamplerNode(AiNode):
 
         super().onWorkerFinished(None)
 
-        if gs.logging:
-            print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed, "images", result[0])
+        #if gs.logging:
+        #    print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed, "images", result[0])
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result[0])
@@ -226,13 +228,15 @@ class KSamplerNode(AiNode):
 
         #self.content.progress_signal.emit(100)
         self.progress_value = 0
-        if len(self.getOutputs(2)) > 0:
-            self.executeChild(output_index=2)
+        if gs.should_run:
 
-    @QtCore.Slot()
+            if len(self.getOutputs(2)) > 0:
+                self.executeChild(output_index=2)
+
+    @QtCore.Slot(str)
     def setSeed(self):
         self.content.seed.setText(str(self.seed))
-    @QtCore.Slot()
+    @QtCore.Slot(int)
     def setProgress(self, progress=None):
         if progress != 100 and progress != 0:
             self.progress_value = self.progress_value + self.single_step

@@ -3,7 +3,7 @@ import time
 
 import cv2
 import numpy as np
-from PIL import ImageOps, Image
+from PIL import ImageOps, Image, ImageEnhance
 #from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
 from qtpy import QtWidgets, QtCore
 
@@ -33,6 +33,9 @@ image_ops_methods = [
     'mlsd',
     'openpose',
     "autocontrast",
+    "Brightness",
+    "Contrast",
+    "Sharpness",
     "colorize",
     "contrast",
     "grayscale",
@@ -45,15 +48,9 @@ image_ops_methods = [
     "semseg"
 ]
 image_ops_valid_methods = [
-    "autocontrast",
-    "colorize",
-    "contrast",
-    "grayscale",
-    "invert",
-    "mirror",
-    "posterize",
-    "solarize",
-    "flip"
+    "Brightness",
+    "Contrast",
+    "Sharpness"
 ]
 
 class ImageOpsWidget(QDMNodeContentWidget):
@@ -68,6 +65,8 @@ class ImageOpsWidget(QDMNodeContentWidget):
     def create_widgets(self):
         self.text_label = QtWidgets.QLabel("Image Operator:")
         self.dropdown = self.create_combo_box(image_ops_methods, "Image Operator:")
+
+        self.enhancer_level = self.create_double_spin_box("Enhance level", min_val=0.0, max_val=10.0, default_val=1.0, step=0.1)
 
         self.width_value = self.create_spin_box("Width:", 64, 4096, 512, 64)
         self.height_value = self.create_spin_box("Height:", 64, 4096, 512, 64)
@@ -166,8 +165,10 @@ class ImageOpNode(AiNode):
     def onWorkerFinished(self, pixmap_list):
         super().onWorkerFinished(None)
         self.setOutput(0, pixmap_list)
-        if len(self.getOutputs(2)) > 0:
-            self.executeChild(2)
+        if gs.should_run:
+
+            if len(self.getOutputs(2)) > 0:
+                self.executeChild(2)
         self.markDirty(False)
         self.markInvalid(False)
 
@@ -175,15 +176,17 @@ class ImageOpNode(AiNode):
         # Convert the QPixmap object to a PIL Image object
         image = pixmap_to_pil_image(pixmap)
         if method in image_ops_valid_methods:
-            # Get the requested ImageOps method
-            ops_method = getattr(ImageOps, method, None)
+            # Get the requested ImageEnhance method
+            enhance_method = getattr(ImageEnhance, method, None)
 
-            if ops_method:
-                # Apply the ImageOps method to the PIL Image object
-                image = ops_method(image)
+            if enhance_method:
+                # Create an instance of the Enhancer for the PIL Image object
+                enhancer = enhance_method(image)
+                # Apply enhancement to the image
+                image = enhancer.enhance(self.content.enhancer_level.value())
             else:
                 # If the requested method is not available, raise an error
-                raise ValueError(f"Invalid ImageOps method: {method}")
+                raise ValueError(f"Invalid ImageEnhance method: {method}")
         elif method == 'resize':
             width = self.content.width_value.value()
             height = self.content.height_value.value()

@@ -107,7 +107,7 @@ class ConditioningNode(AiNode):
             self.setOutput(0, result[1])
             self.markDirty(False)
             self.markInvalid(False)
-            if len(self.getOutputs(2)) > 0:
+            if gs.should_run:
                 self.executeChild(2)
 
     def onInputChanged(self, socket=None):
