@@ -7,7 +7,7 @@ import time
 import numpy as np
 from einops import rearrange
 
-from ..ainodes_backend import common_ksampler, torch_gc
+from ..ainodes_backend import common_ksampler, torch_gc, pil_image_to_pixmap
 
 import torch
 from PIL import Image
@@ -21,6 +21,9 @@ from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 
 from queue import Queue
+
+from ..image_nodes.output_node import ImagePreviewNode
+from ..video_nodes.video_save_node import VideoOutputNode
 
 OP_NODE_K_SAMPLER = get_next_opcode()
 
@@ -84,8 +87,6 @@ class KSamplerNode(AiNode):
 
     @QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
-        #pass
-        # Add a task to the task queue
         cond_list = self.getInputData(3)
         n_cond_list = self.getInputData(2)
         self.steps = self.content.steps.value()
@@ -102,11 +103,12 @@ class KSamplerNode(AiNode):
         except:
             self.seed = get_fixed_seed('')
         if self.content.iterate_seed.isChecked() == True:
-            self.content.seed_signal.emit()
+
             self.seed += 1
+            self.content.seed_signal.emit(str(self.seed))
         return_pixmaps = []
         return_samples = []
-        generator = torch.manual_seed(self.seed)
+        #generator = torch.manual_seed(self.seed)
         try:
             x=0
             if cond_override is not None:
@@ -141,21 +143,18 @@ class KSamplerNode(AiNode):
                 self.scheduler = self.content.schedulers.currentText()
 
                 if data is not None:
-                    print("BEFORE", self.steps)
                     self.update_vars(data)
 
                 if cond_override is not None:
-                    denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
+                    self.denoise = 1.0 if args.strength == 0 else args.strength
                     if latent_override is not None:
                         latent = latent_override
-
                     self.seed = args.seed
                     self.steps = args.steps
                     self.cfg = args.scale
                     self.start_step = 0
                 self.last_step = self.steps if self.content.stop_early.isChecked() == False else self.content.last_step.value()
                 short_steps = self.last_step - self.content.start_step.value()
-
                 self.single_step = 100 / self.steps if self.content.start_step.value() == 0 and self.last_step == self.steps else short_steps
                 self.progress_value = 0
 
@@ -207,11 +206,35 @@ class KSamplerNode(AiNode):
         return x_sample
 
     def callback(self, tensors):
-        #self.setProgress()
-        return
-        for key, value in tensors.items():
-            if key == 'i':
-                print(value)
+        if tensors["i"] < self.last_step:
+            self.latent_rgb_factors = torch.tensor([
+                #   R        G        B
+                [0.298, 0.207, 0.208],  # L1
+                [0.187, 0.286, 0.173],  # L2
+                [-0.158, 0.189, 0.264],  # L3
+                [-0.184, -0.271, -0.473],  # L4
+            ], dtype=torch.float, device='cuda')
+
+
+            latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
+            latent = (((latent + 1) / 2)
+                         .clamp(0, 1)  # change scale from -1..1 to 0..1
+                         .mul(0xFF)  # to 0..255
+                         .byte())
+            # Copying to cpu as numpy array
+            latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
+            img = Image.fromarray(latent)
+            img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
+            latent_pixmap = pil_image_to_pixmap(img)
+            self.setOutput(0, [latent_pixmap])
+            if len(self.getOutputs(2)) > 0:
+                nodes = self.getOutputs(0)
+                for node in nodes:
+                    if isinstance(node, ImagePreviewNode):
+                        node.content.preview_signal.emit(latent_pixmap)
+                    if isinstance(node, VideoOutputNode):
+                        frame = np.array(img)
+                        node.content.video.add_frame(frame, dump=node.content.dump_at.value())
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
@@ -228,10 +251,8 @@ class KSamplerNode(AiNode):
 
         #self.content.progress_signal.emit(100)
         self.progress_value = 0
-        if gs.should_run:
-
-            if len(self.getOutputs(2)) > 0:
-                self.executeChild(output_index=2)
+        if len(self.getOutputs(2)) > 0:
+            self.executeChild(output_index=2)
 
     @QtCore.Slot(str)
     def setSeed(self):

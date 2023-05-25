@@ -24,9 +24,11 @@ from ainodes_frontend import singleton as gs
 from .ESRGAN import model as upscaler
 
 import torch
-from torch import nn
+from torch import nn, cuda, autocast
 import safetensors.torch
 import ldm.modules.diffusionmodules.model
+
+import torch.onnx
 
 class UpscalerLoader(torch.nn.Module):
 
@@ -71,6 +73,35 @@ class ModelLoader(torch.nn.Module):
 
         ldm.modules.diffusionmodules.model.nonlinearity = silu
 
+    def load_model_from_config(self, config, ckpt, device=torch.device("cuda"), verbose=False):
+        print(f"Loading model from {ckpt}")
+        _, extension = os.path.splitext(ckpt)
+        map_location = "cpu"
+        if extension.lower() == ".safetensors":
+            pl_sd = safetensors.torch.load_file(ckpt, device=map_location)
+        else:
+            pl_sd = torch.load(ckpt, map_location=map_location)
+        if "global_step" in pl_sd:
+            print(f"Global Step: {pl_sd['global_step']}")
+        sd = self.get_state_dict_from_checkpoint(pl_sd)
+        model = instantiate_from_config(config.model)
+        m, u = model.load_state_dict(sd, strict=False)
+        if len(m) > 0 and verbose:
+            print("missing keys:")
+            print(m)
+        if len(u) > 0 and verbose:
+            print("unexpected keys:")
+            print(u)
+
+        if device == torch.device("cuda"):
+            model.cuda()
+        elif device == torch.device("cpu"):
+            model.cpu()
+            model.cond_stage_model.device = "cpu"
+        else:
+            raise ValueError(f"Incorrect device name. Received: {device}")
+        model.eval()
+        return model
 
     def load_model(self, file=None, config_name=None, inpaint=False, verbose=False):
         ckpt_path = f"models/checkpoints/{file}"
@@ -87,31 +118,71 @@ class ModelLoader(torch.nn.Module):
         class WeightsLoader(torch.nn.Module):
             pass
 
-        w = WeightsLoader()
-        load_state_dict_to = []
-        vae = VAE(scale_factor=scale_factor, config=vae_config)
-        w.first_stage_model = vae.first_stage_model
-        load_state_dict_to = [w]
-        vae.first_stage_model = w.first_stage_model.half()
+        #w = WeightsLoader()
+        #load_state_dict_to = []
+        #vae = VAE(scale_factor=scale_factor, config=vae_config)
+        #w.first_stage_model = vae.first_stage_model
+        #load_state_dict_to = [w]
+        #vae.first_stage_model = w.first_stage_model.half()
 
-        clip = CLIP(config=clip_config, embedding_directory="models/embeddings")
-        w.cond_stage_model = clip.cond_stage_model
-        load_state_dict_to = [w]
-        clip.cond_stage_model = w.cond_stage_model
+        #clip = CLIP(config=clip_config, embedding_directory="models/embeddings")
+        #w.cond_stage_model = clip.cond_stage_model
+        #load_state_dict_to = [w]
+        #clip.cond_stage_model = w.cond_stage_model
 
-        model = instantiate_from_config(config.model)
-        sd = load_torch_file(ckpt_path)
-        model = load_model_weights(model, sd, verbose=False, load_state_dict_to=load_state_dict_to)
-        model = model.half()
+        #model = instantiate_from_config(config.model)
+        #sd = load_torch_file(ckpt_path)
+        #model = load_model_weights(model, sd, verbose=False, load_state_dict_to=load_state_dict_to)
+        #model = model.half().cuda()
 
-        gs.models["sd"] = ModelPatcher(model)
-        gs.models["clip"] = clip
-        gs.models["vae"] = vae
-        print("LOADED")
-        if gs.debug:
-            print(gs.models["sd"],gs.models["clip"],gs.models["vae"])
+        model = self.load_model_from_config(config, ckpt_path)
 
-        apply_optimizations()
+
+        #gs.models["sd"] = ModelPatcher(model)
+        #gs.models["sd"].model.to("cuda")
+
+
+        #model = self.load_model_from_config(config=config, ckpt=ckpt_path)
+        #model = model.eval().to("cuda")
+
+        #model = model.eval()
+
+        device = "cuda"
+        dtype = torch.float16
+        x = torch.randn(1, 4, 16, 16).to(device, dtype)
+        timesteps = torch.zeros((1,)).to(device, dtype)
+        cond = torch.randn(1, 77, 768).to(device, dtype)
+        #model.model.diffusion_model.forward = UNetModel_forward
+
+        with autocast(device_type='cuda', dtype=torch.float16):
+            # y = shared.sd_model.model.diffusion_model(x, timesteps, cond)
+
+            # print(y)
+
+            # Export the model
+            torch.onnx.export(model.model,  # model being run
+                              (x, timesteps, cond),  # model input (or a tuple for multiple inputs)
+                              "unet.onnx",  # where to save the model (can be a file or file-like object)
+                              export_params=True,  # store the trained parameter weights inside the model file
+                              opset_version=12,  # the ONNX version to export the model to
+                              do_constant_folding=True,  # whether to execute constant folding for optimization
+                              input_names=['x', 'timesteps', 'cond'],  # the model's input names
+                              output_names=['output'],  # the model's output names
+                              dynamic_axes={'x': [0, 2, 3],  # variable length axes
+                                            'timesteps': [0],
+                                            'cond': [0, 1],
+                                            'output': {0: 'batch_size'}})
+
+
+
+
+        #gs.models["clip"] = clip
+        #gs.models["vae"] = vae
+        #print("LOADED")
+        #if gs.debug:
+        #    print(gs.models["sd"],gs.models["clip"],gs.models["vae"])
+
+        #apply_optimizations()
     def load_model_old(self, file=None, config=None, inpaint=False, verbose=False):
 
         if file not in gs.loaded_models["loaded"]:
@@ -884,3 +955,84 @@ def load_model_weights(model, sd, verbose=False, load_state_dict_to=[]):
 
     model.eval()
     return model
+
+ctx = None
+import sys
+sys.path.extend("C:/trt86")
+sys.path.extend("C:/trt86/lib")
+sys.path.extend("C:/trt86/bin")
+
+import tensorrt as trt
+
+class TRT_LOGGER:
+
+    def __call__(self, *args, **kwargs):
+        print("LOG")
+    def log(self, msg):
+        print(msg)
+def load_engine(engine_file_path):
+    assert os.path.exists(engine_file_path)
+    print("Reading engine from file {}".format(engine_file_path))
+    with open(engine_file_path, "rb") as f, trt.Runtime(TRT_LOGGER) as runtime:
+        return runtime.deserialize_cuda_engine(f.read())
+
+
+def UNetModel_forward(self, x, timesteps=None, context=None, *args, **kwargs):
+    #return ldm.modules.diffusionmodules.openaimodel.copy_of_UNetModel_forward_for_webui(self, x, timesteps, context, *args, **kwargs)
+
+    global engine
+    global ctx
+    global trtcontext
+    engine, ctx, trt_context = build()
+
+    binding_mapping = {"x": x, "timesteps": timesteps, "cond": context}
+
+    # Allocate host and device buffers
+    bindings = []
+    input_bindings = []
+    for binding in engine:
+        binding_idx = engine.get_binding_index(binding)
+        size = trt.volume(trtcontext.get_binding_shape(binding_idx))
+        dtype = trt.nptype(engine.get_binding_dtype(binding))
+
+        if engine.binding_is_input(binding):
+            tensor = binding_mapping.get(binding)
+            trtcontext.set_binding_shape(binding_idx, tensor.shape)
+
+            input_image = tensor.detach().cpu().numpy().astype(dtype)
+            input_buffer = np.ascontiguousarray(input_image)
+            input_memory = cuda.mem_alloc(input_image.nbytes)
+            bindings.append(int(input_memory))
+            input_bindings.append((input_memory, input_buffer))
+        else:
+            output_buffer = cuda.pagelocked_empty(size, dtype)
+            output_memory = cuda.mem_alloc(output_buffer.nbytes)
+            bindings.append(int(output_memory))
+    stream = cuda.Stream()
+    # Transfer input data to the GPU.
+    for input_memory, input_buffer in input_bindings:
+        cuda.memcpy_htod_async(input_memory, input_buffer, stream)
+    # Run inference
+    trtcontext.execute_async_v2(bindings=bindings, stream_handle=stream.handle)
+    # Transfer prediction output from the GPU.
+    cuda.memcpy_dtoh_async(output_buffer, output_memory, stream)
+    # Synchronize the stream
+    stream.synchronize()
+
+    ctx.pop()
+
+    #ctx.pop()  # very important
+    #del ctx
+
+    output_buffer = torch.asarray(output_buffer.detach(), dtype=torch.float16, device="cuda").reshape(x.shape)
+
+    return output_buffer
+
+
+def build():
+    device = cuda.Device(0)  # enter your Gpu id here
+    ctx = device.make_context()
+    trt.init_libnvinfer_plugins(None, "")
+    engine = load_engine(engine_file)
+    trtcontext = engine.create_execution_context()
+    return engine, ctx, trtcontext

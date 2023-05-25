@@ -36,7 +36,7 @@ diffusionmodules_model_AttnBlock_forward = ldm.modules.diffusionmodules.model.At
 
 # new memory efficient cross attention blocks do not support hypernets and we already
 # have memory efficient cross attention anyway, so this disables SD2.0's memory efficient cross attention
-ldm.modules.attention.MemoryEfficientCrossAttention = ldm.modules.attention.CrossAttention
+#ldm.modules.attention.MemoryEfficientCrossAttention = ldm.modules.attention.CrossAttention
 #ldm.modules.attention.BasicTransformerBlock.ATTENTION_MODES["softmax-xformers"] = ldm.modules.attention.CrossAttention
 
 
@@ -44,8 +44,8 @@ ldm.modules.attention.MemoryEfficientCrossAttention = ldm.modules.attention.Cros
 ldm.modules.attention.print = lambda *args: None
 ldm.modules.diffusionmodules.model.print = lambda *args: None
 def apply_optimizations():
-    #undo_optimizations()
-    hijack_style = "sdp_quick"
+    undo_optimizations()
+    hijack_style = "sdp"
     ldm.modules.diffusionmodules.model.nonlinearity = silu
     ldm.modules.diffusionmodules.openaimodel.th = sd_hijack_unet.th
 
@@ -79,7 +79,7 @@ def apply_optimizations():
 def undo_optimizations():
     from ..hypernetwork import hypernetwork
 
-    ldm.modules.attention.CrossAttention.forward = hypernetwork.attention_CrossAttention_forward
+    ldm.modules.attention.CrossAttention.forward = attention_CrossAttention_forward
     ldm.modules.diffusionmodules.model.nonlinearity = diffusionmodules_model_nonlinearity
     ldm.modules.diffusionmodules.model.AttnBlock.forward = diffusionmodules_model_AttnBlock_forward
 
@@ -443,4 +443,4 @@ def add_circular_option_to_conv_2d():
     torch.nn.Conv2d.__init__ = conv2d_constructor_circular
 
 
-model_hijack = StableDiffusionModelHijack()
+#model_hijack = StableDiffusionModelHijack()

@@ -5,6 +5,9 @@ from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
 
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+import torch
+
 OP_NODE_EXEC = get_next_opcode()
 
 class ExecWidget(QDMNodeContentWidget):
@@ -65,13 +68,6 @@ class ExecNode(AiNode):
     def start(self):
         self.interrupt = False
         self.content.eval_signal.emit()
-
-
-
-
-
-
-
 
 
 

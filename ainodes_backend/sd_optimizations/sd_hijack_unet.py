@@ -31,7 +31,7 @@ class TorchHijackForUnet:
         return torch.cat(tensors, *args, **kwargs)
 
 
-th = TorchHijackForUnet()
+#th = TorchHijackForUnet()
 
 dtype_unet = torch.float16
 # Below are monkey patches to enable upcasting a float16 UNet for float32 sampling
@@ -90,7 +90,7 @@ def hijack_ddpm_edit():
         ddpm_edit_hijack = CondFunc('modules.models.diffusion.ddpm_edit.LatentDiffusion.apply_model', apply_model, unet_needs_upcast)
 
 
-unet_needs_upcast = lambda *args, **kwargs: False
+"""unet_needs_upcast = lambda *args, **kwargs: False
 CondFunc('ldm.models.diffusion.ddpm.LatentDiffusion.apply_model', apply_model, unet_needs_upcast)
 CondFunc('ldm.modules.diffusionmodules.openaimodel.timestep_embedding', lambda orig_func, timesteps, *args, **kwargs: orig_func(timesteps, *args, **kwargs).to(torch.float32 if timesteps.dtype == torch.int64 else dtype_unet), unet_needs_upcast)
 if version.parse(torch.__version__) <= version.parse("1.13.2") or torch.cuda.is_available():
@@ -102,4 +102,4 @@ first_stage_cond = lambda _, self, *args, **kwargs: False and self.model.diffusi
 first_stage_sub = lambda orig_func, self, x, **kwargs: orig_func(self, x.to(torch.float16), **kwargs)
 CondFunc('ldm.models.diffusion.ddpm.LatentDiffusion.decode_first_stage', first_stage_sub, first_stage_cond)
 CondFunc('ldm.models.diffusion.ddpm.LatentDiffusion.encode_first_stage', first_stage_sub, first_stage_cond)
-CondFunc('ldm.models.diffusion.ddpm.LatentDiffusion.get_first_stage_encoding', lambda orig_func, *args, **kwargs: orig_func(*args, **kwargs).float(), first_stage_cond)
+CondFunc('ldm.models.diffusion.ddpm.LatentDiffusion.get_first_stage_encoding', lambda orig_func, *args, **kwargs: orig_func(*args, **kwargs).float(), first_stage_cond)"""

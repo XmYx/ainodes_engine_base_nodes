@@ -582,6 +582,70 @@ def sample_dpmpp_sde(model, x, sigmas, extra_args=None, callback=None, disable=N
 
 
 @torch.no_grad()
+def sample_dpmpp_sde_improved(model, x, sigmas, extra_args=None, callback=None, disable=None, eta=1., s_noise=1.,
+                              noise_sampler=None, r=1 / 2):
+    """Improved DPM-Solver++ (stochastic)."""
+    sigma_min, sigma_max = sigmas[sigmas > 0].min(), sigmas.max()
+    noise_sampler = BrownianTreeNoiseSampler(x, sigma_min, sigma_max) if noise_sampler is None else noise_sampler
+    extra_args = {} if extra_args is None else extra_args
+    s_in = x.new_ones([x.shape[0]])
+    sigma_fn = lambda t: t.neg().exp()
+    t_fn = lambda sigma: sigma.log().neg()
+
+    for i in trange(len(sigmas) - 1, disable=disable):
+        denoised = model(x, sigmas[i] * s_in, **extra_args)
+        if callback is not None:
+            callback({'x': x, 'i': i, 'sigma': sigmas[i], 'sigma_hat': sigmas[i], 'denoised': denoised})
+
+        if sigmas[i + 1] == 0:
+            # Euler method
+            d = to_d(x, sigmas[i], denoised)
+            dt = sigmas[i + 1] - sigmas[i]
+            x = x + d * dt
+        else:
+            # Improved DPM-Solver++
+            t, t_next = t_fn(sigmas[i]), t_fn(sigmas[i + 1])
+            h = t_next - t
+            s = t + h * r
+            fac = 1 / (2 * r)
+
+            # Step 1
+            sd, su = get_ancestral_step(sigma_fn(t), sigma_fn(s), eta)
+            s_ = t_fn(sd)
+            x_2 = (sigma_fn(s_) / sigma_fn(t)) * x - (t - s_).expm1() * denoised
+            x_2 = x_2 + noise_sampler(sigma_fn(t), sigma_fn(s)) * s_noise * su
+            denoised_2 = model(x_2, sigma_fn(s) * s_in, **extra_args)
+
+            # Step 2
+            sd, su = get_ancestral_step(sigma_fn(t), sigma_fn(t_next), eta)
+            t_next_ = t_fn(sd)
+            denoised_d = (1 - fac) * denoised + fac * denoised_2
+            x = (sigma_fn(t_next_) / sigma_fn(t)) * x - (t - t_next_).expm1() * denoised_d
+            x = x + noise_sampler(sigma_fn(t), sigma_fn(t_next)) * s_noise * su
+
+            # Additional Step: Refinement
+            t_refine = t_next_
+            h_refine = t_next - t_refine
+            s_refine = t_refine + h_refine * r
+
+            # Step 1 (Refinement)
+            sd, su = get_ancestral_step(sigma_fn(t_refine), sigma_fn(s_refine), eta)
+            s_refine_ = t_fn(sd)
+            x_2 = (sigma_fn(s_refine_) / sigma_fn(t_refine)) * x - (t_refine - s_refine_).expm1() * denoised
+            x_2 = x_2 + noise_sampler(sigma_fn(t_refine), sigma_fn(s_refine)) * s_noise * su
+            denoised_2 = model(x_2, sigma_fn(s_refine) * s_in, **extra_args)
+
+            # Step 2 (Refinement)
+            sd, su = get_ancestral_step(sigma_fn(t_refine), sigma_fn(t_next), eta)
+            t_next_ = t_fn(sd)
+            denoised_d = (1 - fac) * denoised + fac * denoised_2
+            x = (sigma_fn(t_next_) / sigma_fn(t_refine)) * x - (t_refine - t_next_).expm1() * denoised_d
+            x = x + noise_sampler(sigma_fn(t_refine), sigma_fn(t_next)) * s_noise * su
+
+    return x
+
+
+@torch.no_grad()
 def sample_dpmpp_2m(model, x, sigmas, extra_args=None, callback=None, disable=None):
     """DPM-Solver++(2M)."""
     extra_args = {} if extra_args is None else extra_args
@@ -603,6 +667,60 @@ def sample_dpmpp_2m(model, x, sigmas, extra_args=None, callback=None, disable=No
             r = h_last / h
             denoised_d = (1 + 1 / (2 * r)) * denoised - (1 / (2 * r)) * old_denoised
             x = (sigma_fn(t_next) / sigma_fn(t)) * x - (-h).expm1() * denoised_d
+        old_denoised = denoised
+    return x
+
+
+@torch.no_grad()
+def sample_dpmpp_2m_alternative(model, x, sigmas, extra_args=None, callback=None, disable=None):
+    """Alternative DPM-Solver++(2M) with adaptive step size control."""
+    extra_args = {} if extra_args is None else extra_args
+    s_in = x.new_ones([x.shape[0]])
+    sigma_fn = lambda t: t.neg().exp()
+    t_fn = lambda sigma: sigma.log().neg()
+    old_denoised = None
+
+    for i in trange(len(sigmas) - 1, disable=disable):
+        denoised = model(x, sigmas[i] * s_in, **extra_args)
+        if callback is not None:
+            callback({'x': x, 'i': i, 'sigma': sigmas[i], 'sigma_hat': sigmas[i], 'denoised': denoised})
+
+        t, t_next = t_fn(sigmas[i]), t_fn(sigmas[i + 1])
+        h = t_next - t
+
+        # Adaptive step size control
+        max_error_ratio = 1e-3  # Adjust this value as needed
+        while True:
+            # Take a full step
+            h_half = h / 2
+            k1 = -(-h).expm1() * denoised
+            k2 = -(-h_half).expm1() * model(x + h_half * k1, sigmas[i] * s_in, **extra_args)
+            k3 = -(-h_half).expm1() * model(x + h_half * k2, sigmas[i] * s_in, **extra_args)
+            k4 = -(-h).expm1() * model(x + h * k3, sigmas[i] * s_in, **extra_args)
+            x_full_step = (sigma_fn(t_next) / sigma_fn(t)) * x + h * (k1 + 2 * k2 + 2 * k3 + k4) / 6
+
+            # Take two half steps
+            h_quarter = h / 4
+            k1 = -(-h_half).expm1() * denoised
+            k2 = -(-h_quarter).expm1() * model(x + h_quarter * k1, sigmas[i] * s_in, **extra_args)
+            k3 = -(-h_quarter).expm1() * model(x + h_quarter * k2, sigmas[i] * s_in, **extra_args)
+            k4 = -(-h_half).expm1() * model(x + h_half * k3, sigmas[i] * s_in, **extra_args)
+            x_half_step = (sigma_fn(t_next) / sigma_fn(t)) * x + h * (k1 + 2 * k2 + 2 * k3 + k4) / 6
+
+            # Estimate the error
+            error_norm = torch.norm(x_full_step - x_half_step)
+            error_ratio = error_norm / torch.norm(x_full_step)
+
+            # Check if the error is within the tolerance
+            if error_ratio <= max_error_ratio:
+                x = x_full_step  # Accept the full step
+                break
+            else:
+                # Adjust the step size based on the error ratio
+                safety_factor = 0.9  # Adjust this value as needed
+                new_h = safety_factor * h * (max_error_ratio / error_ratio) ** 0.25
+                h = min(new_h, 2 * h)  # Limit the step size doubling
+
         old_denoised = denoised
     return x
 
