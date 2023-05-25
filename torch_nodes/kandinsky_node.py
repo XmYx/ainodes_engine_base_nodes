@@ -1,4 +1,6 @@
 import numpy as np
+from PIL import Image
+from einops import rearrange
 
 from .ksampler_node import get_fixed_seed
 from ..ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image
@@ -13,6 +15,9 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 
 
 from kandinsky2 import get_kandinsky2
+
+from ..image_nodes.output_node import ImagePreviewNode
+from ..video_nodes.video_save_node import VideoOutputNode
 
 OP_NODE_KANDINSKY = get_next_opcode()
 
@@ -70,6 +75,13 @@ class KandinskyNode(AiNode):
         self.content.text_signal.connect(self.set_prompt)
         self.busy = False
         self.task = None
+        self.latent_rgb_factors = torch.tensor([
+            #   R        G        B
+            [0.298, 0.207, 0.208],  # L1
+            [0.187, 0.286, 0.173],  # L2
+            [-0.158, 0.189, 0.264],  # L3
+            [-0.184, -0.271, -0.473],  # L4
+        ], dtype=torch.float, device='cuda')
 
     @QtCore.Slot(str)
     def set_prompt(self, text):
@@ -181,12 +193,41 @@ class KandinskyNode(AiNode):
                 h=h, w=w,
                 sampler=sampler,
                 prior_cf_scale=prior_cf_scale,
-                prior_steps=str(prior_steps)
+                prior_steps=str(prior_steps),
+                callback=self.callback
+
             )
         for image in return_pil_images:
             pixmap = pil_image_to_pixmap(image)
             return_images.append(pixmap)
         return return_images
+    def callback(self, tensors):
+        print("cb")
+        i = tensors["i"]
+        #self.content.progress_signal.emit(1)
+        #if self.content.tensor_preview.isChecked():
+        if i < self.content.steps.value():
+
+            latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
+            latent = (((latent + 1) / 2)
+                      .clamp(0, 1)  # change scale from -1..1 to 0..1
+                      .mul(0xFF)  # to 0..255
+                      .byte())
+            # Copying to cpu as numpy array
+            latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
+            img = Image.fromarray(latent)
+            img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
+            latent_pixmap = pil_image_to_pixmap(img)
+            self.setOutput(0, [latent_pixmap])
+            if len(self.getOutputs(0)) > 0:
+                nodes = self.getOutputs(0)
+                for node in nodes:
+                    if isinstance(node, ImagePreviewNode):
+                        node.content.preview_signal.emit(latent_pixmap)
+                    if isinstance(node, VideoOutputNode):
+                        frame = np.array(img)
+                        node.content.video.add_frame(frame, dump=node.content.dump_at.value())
+
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):

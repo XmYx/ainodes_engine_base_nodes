@@ -7,7 +7,7 @@ import time
 import numpy as np
 from einops import rearrange
 
-from ..ainodes_backend import common_ksampler, torch_gc
+from ..ainodes_backend import common_ksampler, torch_gc, pil_image_to_pixmap
 
 import torch
 from PIL import Image
@@ -22,6 +22,9 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 
 from queue import Queue
 
+from ..image_nodes.output_node import ImagePreviewNode
+from ..video_nodes.video_save_node import VideoOutputNode
+
 OP_NODE_K_SAMPLER = get_next_opcode()
 
 SCHEDULERS = ["karras", "normal", "simple", "ddim_uniform"]
@@ -31,7 +34,7 @@ SAMPLERS = ["euler", "euler_ancestral", "heun", "dpm_2", "dpm_2_ancestral",
 
 class KSamplerWidget(QDMNodeContentWidget):
     seed_signal = QtCore.Signal()
-    #progress_signal = QtCore.Signal(int)
+    progress_signal = QtCore.Signal(int)
     def initUI(self):
         self.create_widgets()
         self.create_main_layout(grid=1)
@@ -44,6 +47,7 @@ class KSamplerWidget(QDMNodeContentWidget):
         self.last_step = self.create_spin_box("Last Step:", 1, 1000, 5)
         self.stop_early = self.create_check_box("Stop Sampling Early")
         self.force_denoise = self.create_check_box("Force full denoise", checked=True)
+        self.tensor_preview = self.create_check_box("Show Tensor Preview", checked=True)
         self.disable_noise = self.create_check_box("Disable noise generation")
         self.iterate_seed = self.create_check_box("Iterate seed")
         self.denoise = self.create_double_spin_box("Denoise:", 0.00, 2.00, 0.01, 1.00)
@@ -75,7 +79,7 @@ class KSamplerNode(AiNode):
         self.seed = ""
         self.content.fix_seed_button.clicked.connect(self.setSeed)
         self.content.seed_signal.connect(self.setSeed)
-        #self.content.progress_signal.connect(self.setProgress)
+        self.content.progress_signal.connect(self.setProgress)
         self.progress_value = 0
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.button.clicked.connect(self.content.eval_signal)
@@ -207,12 +211,37 @@ class KSamplerNode(AiNode):
         return x_sample
 
     def callback(self, tensors):
-        #self.setProgress()
-        return
-        for key, value in tensors.items():
-            if key == 'i':
-                print(value)
+        i = tensors["i"]
+        self.content.progress_signal.emit(1)
+        if self.content.tensor_preview.isChecked():
+            if i < self.last_step:
+                self.latent_rgb_factors = torch.tensor([
+                    #   R        G        B
+                    [0.298, 0.207, 0.208],  # L1
+                    [0.187, 0.286, 0.173],  # L2
+                    [-0.158, 0.189, 0.264],  # L3
+                    [-0.184, -0.271, -0.473],  # L4
+                ], dtype=torch.float, device='cuda')
 
+                latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
+                latent = (((latent + 1) / 2)
+                          .clamp(0, 1)  # change scale from -1..1 to 0..1
+                          .mul(0xFF)  # to 0..255
+                          .byte())
+                # Copying to cpu as numpy array
+                latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
+                img = Image.fromarray(latent)
+                img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
+                latent_pixmap = pil_image_to_pixmap(img)
+                self.setOutput(0, [latent_pixmap])
+                if len(self.getOutputs(2)) > 0:
+                    nodes = self.getOutputs(0)
+                    for node in nodes:
+                        if isinstance(node, ImagePreviewNode):
+                            node.content.preview_signal.emit(latent_pixmap)
+                        if isinstance(node, VideoOutputNode):
+                            frame = np.array(img)
+                            node.content.video.add_frame(frame, dump=node.content.dump_at.value())
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
 
@@ -226,8 +255,7 @@ class KSamplerNode(AiNode):
         self.setOutput(1, result[1])
 
 
-        #self.content.progress_signal.emit(100)
-        self.progress_value = 0
+        self.content.progress_signal.emit(100)
         if gs.should_run:
 
             if len(self.getOutputs(2)) > 0:
@@ -238,10 +266,12 @@ class KSamplerNode(AiNode):
         self.content.seed.setText(str(self.seed))
     @QtCore.Slot(int)
     def setProgress(self, progress=None):
-        if progress != 100 and progress != 0:
-            self.progress_value = self.progress_value + self.single_step
-        #print(self.progress_value)
-        self.content.progress_bar.setValue(self.progress_value)
+
+        self.progress_value += self.single_step
+        if progress < 100:
+            self.content.progress_bar.setValue(self.progress_value)
+        else:
+            self.content.progress_bar.setValue(100)
     def onInputChanged(self, socket=None):
         pass
     def apply_control_net(self, conditioning, progress_callback=None):
