@@ -47,6 +47,7 @@ class KSamplerWidget(QDMNodeContentWidget):
         self.last_step = self.create_spin_box("Last Step:", 1, 1000, 5)
         self.stop_early = self.create_check_box("Stop Sampling Early")
         self.force_denoise = self.create_check_box("Force full denoise", checked=True)
+        self.tensor_preview = self.create_check_box("Tensor Preview", checked=True)
         self.disable_noise = self.create_check_box("Disable noise generation")
         self.iterate_seed = self.create_check_box("Iterate seed")
         self.denoise = self.create_double_spin_box("Denoise:", 0.00, 2.00, 0.01, 1.00)
@@ -83,7 +84,13 @@ class KSamplerNode(AiNode):
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.button.clicked.connect(self.content.eval_signal)
 
-
+        self.latent_rgb_factors = torch.tensor([
+            #   R        G        B
+            [0.298, 0.207, 0.208],  # L1
+            [0.187, 0.286, 0.173],  # L2
+            [-0.158, 0.189, 0.264],  # L3
+            [-0.184, -0.271, -0.473],  # L4
+        ], dtype=torch.float, device='cuda')
 
     @QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
@@ -207,34 +214,27 @@ class KSamplerNode(AiNode):
 
     def callback(self, tensors):
         if tensors["i"] < self.last_step:
-            self.latent_rgb_factors = torch.tensor([
-                #   R        G        B
-                [0.298, 0.207, 0.208],  # L1
-                [0.187, 0.286, 0.173],  # L2
-                [-0.158, 0.189, 0.264],  # L3
-                [-0.184, -0.271, -0.473],  # L4
-            ], dtype=torch.float, device='cuda')
+            if self.content.tensor_preview.isChecked():
 
-
-            latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
-            latent = (((latent + 1) / 2)
-                         .clamp(0, 1)  # change scale from -1..1 to 0..1
-                         .mul(0xFF)  # to 0..255
-                         .byte())
-            # Copying to cpu as numpy array
-            latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
-            img = Image.fromarray(latent)
-            img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
-            latent_pixmap = pil_image_to_pixmap(img)
-            self.setOutput(0, [latent_pixmap])
-            if len(self.getOutputs(2)) > 0:
-                nodes = self.getOutputs(0)
-                for node in nodes:
-                    if isinstance(node, ImagePreviewNode):
-                        node.content.preview_signal.emit(latent_pixmap)
-                    if isinstance(node, VideoOutputNode):
-                        frame = np.array(img)
-                        node.content.video.add_frame(frame, dump=node.content.dump_at.value())
+                latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
+                latent = (((latent + 1) / 2)
+                             .clamp(0, 1)  # change scale from -1..1 to 0..1
+                             .mul(0xFF)  # to 0..255
+                             .byte())
+                # Copying to cpu as numpy array
+                latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
+                img = Image.fromarray(latent)
+                img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
+                latent_pixmap = pil_image_to_pixmap(img)
+                #self.setOutput(0, [latent_pixmap])
+                if len(self.getOutputs(2)) > 0:
+                    nodes = self.getOutputs(0)
+                    for node in nodes:
+                        if isinstance(node, ImagePreviewNode):
+                            node.content.preview_signal.emit(latent_pixmap)
+                        if isinstance(node, VideoOutputNode):
+                            frame = np.array(img)
+                            node.content.video.add_frame(frame, dump=node.content.dump_at.value())
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):

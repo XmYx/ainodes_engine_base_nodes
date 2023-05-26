@@ -41,8 +41,8 @@ diffusionmodules_model_AttnBlock_forward = ldm.modules.diffusionmodules.model.At
 
 
 # silence new console spam from SD2
-ldm.modules.attention.print = lambda *args: None
-ldm.modules.diffusionmodules.model.print = lambda *args: None
+#ldm.modules.attention.print = lambda *args: None
+#ldm.modules.diffusionmodules.model.print = lambda *args: None
 def apply_optimizations():
     undo_optimizations()
     hijack_style = "sdp"
