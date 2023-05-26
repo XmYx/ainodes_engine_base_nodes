@@ -8,10 +8,10 @@ from ..ainodes_backend import torch_gc
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
 
 
 from ainodes_frontend import singleton as gs
+from ..ainodes_backend.sd_optimizations.sd_hijack import valid_optimizations
 
 OP_NODE_TORCH_LOADER = get_next_opcode()
 
@@ -19,14 +19,14 @@ OP_NODE_TORCH_LOADER = get_next_opcode()
 class TorchLoaderWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 
 
     def create_widgets(self):
         checkpoint_folder = gs.checkpoints
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
-        self.dropdown = self.create_combo_box(checkpoint_files, "Models")
+        self.dropdown = self.create_combo_box(checkpoint_files, "Model:")
         if checkpoint_files == []:
             self.dropdown.addItem("Please place a model in models/checkpoints")
             print(f"TORCH LOADER NODE: No model file found at {os.getcwd()}/models/checkpoints,")
@@ -35,7 +35,7 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         config_folder = "models/configs"
         config_files = [f for f in os.listdir(config_folder) if f.endswith((".yaml"))]
         config_files = sorted(config_files, key=str.lower)
-        self.config_dropdown = self.create_combo_box(config_files, "Configs")
+        self.config_dropdown = self.create_combo_box(config_files, "Config:")
         self.config_dropdown.setCurrentText("v1-inference_fp16.yaml")
 
         vae_folder = gs.vae
@@ -44,6 +44,7 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         self.vae_dropdown = self.create_combo_box(vae_files, "Vae")
         self.vae_dropdown.addItem("default")
         self.vae_dropdown.setCurrentText("default")
+        self.optimization = self.create_combo_box(valid_optimizations, "LDM Optimization")
 
         self.force_reload = self.create_check_box("Force Reload")
 
@@ -77,7 +78,7 @@ class TorchLoaderNode(AiNode):
         self.content = TorchLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.width = 340
-        self.grNode.height = 180
+        self.grNode.height = 240
         self.content.setMinimumHeight(140)
         self.content.setMinimumWidth(340)
         self.content.eval_signal.connect(self.evalImplementation)
@@ -112,7 +113,7 @@ class TorchLoaderNode(AiNode):
         m = "sd_model" if not inpaint else "inpaint"
         if gs.loaded_sd != model_name or self.content.force_reload.isChecked() == True:
             self.clean_sd()
-            self.loader.load_model(model_name, config_name, inpaint)
+            self.loader.load_model(model_name, config_name, inpaint, style=self.content.optimization.currentText())
             gs.loaded_sd = model_name
             self.setOutput(0, model_name)
         if self.content.vae_dropdown.currentText() != 'default':

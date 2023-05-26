@@ -2,7 +2,6 @@ import time
 
 import cv2
 from PIL import Image
-from qtpy import QtWidgets
 from qtpy.QtWidgets import QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFileDialog
 from qtpy.QtCore import Qt
 
@@ -11,7 +10,6 @@ from ..ainodes_backend import pil_image_to_pixmap
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
 
 
 OP_NODE_VIDEO_INPUT = get_next_opcode()

@@ -72,7 +72,7 @@ class ModelLoader(torch.nn.Module):
         ldm.modules.diffusionmodules.model.nonlinearity = silu
 
 
-    def load_model(self, file=None, config_name=None, inpaint=False, verbose=False):
+    def load_model(self, file=None, config_name=None, inpaint=False, verbose=False, style="sdp"):
         ckpt_path = f"models/checkpoints/{file}"
         config_path = os.path.join('models/configs', config_name)
         config = OmegaConf.load(config_path)
@@ -111,7 +111,7 @@ class ModelLoader(torch.nn.Module):
         if gs.debug:
             print(gs.models["sd"],gs.models["clip"],gs.models["vae"])
 
-        apply_optimizations()
+        apply_optimizations(style)
     def load_model_old(self, file=None, config=None, inpaint=False, verbose=False):
 
         if file not in gs.loaded_models["loaded"]:
@@ -582,7 +582,6 @@ class SD1ClipModel(torch.nn.Module, ClipTokenWeightEncoderSD1):
                     tokens_temp += [next_new_token]
                     next_new_token += 1
             out_tokens += [tokens_temp]
-
         if len(embedding_weights) > 0:
             new_embedding = torch.nn.Embedding(next_new_token, current_embeds.weight.shape[1])
             new_embedding.weight[:token_dict_size] = current_embeds.weight[:]

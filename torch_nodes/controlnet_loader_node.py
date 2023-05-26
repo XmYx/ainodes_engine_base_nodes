@@ -1,5 +1,4 @@
 import os
-import threading
 
 from qtpy import QtWidgets, QtCore
 
@@ -9,7 +8,6 @@ from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
 
 OP_NODE_CONTROLNET_LOADER = get_next_opcode()
 

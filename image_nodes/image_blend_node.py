@@ -1,11 +1,8 @@
-from PIL import Image
-#from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
 from qtpy import QtWidgets, QtCore, QtGui
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap, \
     pixmap_composite_method_list
 from ainodes_frontend import singleton as gs
@@ -56,6 +53,7 @@ class BlendNode(AiNode):
 
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
+        from PIL import Image
 
         pixmap1 = self.getInputData(1)
         pixmap2 = self.getInputData(0)
@@ -116,6 +114,8 @@ class BlendNode(AiNode):
 
 
     def image_op(self, pixmap1, pixmap2, blend):
+        from PIL import Image
+
         # Convert the QPixmap object to a PIL Image object
         image1 = pixmap_to_pil_image(pixmap1).convert("RGBA")
         image2 = pixmap_to_pil_image(pixmap2).convert("RGBA")

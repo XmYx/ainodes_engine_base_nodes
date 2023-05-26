@@ -1,24 +1,12 @@
 import secrets
-import threading
-
-import numpy as np
-from einops import rearrange
 
 from ..ainodes_backend.inpaint import run_inpaint
-from ..ainodes_backend.k_sampler import common_ksampler
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap, torch_gc
+from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 
-import torch
-from PIL import Image
-from PIL.ImageQt import ImageQt
-from qtpy import QtWidgets, QtCore
-from qtpy.QtGui import QPixmap
-
-from ainodes_frontend import singleton as gs
+from qtpy import QtWidgets
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
 
 OP_NODE_INPAINT = get_next_opcode()
 class InpaintWidget(QDMNodeContentWidget):

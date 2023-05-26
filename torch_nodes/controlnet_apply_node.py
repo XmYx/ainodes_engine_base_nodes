@@ -1,15 +1,11 @@
-import copy
-import threading
-import time
 import numpy as np
 import torch
 from qtpy import QtWidgets, QtCore
 
-from ..ainodes_backend import torch_gc, pixmap_to_pil_image
+from ..ainodes_backend import pixmap_to_pil_image
 
 from ainodes_frontend import singleton as gs
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ..ainodes_backend.cnet_preprocessors.refonly.hook import ControlModelType, ControlParams, UnetHook

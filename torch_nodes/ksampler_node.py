@@ -1,13 +1,9 @@
-import inspect
 import random
 import secrets
-import threading
-import time
-
 import numpy as np
 from einops import rearrange
 
-from ..ainodes_backend import common_ksampler, torch_gc, pil_image_to_pixmap
+from ..ainodes_backend import common_ksampler, pil_image_to_pixmap
 
 import torch
 from PIL import Image
@@ -72,10 +68,10 @@ class KSamplerNode(AiNode):
     def initInnerClasses(self):
         self.content = KSamplerWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 600
+        self.grNode.height = 700
         self.grNode.width = 256
-        self.content.setMinimumWidth(256)
-        self.content.setMinimumHeight(256)
+        self.content.setMinimumWidth(250)
+        self.content.setMinimumHeight(500)
         self.seed = ""
         self.content.fix_seed_button.clicked.connect(self.setSeed)
         self.content.seed_signal.connect(self.setSeed)
@@ -223,7 +219,7 @@ class KSamplerNode(AiNode):
                     [-0.184, -0.271, -0.473],  # L4
                 ], dtype=torch.float, device='cuda')
 
-                latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
+                latent = torch.einsum('...lhw,lr -> ...rhw', tensors["x"][0], self.latent_rgb_factors)
                 latent = (((latent + 1) / 2)
                           .clamp(0, 1)  # change scale from -1..1 to 0..1
                           .mul(0xFF)  # to 0..255

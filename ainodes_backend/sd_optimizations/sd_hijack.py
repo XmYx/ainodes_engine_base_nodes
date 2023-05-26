@@ -43,9 +43,15 @@ ldm.modules.attention.MemoryEfficientCrossAttention = ldm.modules.attention.Cros
 # silence new console spam from SD2
 ldm.modules.attention.print = lambda *args: None
 ldm.modules.diffusionmodules.model.print = lambda *args: None
-def apply_optimizations():
+
+valid_optimizations = ["sdp", "sdp_quick", "sdp-no-mem", "doggetx"]
+
+def apply_optimizations(style=""):
     undo_optimizations()
-    hijack_style = "sdp"
+    if style in valid_optimizations:
+        hijack_style = style
+    if style == "":
+        hijack_style = "sdp"
     ldm.modules.diffusionmodules.model.nonlinearity = silu
     ldm.modules.diffusionmodules.openaimodel.th = sd_hijack_unet.th
 

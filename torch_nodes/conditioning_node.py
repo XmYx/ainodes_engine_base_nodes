@@ -1,13 +1,10 @@
-import threading
-import time
-
+import torch
 from qtpy import QtWidgets, QtCore
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.base.settings import handle_ainodes_exception
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
 
 from ainodes_frontend import singleton as gs
 
@@ -93,11 +90,11 @@ class ConditioningNode(AiNode):
                 if isinstance(node, TorchLoaderNode):
                     node.evalImplementation()
                     #print("Node found")"""
-
-
-        c = gs.models["clip"].encode(prompt)
-        uc = {}
-        return [[c, uc]]
+        with torch.autocast("cuda"):
+            with torch.no_grad():
+                c = gs.models["clip"].encode(prompt)
+                uc = {}
+                return [[c, uc]]
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):

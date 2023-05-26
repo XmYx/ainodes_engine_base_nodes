@@ -202,7 +202,6 @@ class KandinskyNode(AiNode):
             return_images.append(pixmap)
         return return_images
     def callback(self, tensors):
-        print("cb")
         i = tensors["i"]
         #self.content.progress_signal.emit(1)
         #if self.content.tensor_preview.isChecked():

@@ -1,17 +1,4 @@
-import threading
-import numpy as np
-from skimage.exposure import match_histograms
-import cv2
-
-from ..ainodes_backend import common_ksampler, torch_gc, pixmap_to_pil_image, pil_image_to_pixmap
-
-import torch
-from PIL import Image
-from PIL.ImageQt import ImageQt
-from qtpy import QtWidgets, QtCore, QtGui
-from qtpy.QtGui import QPixmap
-
-from ainodes_frontend import singleton as gs
+from qtpy import QtCore
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -45,10 +32,15 @@ class ColorMatch(AiNode):
         self.grNode.height = 140
         self.grNode.width = 256
         self.content.eval_signal.connect(self.evalImplementation)
+        import cv2
+
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
 
         if self.getInput(0) != None and self.getInput(1) != None:
+            from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+            from PIL import Image
+            import numpy as np
             node, index = self.getInput(0)
             pixmap1 = node.getOutput(index)[0]
             node, index = self.getInput(1)
@@ -60,11 +52,7 @@ class ColorMatch(AiNode):
             np_image_1 = np.array(pil_image_1)
             np_image_2 = np.array(pil_image_2)
 
-            #np_image_1 = cv2.cvtColor(np_image_1, cv2.COLOR_RGB2BGR)
-            #np_image_2 = cv2.cvtColor(np_image_2, cv2.COLOR_RGB2BGR)
-
             matched_image = maintain_colors(np_image_2, np_image_1, 'LAB')
-            #matched_image = cv2.cvtColor(matched_image, cv2.COLOR_BGR2RGB)
 
             pil_image = Image.fromarray(matched_image)
             pixmap = pil_image_to_pixmap(pil_image)
@@ -83,9 +71,8 @@ class ColorMatch(AiNode):
             self.executeChild(output_index=1)
 
 def maintain_colors_old(prev_img, color_match_sample, mode):
-    #prev_img = np.float32(prev_img)
-    #color_match_sample = np.float32(color_match_sample)
     from skimage.exposure import match_histograms
+    import cv2
     if mode == 'Match Frame 0 RGB':
         return match_histograms(prev_img, color_match_sample)
     elif mode == 'Match Frame 0 HSV':
@@ -101,8 +88,8 @@ def maintain_colors_old(prev_img, color_match_sample, mode):
 
 
 def maintain_colors(prev_img, color_match_sample, mode):
-    #skimage_version = pkg_resources.get_distribution('scikit-image').version
-    #is_skimage_v20_or_higher = pkg_resources.parse_version(skimage_version) >= pkg_resources.parse_version('0.20.0')
+    from skimage.exposure import match_histograms
+    import cv2
 
     match_histograms_kwargs = {'channel_axis': -1} # if is_skimage_v20_or_higher else {'multichannel': True}
 

@@ -6,18 +6,16 @@ import requests
 from PIL import Image
 from PIL.ImageQt import ImageQt
 from qtpy.QtCore import QUrl
-from qtpy.QtGui import QImage
 from qtpy import QtGui
 from qtpy import QtCore, QtWidgets
-from qtpy.QtWidgets import QLabel, QFileDialog, QVBoxLayout
+from qtpy.QtWidgets import QFileDialog
 from qtpy.QtGui import QPixmap
 import cv2
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, poorman_wget
+from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap
 from ainodes_frontend import singleton as gs
 
 OP_NODE_IMG_INPUT = get_next_opcode()

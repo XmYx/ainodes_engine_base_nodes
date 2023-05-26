@@ -25,7 +25,7 @@ class ImagePreviewWidget(QDMNodeContentWidget):
         self.image.setAlignment(Qt.AlignRight)
         self.image.setObjectName(self.node.content_label_objname)
         self.checkbox = QtWidgets.QCheckBox("Autosave")
-        self.meta_checkbox = QtWidgets.QCheckBox("Metasave as json")
+        self.meta_checkbox = QtWidgets.QCheckBox("Embed Node graph in PNG")
         palette = QtGui.QPalette()
         palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
         palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
@@ -62,7 +62,7 @@ class ImagePreviewNode(AiNode):
     def initInnerClasses(self):
         self.content = ImagePreviewWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 220
+        self.grNode.height = 400
         self.grNode.width = 320
         self.images = []
         self.index = 0

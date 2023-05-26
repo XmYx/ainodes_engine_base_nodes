@@ -1,17 +1,13 @@
-import threading
 import time
 
 import numpy as np
 from PIL import Image
-#from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
-from qtpy import QtWidgets, QtCore, QtGui
+from qtpy import QtCore, QtGui
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap, \
-    pixmap_composite_method_list
+from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 from ..ainodes_backend.RIFE.infer_rife import RIFEModel
 
 OP_NODE_RIFE = get_next_opcode()

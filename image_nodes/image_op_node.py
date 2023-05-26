@@ -1,10 +1,6 @@
-import threading
-import time
-
 import cv2
 import numpy as np
-from PIL import ImageOps, Image, ImageEnhance
-#from qtpy.QtWidgets import QLineEdit, QLabel, QPushButton, QFileDialog, QVBoxLayout
+from PIL import Image, ImageEnhance
 from qtpy import QtWidgets, QtCore
 
 from ..ainodes_backend.cnet_preprocessors import hed
@@ -12,11 +8,9 @@ from ..ainodes_backend.cnet_preprocessors.mlsd import MLSDdetector
 from ..ainodes_backend.cnet_preprocessors.midas import MidasDetector
 from ..ainodes_backend.cnet_preprocessors import OpenposeDetector
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
-
-from ainodes_frontend.base import register_node, get_next_opcode, Worker
+from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend.node_engine.utils import dumpException
 from ..ainodes_backend.deforum.deforum_anim_warp import anim_frame_warp_3d
 from ..ainodes_backend.semseg.semseg_inference import SemSegModel
 
@@ -45,7 +39,8 @@ image_ops_methods = [
     "solarize",
     "flip",
     "depth_transform",
-    "semseg"
+    "semseg",
+    "antialias"
 ]
 image_ops_valid_methods = [
     "Brightness",
@@ -187,6 +182,9 @@ class ImageOpNode(AiNode):
             else:
                 # If the requested method is not available, raise an error
                 raise ValueError(f"Invalid ImageEnhance method: {method}")
+        elif method == 'antialias':
+            image = antialias_image(image, int(self.content.enhancer_level.value()))
+
         elif method == 'resize':
             width = self.content.width_value.value()
             height = self.content.height_value.value()
@@ -486,3 +484,24 @@ def return_ratio_string(ratio, width, height):
         return f"{width}x{height} (1:1.29, Two-Perf Techniscope)"
     else:
         return f"{width}x{height} ({ratio:.2f}:1)"
+
+def antialias_image(image, antialias):
+
+    image = np.array(image)
+
+    orig_size = (int(image.shape[1]), int(image.shape[0]))
+    # Calculate the target size
+    target_size = (int(image.shape[1] * antialias), int(image.shape[0] * antialias))
+
+    # Resize the image to the target size using cubic interpolation
+    resized_image = cv2.resize(image, target_size, interpolation=cv2.INTER_CUBIC)
+
+    # Resize the image back to the original size using Gaussian blur
+    antialiased_image = cv2.GaussianBlur(resized_image, (0, 0), antialias)
+
+    antialiased_image = cv2.resize(antialiased_image, orig_size, interpolation=cv2.INTER_NEAREST_EXACT  )
+
+
+    image = Image.fromarray(antialiased_image)
+
+    return image

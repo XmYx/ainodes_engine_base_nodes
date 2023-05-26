@@ -1,8 +1,6 @@
 import math
 import os
-import threading
 
-import cv2
 import numpy as np
 import torch
 from PIL import Image
