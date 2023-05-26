@@ -155,6 +155,7 @@ class KandinskyNode(AiNode):
                         sampler=sampler,
                         prior_cf_scale=prior_cf_scale,
                         prior_steps=str(prior_steps),
+                        callback=self.callback
                     )
                 else:
                     pil_img = pixmap_to_pil_image(image)
