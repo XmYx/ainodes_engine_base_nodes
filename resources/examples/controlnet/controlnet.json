@@ -50,7 +50,7 @@
             "content": {
                 "Prompt": ""
             },
-            "op_code": 16,
+            "op_code": 19,
             "content_label_objname": "cond_node"
         },
         {
@@ -77,7 +77,7 @@
                 }
             ],
             "content": {},
-            "op_code": 3,
+            "op_code": 7,
             "content_label_objname": "exec_node"
         },
         {
@@ -88,7 +88,7 @@
             "inputs": [],
             "outputs": [],
             "content": {},
-            "op_code": 2,
+            "op_code": 5,
             "content_label_objname": "bg_node",
             "color": "#ff55557f",
             "width": 2048.0,
@@ -146,7 +146,7 @@
                 }
             ],
             "content": {},
-            "op_code": 10,
+            "op_code": 14,
             "content_label_objname": "image_output_node"
         },
         {
@@ -196,7 +196,7 @@
             "content": {
                 "Prompt": "Alien landscape, highly detailed"
             },
-            "op_code": 16,
+            "op_code": 19,
             "content_label_objname": "cond_node"
         },
         {
@@ -223,11 +223,13 @@
                 }
             ],
             "content": {
-                "Models": "cyberrealistic_v20.safetensors",
-                "Configs": "v1-inference_fp16.yaml",
-                "Vae": "default"
+                "Model:": "cyberrealistic_v20.safetensors",
+                "Config:": "v1-inference_fp16.yaml",
+                "Vae": "default",
+                "LDM Optimization": "sdp",
+                "Force Reload": "False"
             },
-            "op_code": 15,
+            "op_code": 34,
             "content_label_objname": "torch_loader_node"
         },
         {
@@ -299,17 +301,18 @@
                 "Scheduler:": "karras",
                 "Sampler:": "euler",
                 "Seed:": "",
-                "Steps:": "10",
-                "Start Step:": "0",
-                "Last Step:": "5",
+                "Steps:": 10,
+                "Start Step:": 0,
+                "Last Step:": 5,
                 "Stop Sampling Early": "False",
                 "Force full denoise": "True",
+                "Show Tensor Preview": "True",
                 "Disable noise generation": "False",
                 "Iterate seed": "False",
-                "Denoise:": "1.0",
-                "Guidance Scale:": "7.5"
+                "Denoise:": 1.0,
+                "Guidance Scale:": 7.5
             },
-            "op_code": 22,
+            "op_code": 27,
             "content_label_objname": "K_sampling_node"
         },
         {
@@ -338,7 +341,7 @@
             "content": {
                 "ControlNet": "control_sd15_canny.pth"
             },
-            "op_code": 18,
+            "op_code": 21,
             "content_label_objname": "controlnet_loader_node"
         },
         {
@@ -394,21 +397,22 @@
             ],
             "content": {
                 "Image Operator:": "canny",
-                "Width:": "512",
-                "Height:": "512",
-                "Canny Low:": "100",
-                "Canny High:": "100",
-                "Midas A:": "6.28",
-                "Midas Bg:": "0.01"
+                "Enhance level": 1.0,
+                "Width:": 512,
+                "Height:": 512,
+                "Canny Low:": 100,
+                "Canny High:": 100,
+                "Midas A:": 6.28,
+                "Midas Bg:": 0.01
             },
-            "op_code": 8,
+            "op_code": 12,
             "content_label_objname": "image_op_node"
         },
         {
             "id": 1862133029456,
             "title": "Image Preview",
-            "pos_x": 1570.3124999999995,
-            "pos_y": -318.84765624999994,
+            "pos_x": 1489.7460937499998,
+            "pos_y": -343.26171874999994,
             "inputs": [
                 {
                     "id": 1862133029360,
@@ -456,14 +460,14 @@
                 }
             ],
             "content": {},
-            "op_code": 10,
+            "op_code": 14,
             "content_label_objname": "image_output_node"
         },
         {
             "id": 1862133027248,
             "title": "Apply ControlNet",
-            "pos_x": 2702.578124999999,
-            "pos_y": -210.41015624999997,
+            "pos_x": 2712.343749999999,
+            "pos_y": -200.64453124999997,
             "inputs": [
                 {
                     "id": 1862133027536,
@@ -504,16 +508,16 @@
                 }
             ],
             "content": {
-                "Strength": "1.0",
-                "Guidance Scale": "7.5",
-                "Start %": "0",
-                "Stop %": "100",
+                "Strength": 1.0,
+                "Guidance Scale": 7.5,
+                "Start %": 0,
+                "Stop %": 100,
                 "Soft Inject": "False",
                 "CFG Inject": "False",
                 "CleanUp on Run": "True",
                 "Control Style": "controlnet"
             },
-            "op_code": 17,
+            "op_code": 20,
             "content_label_objname": "CN_apply_node"
         },
         {
@@ -563,7 +567,7 @@
             "content": {
                 "Prompt": ""
             },
-            "op_code": 16,
+            "op_code": 19,
             "content_label_objname": "cond_node"
         },
         {
@@ -613,14 +617,14 @@
             "content": {
                 "Prompt": ""
             },
-            "op_code": 16,
+            "op_code": 19,
             "content_label_objname": "cond_node"
         },
         {
             "id": 1862133029648,
             "title": "K Sampler",
-            "pos_x": 3103.515624999999,
-            "pos_y": -238.76953124999997,
+            "pos_x": 3086.4257812499995,
+            "pos_y": -343.75,
             "inputs": [
                 {
                     "id": 1877384465472,
@@ -685,24 +689,25 @@
                 "Scheduler:": "karras",
                 "Sampler:": "euler",
                 "Seed:": "",
-                "Steps:": "10",
-                "Start Step:": "0",
-                "Last Step:": "5",
+                "Steps:": 10,
+                "Start Step:": 0,
+                "Last Step:": 5,
                 "Stop Sampling Early": "False",
                 "Force full denoise": "True",
+                "Show Tensor Preview": "True",
                 "Disable noise generation": "False",
                 "Iterate seed": "False",
-                "Denoise:": "1.0",
-                "Guidance Scale:": "7.5"
+                "Denoise:": 1.0,
+                "Guidance Scale:": 7.5
             },
-            "op_code": 22,
+            "op_code": 27,
             "content_label_objname": "K_sampling_node"
         },
         {
             "id": 1877384465568,
             "title": "Image Preview",
-            "pos_x": 3558.593749999999,
-            "pos_y": -336.4257812499999,
+            "pos_x": 3585.4492187499995,
+            "pos_y": -365.7226562499999,
             "inputs": [
                 {
                     "id": 1877384465280,
@@ -750,7 +755,7 @@
                 }
             ],
             "content": {},
-            "op_code": 10,
+            "op_code": 14,
             "content_label_objname": "image_output_node"
         },
         {
@@ -761,7 +766,7 @@
             "inputs": [],
             "outputs": [],
             "content": {},
-            "op_code": 2,
+            "op_code": 5,
             "content_label_objname": "bg_node",
             "color": "#ff5500ff",
             "width": 3262.7382812499986,

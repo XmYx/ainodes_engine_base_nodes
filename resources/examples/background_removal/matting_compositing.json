@@ -50,7 +50,7 @@
             "content": {
                 "Prompt": ""
             },
-            "op_code": 16,
+            "op_code": 19,
             "content_label_objname": "cond_node"
         },
         {
@@ -122,17 +122,18 @@
                 "Scheduler:": "karras",
                 "Sampler:": "euler",
                 "Seed:": "",
-                "Steps:": "10",
-                "Start Step:": "0",
-                "Last Step:": "5",
+                "Steps:": 10,
+                "Start Step:": 0,
+                "Last Step:": 5,
                 "Stop Sampling Early": "False",
                 "Force full denoise": "True",
+                "Show Tensor Preview": "True",
                 "Disable noise generation": "False",
                 "Iterate seed": "False",
-                "Denoise:": "1.0",
-                "Guidance Scale:": "7.5"
+                "Denoise:": 1.0,
+                "Guidance Scale:": 7.5
             },
-            "op_code": 22,
+            "op_code": 27,
             "content_label_objname": "K_sampling_node"
         },
         {
@@ -159,11 +160,13 @@
                 }
             ],
             "content": {
-                "Models": "cyberrealistic_v20.safetensors",
-                "Configs": "v1-inference_fp16.yaml",
-                "Vae": "default"
+                "Model:": "cyberrealistic_v20.safetensors",
+                "Config:": "v1-inference_fp16.yaml",
+                "Vae": "default",
+                "LDM Optimization": "sdp",
+                "Force Reload": "False"
             },
-            "op_code": 15,
+            "op_code": 34,
             "content_label_objname": "torch_loader_node"
         },
         {
@@ -218,7 +221,7 @@
                 }
             ],
             "content": {},
-            "op_code": 10,
+            "op_code": 14,
             "content_label_objname": "image_output_node"
         },
         {
@@ -229,7 +232,7 @@
             "inputs": [],
             "outputs": [],
             "content": {},
-            "op_code": 2,
+            "op_code": 5,
             "content_label_objname": "bg_node",
             "color": "#ff55557f",
             "width": 2048.0,
@@ -259,7 +262,7 @@
                 }
             ],
             "content": {},
-            "op_code": 3,
+            "op_code": 7,
             "content_label_objname": "exec_node"
         },
         {
@@ -309,7 +312,7 @@
             "content": {
                 "Prompt": "portrait of a man"
             },
-            "op_code": 16,
+            "op_code": 19,
             "content_label_objname": "cond_node"
         },
         {
@@ -357,7 +360,7 @@
                 }
             ],
             "content": {},
-            "op_code": 26,
+            "op_code": 31,
             "content_label_objname": "image_matte_node"
         },
         {
@@ -412,7 +415,7 @@
                 }
             ],
             "content": {},
-            "op_code": 10,
+            "op_code": 14,
             "content_label_objname": "image_output_node"
         },
         {
@@ -467,7 +470,7 @@
                 }
             ],
             "content": {},
-            "op_code": 10,
+            "op_code": 14,
             "content_label_objname": "image_output_node"
         },
         {
@@ -517,7 +520,7 @@
             "content": {
                 "Prompt": ""
             },
-            "op_code": 16,
+            "op_code": 19,
             "content_label_objname": "cond_node"
         },
         {
@@ -528,7 +531,7 @@
             "inputs": [],
             "outputs": [],
             "content": {},
-            "op_code": 2,
+            "op_code": 5,
             "content_label_objname": "bg_node",
             "color": "#ff55557f",
             "width": 2048.0,
@@ -558,7 +561,7 @@
                 }
             ],
             "content": {},
-            "op_code": 3,
+            "op_code": 7,
             "content_label_objname": "exec_node"
         },
         {
@@ -630,17 +633,18 @@
                 "Scheduler:": "karras",
                 "Sampler:": "euler",
                 "Seed:": "",
-                "Steps:": "10",
-                "Start Step:": "0",
-                "Last Step:": "5",
+                "Steps:": 10,
+                "Start Step:": 0,
+                "Last Step:": 5,
                 "Stop Sampling Early": "False",
                 "Force full denoise": "True",
+                "Show Tensor Preview": "True",
                 "Disable noise generation": "False",
                 "Iterate seed": "False",
-                "Denoise:": "1.0",
-                "Guidance Scale:": "7.5"
+                "Denoise:": 1.0,
+                "Guidance Scale:": 7.5
             },
-            "op_code": 22,
+            "op_code": 27,
             "content_label_objname": "K_sampling_node"
         },
         {
@@ -667,11 +671,13 @@
                 }
             ],
             "content": {
-                "Models": "cyberrealistic_v20.safetensors",
-                "Configs": "v1-inference_fp16.yaml",
-                "Vae": "default"
+                "Model:": "cyberrealistic_v20.safetensors",
+                "Config:": "v1-inference_fp16.yaml",
+                "Vae": "default",
+                "LDM Optimization": "sdp",
+                "Force Reload": "False"
             },
-            "op_code": 15,
+            "op_code": 34,
             "content_label_objname": "torch_loader_node"
         },
         {
@@ -726,7 +732,7 @@
                 }
             ],
             "content": {},
-            "op_code": 10,
+            "op_code": 14,
             "content_label_objname": "image_output_node"
         },
         {
@@ -776,7 +782,7 @@
             "content": {
                 "Prompt": "sunny landscape"
             },
-            "op_code": 16,
+            "op_code": 19,
             "content_label_objname": "cond_node"
         },
         {
@@ -824,10 +830,10 @@
                 }
             ],
             "content": {
-                "Blend:": "0.0",
+                "Blend:": 0.0,
                 "Composite Method:": "composite"
             },
-            "op_code": 6,
+            "op_code": 10,
             "content_label_objname": "image_blend_node"
         },
         {
@@ -882,7 +888,7 @@
                 }
             ],
             "content": {},
-            "op_code": 10,
+            "op_code": 14,
             "content_label_objname": "image_output_node"
         },
         {
@@ -937,7 +943,7 @@
                 }
             ],
             "content": {},
-            "op_code": 10,
+            "op_code": 14,
             "content_label_objname": "image_output_node"
         },
         {
@@ -985,10 +991,10 @@
                 }
             ],
             "content": {
-                "Blend:": "0.0",
+                "Blend:": 0.0,
                 "Composite Method:": "source_over"
             },
-            "op_code": 6,
+            "op_code": 10,
             "content_label_objname": "image_blend_node"
         },
         {
@@ -1017,6 +1023,13 @@
                     "multi_edges": false,
                     "position": 3,
                     "socket_type": 1
+                },
+                {
+                    "id": 2274541795168,
+                    "index": 3,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
                 }
             ],
             "outputs": [
@@ -1036,16 +1049,18 @@
                 }
             ],
             "content": {
+                "Task": "TXT2IMG",
                 "Prompt:": "abstract portrait of a medieval person",
                 "Seed:": "",
-                "Steps:": "25",
-                "Guidance Scale:": "4",
-                "Width:": "512",
-                "Height:": "512",
+                "Steps:": 25,
+                "Guidance Scale:": 4,
+                "Width:": 512,
+                "Height:": 512,
+                "Strength:": 0.84,
                 "Sampler:": "p_sampler",
-                "Prior Scale:": "5"
+                "Prior Scale:": 5
             },
-            "op_code": 23,
+            "op_code": 28,
             "content_label_objname": "kandinsky_node"
         },
         {
@@ -1100,7 +1115,7 @@
                 }
             ],
             "content": {},
-            "op_code": 10,
+            "op_code": 14,
             "content_label_objname": "image_output_node"
         }
     ],
