@@ -109,7 +109,7 @@ class ImagePreviewNode(AiNode):
                     self.content.preview_signal.emit(image)
                     if len(input_images) > 1:
                         time.sleep(0.1)
-                return input_images
+            return input_images
 
         """elif len(self.getInputs(1)) > 0:
             data_node, other_index = self.getInput(1)

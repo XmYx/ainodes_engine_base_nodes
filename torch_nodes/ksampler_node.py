@@ -1,3 +1,4 @@
+import copy
 import random
 import secrets
 import numpy as np
@@ -179,13 +180,14 @@ class KSamplerNode(AiNode):
                     if "control" in c[1]:
                         del c[1]["control"]
 
-                return_sample = sample.detach().cpu().half()
-                return_samples.append(return_sample)
-                x_sample = self.decode_sample(sample)
+                x_sample = self.decode_sample(sample.to("cuda"))
+                return_samples.append(sample)
+
                 image = Image.fromarray(x_sample.astype(np.uint8))
             qimage = ImageQt(image)
             pixmap = QPixmap().fromImage(qimage)
-
+            #for s in return_samples:
+            #    s.cpu()
             #if len(self.getOutputs(0)) > 0:
             #    node = self.getOutputs(0)[0]
             #    if hasattr(node.content, "preview_signal"):
@@ -202,8 +204,14 @@ class KSamplerNode(AiNode):
             print(e)
         return [return_pixmaps, return_samples]
     def decode_sample(self, sample):
-        x_sample = gs.models["vae"].decode(sample.half())
-        x_sample = 255. * x_sample[0].detach().cpu().numpy()
+        #gs.models["vae"]
+        #s = sample.detach()
+        #s.to("cpu")
+        gs.models["vae"].first_stage_model.cuda()
+        x_sample = gs.models["vae"].decode(sample.cuda())
+        x_sample = 255. * x_sample[0].detach().numpy()
+        gs.models["vae"].first_stage_model.cpu()
+
         return x_sample
 
     def callback(self, tensors):

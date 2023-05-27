@@ -107,12 +107,13 @@ class TorchLoaderNode(AiNode):
         model_name = self.content.dropdown.currentText()
         config_name = self.content.config_dropdown.currentText()
 
-        print(gs.loaded_sd, model_name)
+        #print(gs.loaded_sd, model_name)
 
         inpaint = True if "inpaint" in model_name else False
         m = "sd_model" if not inpaint else "inpaint"
         if gs.loaded_sd != model_name or self.content.force_reload.isChecked() == True:
             self.clean_sd()
+            gs.loaded_hypernetworks.clear()
             self.loader.load_model(model_name, config_name, inpaint, style=self.content.optimization.currentText())
             gs.loaded_sd = model_name
             self.setOutput(0, model_name)
@@ -126,14 +127,14 @@ class TorchLoaderNode(AiNode):
             model = self.content.vae_dropdown.currentText()
             self.loader.load_vae(model)
             gs.loaded_vae = model
-        else:
-            self.markDirty(False)
-            self.markInvalid(False)
-            self.grNode.setToolTip("")
         return self.value
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        self.markDirty(False)
+        self.markInvalid(False)
+        self.grNode.setToolTip("")
+
         super().onWorkerFinished(None)
         self.executeChild(0)
 

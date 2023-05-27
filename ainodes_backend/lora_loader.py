@@ -1,3 +1,5 @@
+import copy
+
 import torch
 
 from .controlnet_loader import load_torch_file
@@ -32,11 +34,45 @@ class ModelPatcher:
         self.model = model
         self.patches = []
         self.backup = {}
+        self.model_options = {"transformer_options": {}}
 
     def clone(self):
         n = ModelPatcher(self.model)
         n.patches = self.patches[:]
+        n.model_options = copy.deepcopy(self.model_options)
         return n
+
+    def set_model_tomesd(self, ratio):
+        self.model_options["transformer_options"]["tomesd"] = {"ratio": ratio}
+
+    def set_model_sampler_cfg_function(self, sampler_cfg_function):
+        self.model_options["sampler_cfg_function"] = sampler_cfg_function
+
+    def set_model_patch(self, patch, name):
+        if "patches" not in self.model_options["transformer_options"]:
+            self.model_options["transformer_options"]["patches"] = {}
+        self.model_options["transformer_options"]["patches"][name] = self.model_options["transformer_options"]["patches"].get(name, []) + [patch]
+
+    def set_model_attn1_patch(self, patch):
+        self.set_model_patch(patch, "attn1_patch")
+
+    def set_model_attn2_patch(self, patch):
+        self.set_model_patch(patch, "attn2_patch")
+
+    def model_patches_to(self, device):
+        #self.model_options["transformer_options"]
+
+
+        if "patches" in self.model_options["transformer_options"]:
+            patches = self.model_options["transformer_options"]["patches"]
+            for name in patches:
+                patch_list = patches[name]
+                for i in range(len(patch_list)):
+                    if hasattr(patch_list[i], "to"):
+                        patch_list[i] = patch_list[i].to(device)
+
+    def model_dtype(self):
+        return self.model.diffusion_model.dtype
 
     def add_patches(self, patches, strength=1.0):
         p = {}
@@ -62,13 +98,74 @@ class ModelPatcher:
                     self.backup[key] = weight.clone()
 
                 alpha = p[0]
-                mat1 = v[0]
-                mat2 = v[1]
-                if v[2] is not None:
-                    alpha *= v[2] / mat2.shape[0]
-                weight += (alpha * torch.mm(mat1.flatten(start_dim=1).float(), mat2.flatten(start_dim=1).float())).reshape(weight.shape).type(weight.dtype).to(weight.device)
+
+                if len(v) == 4:  # lora/locon
+                    mat1 = v[0]
+                    mat2 = v[1]
+                    if v[2] is not None:
+                        alpha *= v[2] / mat2.shape[0]
+                    if v[3] is not None:
+                        # locon mid weights, hopefully the math is fine because I didn't properly test it
+                        final_shape = [mat2.shape[1], mat2.shape[0], v[3].shape[2], v[3].shape[3]]
+                        mat2 = torch.mm(mat2.transpose(0, 1).flatten(start_dim=1).float(),
+                                        v[3].transpose(0, 1).flatten(start_dim=1).float()).reshape(
+                            final_shape).transpose(0, 1)
+                    weight += (alpha * torch.mm(mat1.flatten(start_dim=1).float(),
+                                                mat2.flatten(start_dim=1).float())).reshape(weight.shape).type(
+                        weight.dtype).to(weight.device)
+                elif len(v) == 8:  # lokr
+                    w1 = v[0]
+                    w2 = v[1]
+                    w1_a = v[3]
+                    w1_b = v[4]
+                    w2_a = v[5]
+                    w2_b = v[6]
+                    t2 = v[7]
+                    dim = None
+
+                    if w1 is None:
+                        dim = w1_b.shape[0]
+                        w1 = torch.mm(w1_a.float(), w1_b.float())
+
+                    if w2 is None:
+                        dim = w2_b.shape[0]
+                        if t2 is None:
+                            w2 = torch.mm(w2_a.float(), w2_b.float())
+                        else:
+                            w2 = torch.einsum('i j k l, j r, i p -> p r k l', t2.float(), w2_b.float(),
+                                              w2_a.float())
+
+                    if len(w2.shape) == 4:
+                        w1 = w1.unsqueeze(2).unsqueeze(2)
+                    if v[2] is not None and dim is not None:
+                        alpha *= v[2] / dim
+
+                    weight += alpha * torch.kron(w1.float(), w2.float()).reshape(weight.shape).type(
+                        weight.dtype).to(weight.device)
+                else:  # loha
+                    w1a = v[0]
+                    w1b = v[1]
+                    if v[2] is not None:
+                        alpha *= v[2] / w1b.shape[0]
+                    w2a = v[3]
+                    w2b = v[4]
+                    if v[5] is not None:  # cp decomposition
+                        t1 = v[5]
+                        t2 = v[6]
+                        m1 = torch.einsum('i j k l, j r, i p -> p r k l', t1.float(), w1b.float(), w1a.float())
+                        m2 = torch.einsum('i j k l, j r, i p -> p r k l', t2.float(), w2b.float(), w2a.float())
+                    else:
+                        m1 = torch.mm(w1a.float(), w1b.float())
+                        m2 = torch.mm(w2a.float(), w2b.float())
+
+                    weight += (alpha * m1 * m2).reshape(weight.shape).type(weight.dtype).to(weight.device)
         return self.model
+
     def unpatch_model(self):
+
+        for key, value in self.model_options.items():
+            self.model_options[key] = None
+
         model_sd = self.model.state_dict()
         keys = list(self.backup.keys())
         for k in keys:
@@ -76,7 +173,7 @@ class ModelPatcher:
             del self.backup[k]
 
         self.backup = {}
-
+        self.model_options = {"transformer_options": {}}
 
 """def load_lora_for_models(lora_path, strength_model, strength_clip):
     key_map = model_lora_keys(gs.models["sd"].model)

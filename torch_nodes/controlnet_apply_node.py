@@ -12,22 +12,31 @@ from ..ainodes_backend.cnet_preprocessors.refonly.hook import ControlModelType, 
 from ..image_nodes.image_op_node import HWC3
 
 OP_NODE_CN_APPLY = get_next_opcode()
+
+model_free_preprocessors = [
+    "reference_only",
+    "reference_adain",
+    "reference_adain+attn"
+]
+
+
 class CNApplyWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
         self.main_layout.setContentsMargins(15, 15, 15, 25)
     def create_widgets(self):
-        self.strength = self.create_double_spin_box("Strength", 0.01, 100.00, 0.01, 1.00)
+        self.strength = self.create_double_spin_box("Strength", 0.00, 100.00, 0.01, 1.00)
         self.cfg_scale = self.create_double_spin_box("Guidance Scale", 0.01, 100.00, 0.01, 7.5)
-        self.start = self.create_spin_box("Start %", 0, 100, 0, 1)
-        self.stop = self.create_spin_box("Stop %", 0, 100, 100, 1)
+        self.start = self.create_double_spin_box("Start", 0.00, 1.00, 0.01, 1)
+        self.stop = self.create_double_spin_box("End", 0.00, 1.00, 0.01, 1)
+        self.tresh_a = self.create_spin_box("Treshold a", 64, 1024, 512, 64)
+        self.tresh_b = self.create_spin_box("Treshold b", 64, 1024, 512, 64)
         self.soft_injection = self.create_check_box("Soft Inject")
         self.cfg_injection = self.create_check_box("CFG Inject")
         self.cleanup_on_run = self.create_check_box("CleanUp on Run", True)
-
-
         self.control_net_selector = self.create_combo_box(["controlnet", "t2i", "reference"], "Control Style")
+        self.model_free_selector = self.create_combo_box(model_free_preprocessors, "Modelfree Style")
         self.button = QtWidgets.QPushButton("Run")
         self.cleanup_button = QtWidgets.QPushButton("CleanUp")
         self.create_button_layout([self.button, self.cleanup_button])
@@ -51,10 +60,10 @@ class CNApplyNode(AiNode):
     def initInnerClasses(self):
         self.content = CNApplyWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 376
+        self.grNode.height = 600
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
-        self.content.setMinimumHeight(256)
+        self.content.setMinimumHeight(420)
         self.content.eval_signal.connect(self.evalImplementation)
 
     def clean(self):
@@ -149,10 +158,10 @@ class CNApplyNode(AiNode):
         ]
 
         model_net = dict(
-            name=model_free_preprocessors[0],
+            name=self.content.model_free_selector.currentText(),
             preprocessor_resolution=processor_res,
-            threshold_a=512,
-            threshold_b=64
+            threshold_a=self.content.tresh_a.value(),
+            threshold_b=self.content.tresh_b.value()
         )
 
 

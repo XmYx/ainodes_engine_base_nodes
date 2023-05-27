@@ -32,7 +32,7 @@ if gs.xformers_not_available == None:
         pass
 
 # see https://github.com/basujindal/stable-diffusion/pull/117 for discussion
-def split_cross_attention_forward_v1(self, x, context=None, mask=None):
+def split_cross_attention_forward_v1(self, x, context=None, value=None, mask=None):
     h = self.heads
 
     q_in = self.to_q(x)
@@ -40,7 +40,13 @@ def split_cross_attention_forward_v1(self, x, context=None, mask=None):
 
     context_k, context_v = hypernetwork.apply_hypernetwork(gs.loaded_hypernetwork, context)
     k_in = self.to_k(context_k)
-    v_in = self.to_v(context_v)
+
+    if value is not None:
+        v_in = self.to_v(value)
+        del value
+    else:
+        v_in = self.to_v(context_v)
+
     del context, context_k, context_v, x
 
     q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h=h), (q_in, k_in, v_in))
@@ -66,7 +72,7 @@ def split_cross_attention_forward_v1(self, x, context=None, mask=None):
 
 
 # taken from https://github.com/Doggettx/stable-diffusion and modified
-def split_cross_attention_forward(self, x, context=None, mask=None):
+def split_cross_attention_forward(self, x, context=None, value=None, mask=None):
     h = self.heads
 
     q_in = self.to_q(x)
@@ -74,7 +80,11 @@ def split_cross_attention_forward(self, x, context=None, mask=None):
 
     context_k, context_v = hypernetwork.apply_hypernetwork(gs.loaded_hypernetwork, context)
     k_in = self.to_k(context_k)
-    v_in = self.to_v(context_v)
+    if value is not None:
+        v_in = self.to_v(value)
+        del value
+    else:
+        v_in = self.to_v(context_v)
 
     k_in *= self.scale
 
@@ -205,7 +215,7 @@ def einsum_op(q, k, v):
     # Tested on i7 with 8MB L3 cache.
     return einsum_op_tensor_mem(q, k, v, 32)
 
-def split_cross_attention_forward_invokeAI(self, x, context=None, mask=None):
+def split_cross_attention_forward_invokeAI(self, x, context=None, value=None, mask=None):
     h = self.heads
 
     q = self.to_q(x)
@@ -222,7 +232,7 @@ def split_cross_attention_forward_invokeAI(self, x, context=None, mask=None):
 
 # -- End of code from https://github.com/invoke-ai/InvokeAI --
 
-def xformers_attention_forward(self, x, context=None, mask=None):
+def xformers_attention_forward(self, x, context=None, value=None, mask=None):
     h = self.heads
     q_in = self.to_q(x)
     context = default(context, x)
@@ -323,7 +333,7 @@ def xformers_attnblock_forward(self, x):
 
 # Based on Diffusers usage of scaled dot product attention from https://github.com/huggingface/diffusers/blob/c7da8fd23359a22d0df2741688b5b4f33c26df21/src/diffusers/models/cross_attention.py
 # The scaled_dot_product_attention_forward function contains parts of code under Apache-2.0 license listed under Scaled Dot Product Attention in the Licenses section of the web UI interface
-def scaled_dot_product_attention_forward(self, x, context=None, mask=None):
+def scaled_dot_product_attention_forward(self, x, context=None, value=None, mask=None):
     batch_size, sequence_length, inner_dim = x.shape
 
     if mask is not None:
@@ -333,8 +343,8 @@ def scaled_dot_product_attention_forward(self, x, context=None, mask=None):
     h = self.heads
     q_in = self.to_q(x)
     context = default(context, x)
-    gs.loaded_hypernetworks = None
-    context_k, context_v = hypernetwork.apply_hypernetwork(gs.loaded_hypernetworks, context)
+    #gs.loaded_hypernetworks = None
+    context_k, context_v = hypernetwork.apply_hypernetwork(None, context)
     k_in = self.to_k(context_k)
     v_in = self.to_v(context_v)
 
@@ -362,7 +372,7 @@ def scaled_dot_product_attention_forward(self, x, context=None, mask=None):
     return hidden_states
 
 
-def scaled_dot_product_no_mem_attention_forward(self, x, context=None, mask=None):
+def scaled_dot_product_no_mem_attention_forward(self, x, context=None, value=None, mask=None):
     with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=False):
         return scaled_dot_product_attention_forward(self, x, context, mask)
 

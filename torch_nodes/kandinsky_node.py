@@ -45,6 +45,7 @@ class KandinskyWidget(QDMNodeContentWidget):
         self.sampler = self.create_combo_box(["p_sampler", "ddim_sampler", "plms_sampler"], "Sampler:")
         self.prior_cf_scale = self.create_spin_box("Prior Scale:", 0, 1000, 4)
         self.prior_steps = self.create_spin_box("Prior Scale:", 0, 1000, 5)
+        self.force_values = self.create_check_box("Force Values:", False)
         self.button = QtWidgets.QPushButton("Run")
 
 
@@ -126,15 +127,16 @@ class KandinskyNode(AiNode):
         return_pil_images = []
         strength = self.content.strength.value()
         if prompt_override is not None:
-            num_steps = args.steps
             images = init_image
-            prompt = prompt_override
-            strength = args.strength
-            guidance_scale = int(args.scale)
             h = args.H
             w = args.W
-            print(prompt, strength, guidance_scale, num_steps)
-            self.seed = args.seed
+            if not self.content.force_values.isChecked():
+                num_steps = args.steps
+                prompt = prompt_override
+                strength = args.strength
+                guidance_scale = int(args.scale)
+                print(prompt, strength, guidance_scale, num_steps)
+                self.seed = args.seed
         torch.manual_seed(self.seed)
 
         if images is not None:

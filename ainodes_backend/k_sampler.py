@@ -7,7 +7,7 @@ from .torch_gc import torch_gc
 
 
 def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, callback=None, model_key="sd"):
-    latent_image = latent.to("cpu")
+    latent_image = latent
     noise_mask = None
     if disable_noise:
         noise = torch.zeros(latent_image.size(), dtype=latent_image.dtype, layout=latent_image.layout, device="cpu")
@@ -23,7 +23,7 @@ def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive,
         noise_mask = noise_mask.to(device)"""
     real_model = None
     noise = noise.to(device)
-    latent_image = latent_image.to(device)
+    latent_image = latent.to(device)
     positive_copy = []
     negative_copy = []
     control_nets = []
@@ -50,15 +50,39 @@ def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive,
             i.cuda()
     if "controlnet" in gs.models:
         gs.models["controlnet"].control_model.cuda()
-    gs.models["sd"].model.cuda()
+    #gs.models["sd"].model.cuda()
     if sampler_name in samplers.KSampler.SAMPLERS:
-        sampler = samplers.KSampler(steps=steps, device=device, sampler=sampler_name, scheduler=scheduler, denoise=denoise, model_key=model_key)
+        model = gs.models["sd"].clone()
+        model.model.cuda()
+        if 'transformer_options' in model.model_options:
+            for key, value in model.model_options.items():
+                #print(key, value)
+                for item_name, items in value.items():
+                    for _, models in items.items():
+                        for m in models:
+                            m.to("cuda")
+
+        sampler = samplers.KSampler(steps=steps, device=device, sampler=sampler_name, scheduler=scheduler, denoise=denoise, model=model, model_options=model.model_options)
+
     else:
         #other samplers
         pass
 
     samples = sampler.sample(noise, positive_copy, negative_copy, cfg=cfg, latent_image=latent_image, start_step=start_step, last_step=last_step, force_full_denoise=force_full_denoise, denoise_mask=noise_mask, callback=callback, model_key=model_key)
-    gs.models["sd"].model.cpu()
+    if sampler_name in samplers.KSampler.SAMPLERS:
+        if 'transformer_options' in model.model_options:
+            for key, value in model.model_options.items():
+                # print(key, value)
+                for item_name, items in value.items():
+                    for _, models in items.items():
+                        for m in models:
+                            m.to("cpu")
+                            del m
+
+    #sampler.model.model.cpu()
+    #del model
+    #del sampler.model
+    #gs.models["sd"].model.cpu()
     #samples = samples.cpu()
     for c in control_nets:
         c.cleanup()

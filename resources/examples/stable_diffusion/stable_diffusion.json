@@ -27,11 +27,13 @@
                 }
             ],
             "content": {
-                "Models": "cyberrealistic_v20.safetensors",
-                "Configs": "v1-inference_fp16.yaml",
-                "Vae": "default"
+                "Model:": "cyberrealistic_v20.safetensors",
+                "Config:": "v1-inference_fp16.yaml",
+                "Vae": "default",
+                "LDM Optimization": "sdp",
+                "Force Reload": "False"
             },
-            "op_code": 16,
+            "op_code": 34,
             "content_label_objname": "torch_loader_node"
         },
         {
@@ -81,7 +83,7 @@
             "content": {
                 "Prompt": "Alien landscape, highly detailed"
             },
-            "op_code": 17,
+            "op_code": 19,
             "content_label_objname": "cond_node"
         },
         {
@@ -131,14 +133,14 @@
             "content": {
                 "Prompt": ""
             },
-            "op_code": 17,
+            "op_code": 19,
             "content_label_objname": "cond_node"
         },
         {
             "id": 1858103435152,
             "title": "K Sampler",
-            "pos_x": -52.0,
-            "pos_y": 16.0,
+            "pos_x": -43.25,
+            "pos_y": -96.5,
             "inputs": [
                 {
                     "id": 1858103435680,
@@ -203,17 +205,18 @@
                 "Scheduler:": "karras",
                 "Sampler:": "euler",
                 "Seed:": "",
-                "Steps:": "10",
-                "Start Step:": "0",
-                "Last Step:": "5",
+                "Steps:": 10,
+                "Start Step:": 0,
+                "Last Step:": 5,
                 "Stop Sampling Early": "False",
                 "Force full denoise": "True",
+                "Show Tensor Preview": "True",
                 "Disable noise generation": "False",
                 "Iterate seed": "False",
-                "Denoise:": "1.0",
-                "Guidance Scale:": "7.5"
+                "Denoise:": 1.0,
+                "Guidance Scale:": 7.5
             },
-            "op_code": 23,
+            "op_code": 27,
             "content_label_objname": "K_sampling_node"
         },
         {
@@ -268,7 +271,7 @@
                 }
             ],
             "content": {},
-            "op_code": 11,
+            "op_code": 14,
             "content_label_objname": "image_output_node"
         },
         {
@@ -279,7 +282,7 @@
             "inputs": [],
             "outputs": [],
             "content": {},
-            "op_code": 2,
+            "op_code": 5,
             "content_label_objname": "bg_node",
             "color": "#ff55557f",
             "width": 2048.0,
@@ -309,7 +312,7 @@
                 }
             ],
             "content": {},
-            "op_code": 4,
+            "op_code": 7,
             "content_label_objname": "exec_node"
         },
         {
@@ -322,7 +325,7 @@
             "content": {
                 "Info": "Stable Diffusion Example Graph\n\nThe Torch Loader Node loads the model from the set model folder, with the config chosen, and with default VAE, if not selected otherwise.\n\nA Positive and a Negative conditioning gets created and fed into the sampler node, where you can further tweak the parameters.\n\nIf you add an Empty Latent Image before the sampler node and feed it's LATENT output to the input of the sampler, you adjust the resolution. Make sure EXEC lines are connected, as that is making sure that a node is executed, and is executed in order."
             },
-            "op_code": 3,
+            "op_code": 6,
             "content_label_objname": "bg_node_info",
             "color": "#e3212121",
             "width": 782.5624999999999,

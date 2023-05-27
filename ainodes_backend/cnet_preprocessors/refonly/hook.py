@@ -238,15 +238,18 @@ class UnetHook(nn.Module):
                     continue
                 try:
                     query_size = int(x.shape[0])
-                    latent_hint = param.used_hint_cond[None] * 2.0 - 1.0
-                    latent_hint = latent_hint.type(torch.float16)
+                    pixel_hint = param.used_hint_cond
+                    if pixel_hint.shape[1] > 3:
+                        pixel_hint = pixel_hint[:, 0:3, :, :]
+                    pixel_hint = pixel_hint * 2.0 - 1.0
+                    pixel_hint = pixel_hint.type(torch.float32)
                     with torch.autocast("cuda"):
                         gs.models["vae"].first_stage_model.cuda()
-                        latent_hint = gs.models["vae"].encode(latent_hint[0])
+                        latent_hint = gs.models["vae"].encode(pixel_hint)
                         latent_hint = gs.models["sd"].model.get_first_stage_encoding(latent_hint)
 
 
-                        gs.models["vae"].first_stage_model.cpu()
+                        #gs.models["vae"].first_stage_model.cpu()
                     latent_hint = torch.cat([latent_hint.clone() for _ in range(query_size)], dim=0)
                     latent_hint = latent_hint.type(x.dtype)
                     param.used_hint_cond_latent = latent_hint
@@ -426,7 +429,7 @@ class UnetHook(nn.Module):
                         if param.control_model is not None:
                             param.control_model.to("cpu")
 
-        def hacked_basic_transformer_inner_forward(self, x, context=None):
+        def hacked_basic_transformer_inner_forward(self, x, context=None, transformer_options=None):
             x_norm1 = self.norm1(x)
             self_attn1 = 0
             if self.disable_self_attn:

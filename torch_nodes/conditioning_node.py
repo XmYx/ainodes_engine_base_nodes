@@ -92,8 +92,10 @@ class ConditioningNode(AiNode):
                     #print("Node found")"""
         with torch.autocast("cuda"):
             with torch.no_grad():
-                c = gs.models["clip"].encode(prompt)
+                clip = gs.models["clip"].clone()
+                c = clip.encode(prompt)
                 uc = {}
+                del clip
                 return [[c, uc]]
 
     @QtCore.Slot(object)

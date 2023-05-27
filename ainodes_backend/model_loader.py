@@ -73,7 +73,7 @@ class ModelLoader(torch.nn.Module):
 
 
     def load_model(self, file=None, config_name=None, inpaint=False, verbose=False, style="sdp"):
-        ckpt_path = f"models/checkpoints/{file}"
+        ckpt_path = os.path.join(gs.checkpoints, file)
         config_path = os.path.join('models/configs', config_name)
         config = OmegaConf.load(config_path)
         model_config_params = config['model']['params']
@@ -92,7 +92,7 @@ class ModelLoader(torch.nn.Module):
         vae = VAE(scale_factor=scale_factor, config=vae_config)
         w.first_stage_model = vae.first_stage_model
         load_state_dict_to = [w]
-        vae.first_stage_model = w.first_stage_model.half()
+        vae.first_stage_model = w.first_stage_model.cuda()
 
         clip = CLIP(config=clip_config, embedding_directory="models/embeddings")
         w.cond_stage_model = clip.cond_stage_model
@@ -391,16 +391,19 @@ class VAE:
         else:
             self.first_stage_model = AutoencoderKL(**(config['params']), ckpt_path=ckpt_path)
         self.first_stage_model = self.first_stage_model.eval()
+        self.first_stage_model.float()
         self.scale_factor = scale_factor
         self.device = device
 
     def decode(self, samples):
         #model_management.unload_model()
-        self.first_stage_model = self.first_stage_model.to(self.device)
-        samples = samples.to(self.device)
+        #self.first_stage_model = self.first_stage_model.to(self.device)
+        #samples = samples.to(self.device)
+        #samples = samples.float().cpu()
+        #self.first_stage_model.float()
         pixel_samples = self.first_stage_model.decode(1. / self.scale_factor * samples)
         pixel_samples = torch.clamp((pixel_samples + 1.0) / 2.0, min=0.0, max=1.0)
-        self.first_stage_model = self.first_stage_model.cpu()
+        #self.first_stage_model = self.first_stage_model.cpu()
         pixel_samples = pixel_samples.cpu().movedim(1,-1)
         return pixel_samples
 
@@ -434,11 +437,11 @@ class VAE:
         return output.movedim(1,-1)
 
     def encode(self, pixel_samples):
-        pixel_samples = pixel_samples.cuda()
+        #pixel_samples = pixel_samples.cuda()
         #self.first_stage_model = self.first_stage_model.to(self.device)
         #pixel_samples = pixel_samples.movedim(-1,1).to(self.device)
         samples = self.first_stage_model.encode(2. * pixel_samples - 1.).sample() * self.scale_factor
-        pixel_samples = pixel_samples.detach().cpu()
+        #pixel_samples = pixel_samples.detach().cpu()
         #self.first_stage_model = self.first_stage_model.cpu()
         samples = samples.detach().cpu()
 
@@ -806,12 +809,19 @@ class SD2Tokenizer(SD1Tokenizer):
         super().__init__(tokenizer_path, pad_with_end=False, embedding_directory=embedding_directory)
 
 
-def load_torch_file(ckpt):
+def load_torch_file(ckpt, safe_load=False):
     if ckpt.lower().endswith(".safetensors"):
         import safetensors.torch
         sd = safetensors.torch.load_file(ckpt, device="cpu")
     else:
-        pl_sd = torch.load(ckpt, map_location="cpu")
+        if safe_load:
+            if not 'weights_only' in torch.load.__code__.co_varnames:
+                print("Warning torch.load doesn't support weights_only on this pytorch version, loading unsafely.")
+                safe_load = False
+        if safe_load:
+            pl_sd = torch.load(ckpt, map_location="cpu", weights_only=True)
+        else:
+            pl_sd = torch.load(ckpt, map_location="cpu")
         if "global_step" in pl_sd:
             print(f"Global Step: {pl_sd['global_step']}")
         if "state_dict" in pl_sd:
