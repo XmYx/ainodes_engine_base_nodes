@@ -180,23 +180,14 @@ class KSamplerNode(AiNode):
                     if "control" in c[1]:
                         del c[1]["control"]
 
-                x_sample = self.decode_sample(sample.to("cuda"))
-                return_samples.append(sample)
+                cpu_s = sample.cpu()
+                x_sample = self.decode_sample(sample)
+
+                return_samples.append(cpu_s)
 
                 image = Image.fromarray(x_sample.astype(np.uint8))
-            qimage = ImageQt(image)
-            pixmap = QPixmap().fromImage(qimage)
-            #for s in return_samples:
-            #    s.cpu()
-            #if len(self.getOutputs(0)) > 0:
-            #    node = self.getOutputs(0)[0]
-            #    if hasattr(node.content, "preview_signal"):
-            #        #print("emitting")
-            #        node.content.preview_signal.emit(pixmap)
-
-            #self.content.progress_signal.emit(0)
-            return_pixmaps.append(pixmap)
-            x+=1
+                return_pixmaps.append(pil_image_to_pixmap(image))
+                x+=1
             return [return_pixmaps, return_samples]
         except Exception as e:
             handle_ainodes_exception()
@@ -204,21 +195,15 @@ class KSamplerNode(AiNode):
             print(e)
         return [return_pixmaps, return_samples]
     def decode_sample(self, sample):
-        #gs.models["vae"]
-        #s = sample.detach()
-        #s.to("cpu")
-        gs.models["vae"].first_stage_model.cuda()
-        x_sample = gs.models["vae"].decode(sample.cuda())
-        x_sample = 255. * x_sample[0].detach().numpy()
-        gs.models["vae"].first_stage_model.cpu()
-
-        return x_sample
+        decoded = gs.models["vae"].decode_tiled(sample)
+        decoded_array = 255. * decoded[0].detach().numpy()
+        return decoded_array
 
     def callback(self, tensors):
         i = tensors["i"]
         self.content.progress_signal.emit(1)
         if self.content.tensor_preview.isChecked():
-            if i < self.last_step:
+            if i < self.last_step - 2:
                 self.latent_rgb_factors = torch.tensor([
                     #   R        G        B
                     [0.298, 0.207, 0.208],  # L1
@@ -227,7 +212,7 @@ class KSamplerNode(AiNode):
                     [-0.184, -0.271, -0.473],  # L4
                 ], dtype=torch.float, device='cuda')
 
-                latent = torch.einsum('...lhw,lr -> ...rhw', tensors["x"][0], self.latent_rgb_factors)
+                latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
                 latent = (((latent + 1) / 2)
                           .clamp(0, 1)  # change scale from -1..1 to 0..1
                           .mul(0xFF)  # to 0..255
@@ -237,7 +222,7 @@ class KSamplerNode(AiNode):
                 img = Image.fromarray(latent)
                 img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
                 latent_pixmap = pil_image_to_pixmap(img)
-                self.setOutput(0, [latent_pixmap])
+                #self.setOutput(0, [latent_pixmap])
                 if len(self.getOutputs(2)) > 0:
                     nodes = self.getOutputs(0)
                     for node in nodes:

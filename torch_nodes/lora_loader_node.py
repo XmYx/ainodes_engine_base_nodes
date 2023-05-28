@@ -16,7 +16,7 @@ OP_NODE_LORA_LOADER = get_next_opcode()
 class LoraLoaderWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
     def create_widgets(self):
         lora_folder = gs.loras
         lora_files = [f for f in os.listdir(lora_folder) if f.endswith(('.safetensors', '.ckpt', '.pt', '.bin', '.pth'))]

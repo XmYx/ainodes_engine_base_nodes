@@ -138,6 +138,7 @@ class KandinskyNode(AiNode):
                 print(prompt, strength, guidance_scale, num_steps)
                 self.seed = args.seed
         torch.manual_seed(self.seed)
+        print(f"KANDINSKY NODE: seed:{self.seed}")
 
         if images is not None:
             for image in images:
@@ -208,7 +209,7 @@ class KandinskyNode(AiNode):
         i = tensors["i"]
         #self.content.progress_signal.emit(1)
         #if self.content.tensor_preview.isChecked():
-        if i < self.content.steps.value():
+        if i < self.content.steps.value() - 2:
 
             latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
             latent = (((latent + 1) / 2)
@@ -220,7 +221,7 @@ class KandinskyNode(AiNode):
             img = Image.fromarray(latent)
             img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
             latent_pixmap = pil_image_to_pixmap(img)
-            self.setOutput(0, [latent_pixmap])
+            #self.setOutput(0, [latent_pixmap])
             if len(self.getOutputs(0)) > 0:
                 nodes = self.getOutputs(0)
                 for node in nodes:

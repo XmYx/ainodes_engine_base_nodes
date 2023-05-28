@@ -6,8 +6,8 @@
         {
             "id": 1858037328256,
             "title": "Torch Loader",
-            "pos_x": -899.0,
-            "pos_y": 275.0,
+            "pos_x": -971.5,
+            "pos_y": 176.25,
             "inputs": [
                 {
                     "id": 1858089772816,
@@ -27,20 +27,20 @@
                 }
             ],
             "content": {
-                "Model:": "cyberrealistic_v20.safetensors",
-                "Config:": "v1-inference_fp16.yaml",
+                "Model:": "perpetual-v1-sun.safetensors",
+                "Config:": "v2-inference-v.yaml",
                 "Vae": "default",
                 "LDM Optimization": "sdp",
                 "Force Reload": "False"
             },
-            "op_code": 34,
+            "op_code": 35,
             "content_label_objname": "torch_loader_node"
         },
         {
             "id": 1858089770368,
             "title": "Conditioning",
-            "pos_x": -458.0,
-            "pos_y": -64.0,
+            "pos_x": -481.75,
+            "pos_y": -71.5,
             "inputs": [
                 {
                     "id": 1858103432416,
@@ -81,16 +81,17 @@
                 }
             ],
             "content": {
-                "Prompt": "Alien landscape, highly detailed"
+                "Prompt": "Alien landscape, highly detailed",
+                "Use embeds": "False"
             },
-            "op_code": 19,
+            "op_code": 20,
             "content_label_objname": "cond_node"
         },
         {
             "id": 1858103433472,
             "title": "Conditioning",
-            "pos_x": -460.0,
-            "pos_y": 301.0,
+            "pos_x": -487.5,
+            "pos_y": 282.25,
             "inputs": [
                 {
                     "id": 1858103433568,
@@ -131,16 +132,17 @@
                 }
             ],
             "content": {
-                "Prompt": ""
+                "Prompt": "",
+                "Use embeds": "False"
             },
-            "op_code": 19,
+            "op_code": 20,
             "content_label_objname": "cond_node"
         },
         {
             "id": 1858103435152,
             "title": "K Sampler",
-            "pos_x": -43.25,
-            "pos_y": -96.5,
+            "pos_x": -50.75,
+            "pos_y": -119.0,
             "inputs": [
                 {
                     "id": 1858103435680,
@@ -204,75 +206,20 @@
             "content": {
                 "Scheduler:": "karras",
                 "Sampler:": "euler",
-                "Seed:": "",
-                "Steps:": 10,
-                "Start Step:": 0,
-                "Last Step:": 5,
+                "Seed:": "-270771908045683849",
+                "Steps:": "200",
+                "Start Step:": "0",
+                "Last Step:": "5",
                 "Stop Sampling Early": "False",
                 "Force full denoise": "True",
                 "Show Tensor Preview": "True",
                 "Disable noise generation": "False",
                 "Iterate seed": "False",
-                "Denoise:": 1.0,
-                "Guidance Scale:": 7.5
+                "Denoise:": "1.0",
+                "Guidance Scale:": "7.5"
             },
-            "op_code": 27,
+            "op_code": 28,
             "content_label_objname": "K_sampling_node"
-        },
-        {
-            "id": 1858103435632,
-            "title": "Image Preview",
-            "pos_x": 276.0,
-            "pos_y": -58.0,
-            "inputs": [
-                {
-                    "id": 1858103435536,
-                    "index": 0,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 5
-                },
-                {
-                    "id": 1858103436448,
-                    "index": 1,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 6
-                },
-                {
-                    "id": 1858103436496,
-                    "index": 2,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 1
-                }
-            ],
-            "outputs": [
-                {
-                    "id": 1858103436544,
-                    "index": 0,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 5
-                },
-                {
-                    "id": 1858103436592,
-                    "index": 1,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 6
-                },
-                {
-                    "id": 1858103436640,
-                    "index": 2,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 1
-                }
-            ],
-            "content": {},
-            "op_code": 14,
-            "content_label_objname": "image_output_node"
         },
         {
             "id": 1858103438512,
@@ -291,8 +238,8 @@
         {
             "id": 1858103438176,
             "title": "Execute",
-            "pos_x": -863.0,
-            "pos_y": 5.0,
+            "pos_x": -943.0,
+            "pos_y": -85.0,
             "inputs": [
                 {
                     "id": 1858103437792,
@@ -330,15 +277,116 @@
             "color": "#e3212121",
             "width": 782.5624999999999,
             "height": 302.8749999999999
+        },
+        {
+            "id": 2467824340128,
+            "title": "Image Preview",
+            "pos_x": 327.5,
+            "pos_y": -71.25,
+            "inputs": [
+                {
+                    "id": 2467824340512,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2472652799712,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2472652798416,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2472652795824,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2472652798464,
+                    "index": 1,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2472652788672,
+                    "index": 2,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {},
+            "op_code": 15,
+            "content_label_objname": "image_output_node"
+        },
+        {
+            "id": 2472652797840,
+            "title": "Empty Latent Image",
+            "pos_x": -890.0,
+            "pos_y": 447.5,
+            "inputs": [
+                {
+                    "id": 2468006772352,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 2
+                },
+                {
+                    "id": 2468008654064,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2468008655120,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2468008654688,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 2
+                },
+                {
+                    "id": 2468008656704,
+                    "index": 1,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {
+                "Width": "512",
+                "Height": "512",
+                "Latent Rescale": "False"
+            },
+            "op_code": 24,
+            "content_label_objname": "empty_latent_node"
         }
     ],
     "edges": [
-        {
-            "id": 1858103436976,
-            "edge_type": 2,
-            "start": 1858089772672,
-            "end": 1858103431936
-        },
         {
             "id": 1858103437024,
             "edge_type": 2,
@@ -364,22 +412,40 @@
             "end": 1858103433184
         },
         {
-            "id": 1858103438224,
-            "edge_type": 2,
-            "start": 1858103436016,
-            "end": 1858103436496
-        },
-        {
-            "id": 1858103438416,
-            "edge_type": 2,
-            "start": 1858103435536,
-            "end": 1858103435920
-        },
-        {
             "id": 1858103439088,
             "edge_type": 2,
             "start": 1858103437744,
             "end": 1858089772816
+        },
+        {
+            "id": 2468006772592,
+            "edge_type": 2,
+            "start": 1858103435920,
+            "end": 2467824340512
+        },
+        {
+            "id": 2468006772208,
+            "edge_type": 2,
+            "start": 2472652798416,
+            "end": 1858103436016
+        },
+        {
+            "id": 2472652799760,
+            "edge_type": 2,
+            "start": 1858089772672,
+            "end": 2468008655120
+        },
+        {
+            "id": 2468008654352,
+            "edge_type": 2,
+            "start": 2468008656704,
+            "end": 1858103431936
+        },
+        {
+            "id": 2468008655168,
+            "edge_type": 2,
+            "start": 2468008654688,
+            "end": 1858103435728
         }
     ]
 }

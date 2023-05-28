@@ -223,7 +223,11 @@ def split_cross_attention_forward_invokeAI(self, x, context=None, value=None, ma
 
     context_k, context_v = hypernetwork.apply_hypernetwork(gs.loaded_hypernetwork, context)
     k = self.to_k(context_k) * self.scale
-    v = self.to_v(context_v)
+    if value is not None:
+        v_in = self.to_v(value)
+        del value
+    else:
+        v_in = self.to_v(context_v)
     del context, context_k, context_v, x
 
     q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h=h), (q, k, v))
@@ -239,7 +243,11 @@ def xformers_attention_forward(self, x, context=None, value=None, mask=None):
 
     context_k, context_v = hypernetwork.apply_hypernetwork(gs.loaded_hypernetwork, context)
     k_in = self.to_k(context_k)
-    v_in = self.to_v(context_v)
+    if value is not None:
+        v_in = self.to_v(value)
+        del value
+    else:
+        v_in = self.to_v(context_v)
 
     q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b n h d', h=h), (q_in, k_in, v_in))
     del q_in, k_in, v_in
@@ -346,7 +354,11 @@ def scaled_dot_product_attention_forward(self, x, context=None, value=None, mask
     #gs.loaded_hypernetworks = None
     context_k, context_v = hypernetwork.apply_hypernetwork(None, context)
     k_in = self.to_k(context_k)
-    v_in = self.to_v(context_v)
+    if value is not None:
+        v_in = self.to_v(value)
+        del value
+    else:
+        v_in = self.to_v(context_v)
 
     head_dim = inner_dim // h
     q = q_in.view(batch_size, -1, h, head_dim).transpose(1, 2)

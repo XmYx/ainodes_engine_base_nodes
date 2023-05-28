@@ -1,4 +1,9 @@
+import os
+
+import requests
 import torch
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtGui import Qt
 from qtpy import QtWidgets, QtCore
 
 from ainodes_frontend.base import register_node, get_next_opcode
@@ -8,6 +13,67 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 
 from ainodes_frontend import singleton as gs
 
+from PySide6.QtWidgets import QDialog, QListWidget, QCheckBox, QDoubleSpinBox, QVBoxLayout, QDialogButtonBox, \
+    QListWidgetItem, QHBoxLayout, QWidget
+
+from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.hash import sha256
+
+
+class EmbedDialog(QDialog):
+    def __init__(self, embed_files, prev_dict):
+        super().__init__()
+        self.embed_files = embed_files
+        self.embed_values = {}
+
+        self.setWindowTitle("Select Embeddings")
+        layout = QVBoxLayout()
+        self.list_widget = QListWidget()
+        layout.addWidget(self.list_widget)
+
+        for file_name in embed_files:
+            item_widget = QWidget()
+            item_layout = QHBoxLayout(item_widget)
+
+            check_box = QCheckBox()
+            check_box.setText(file_name)
+            item_layout.addWidget(check_box)
+
+            spin_box = QDoubleSpinBox()
+            spin_box.setRange(0.0, 1.0)
+            spin_box.setSingleStep(0.1)
+            spin_box.setEnabled(True)
+            item_layout.addWidget(spin_box)
+            for item in prev_dict:
+                print(item)
+                if item['embed']['filename'] == file_name:
+                    check_box.setChecked(True)
+                    spin_box.setValue(item['embed']['value'])
+            self.d = prev_dict
+            check_box.stateChanged.connect(lambda state, box=spin_box: box.setEnabled(state == Qt.Checked))
+            self.embed_values[file_name] = [check_box, spin_box]
+
+            list_widget_item = QListWidgetItem()
+            list_widget_item.setSizeHint(item_widget.sizeHint())  # Set size hint for proper layout
+            self.list_widget.addItem(list_widget_item)
+            self.list_widget.setItemWidget(list_widget_item, item_widget)
+
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        layout.addWidget(self.button_box)
+
+        self.setLayout(layout)
+
+    def accept(self):
+        selected_embeds = []
+        for file_name, check_box in self.embed_values.items():
+            if check_box[0].isChecked():
+                selected_embeds.append({"embed":{"filename":file_name,
+                                        "value":check_box[1].value(),
+                                        "word":""}})
+        self.selected_embeds = selected_embeds
+        super().accept()
+        return selected_embeds
 OP_NODE_CONDITIONING = get_next_opcode()
 class ConditioningWidget(QDMNodeContentWidget):
     def initUI(self):
@@ -15,8 +81,23 @@ class ConditioningWidget(QDMNodeContentWidget):
         self.create_main_layout()
     def create_widgets(self):
         self.prompt = self.create_text_edit("Prompt")
+        self.embed_checkbox = self.create_check_box("Use embeds")
         self.button = QtWidgets.QPushButton("Get Conditioning")
-        self.create_button_layout([self.button])
+        self.set_embeds = QtWidgets.QPushButton("Embeddings")
+        self.create_button_layout([self.button, self.set_embeds])
+
+class APIHandler(QObject):
+    response_received = Signal(dict)
+
+    def get_response(self, hash_value):
+        url = f"https://civitai.com/api/v1/model-versions/by-hash/{hash_value}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            self.response_received.emit(data)
+        else:
+            # Handle error
+            self.response_received.emit({})
 
 @register_node(OP_NODE_CONDITIONING)
 class ConditioningNode(AiNode):
@@ -39,8 +120,40 @@ class ConditioningNode(AiNode):
         self.content.setMinimumWidth(320)
         #pass
         self.content.button.clicked.connect(self.evalImplementation)
+        self.content.set_embeds.clicked.connect(self.show_embeds)
         self.input_socket_name = ["EXEC"]
         self.output_socket_name = ["EXEC", "COND"]
+        self.embed_dict = []
+        self.apihandler = APIHandler()
+        self.apihandler.response_received.connect(self.handle_response)
+        self.string = ""
+
+
+    def show_embeds(self):
+
+        embed_files = [f for f in os.listdir(gs.embeddings) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
+        if embed_files is not []:
+            # The embedding strings returned as: "embedding:<filename without extension>:<weight> where weight is a float between 0.0 and 1.0"
+            self.show_embed_dialog(embed_files)
+
+
+    def show_embed_dialog(self, embed_files):
+        dialog = EmbedDialog(embed_files, self.embed_dict)
+        if dialog.exec() == QDialog.Accepted:
+            selected_embeds = dialog.selected_embeds
+            self.embed_dict = selected_embeds
+
+            """for embed in self.embed_dict:
+                print("word", embed["embed"]["filename"])
+                file = os.path.join(gs.embeddings, embed["embed"]["filename"])
+                sha = sha256(file)
+                self.apihandler.response_received.connect(self.handle_response)
+                self.apihandler.get_response(sha)"""
+
+        else:
+            return None
+
+
 
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0, prompt_override=None):
@@ -49,6 +162,14 @@ class ConditioningNode(AiNode):
             prompt = self.content.prompt.toPlainText()
             if prompt_override is not None:
                 prompt = prompt_override
+
+            string = ""
+            for item in self.embed_dict:
+                string = f'{string} embedding:{item["embed"]["filename"]}'
+
+            string = "" if not self.content.embed_checkbox.isChecked() else string
+
+            prompt = f"{prompt} {string}" if (self.content.embed_checkbox.isChecked and string != "") else prompt
             if len(self.getInputs(0)) > 0:
                 data_node, index = self.getInput(0)
                 data = data_node.getOutput(index)
@@ -82,6 +203,24 @@ class ConditioningNode(AiNode):
             else:
                 print(repr(e))
             return None
+
+    @QtCore.Slot(object)
+    def handle_response(self, data):
+        if 'files' in data:
+            file = data['files'][0]['name']
+
+            for item in self.embed_dict:
+                if item['embed']['filename'] == file:
+                    item['embed']['word'] = "\n".join(data["trainedWords"])
+                    item['embed']['word'] = item['embed']['filename']
+
+        string = ""
+
+        for item in self.embed_dict:
+            if item['embed']['word'] != "":
+                string = f'{string} embedding:{item["embed"]["word"]}'
+
+        self.string = string
 
     def get_conditioning(self, prompt="", progress_callback=None):
 

@@ -2,7 +2,7 @@
 from ainodes_frontend.node_engine.node_graphics_node import QDMGraphicsBGNode, QDMGraphicsBGInfoNode
 from qtpy import QtWidgets, QtGui
 
-from ainodes_frontend.base import register_node, get_next_opcode
+from ainodes_frontend.base import register_node, get_next_opcode, AiDummyNode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend.node_engine.utils import dumpException
@@ -10,7 +10,7 @@ from ainodes_frontend.node_engine.utils import dumpException
 OP_NODE_BG = get_next_opcode()
 
 @register_node(OP_NODE_BG)
-class BGNode(AiNode):
+class BGNode(AiDummyNode):
     icon = "ainodes_frontend/icons/base_nodes/bg.png"
     op_code = OP_NODE_BG
     op_title = "Bg Node"

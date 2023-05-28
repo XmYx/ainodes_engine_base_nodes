@@ -7,6 +7,7 @@ www.github.com/XmYx/ainodes-engine
 miklos.mnagy@gmail.com
 """
 import hashlib
+import math
 import os
 
 import numpy as np
@@ -14,11 +15,13 @@ from omegaconf import OmegaConf
 from torch.nn.functional import silu
 
 from ldm.models.autoencoder import AutoencoderKL
+from ldm.modules.sub_quadratic_attention import OOM_EXCEPTION
+from . import diffusers_convert
 from .chainner_models import model_loading
 from .lora_loader import ModelPatcher
 from .sd_optimizations.sd_hijack import apply_optimizations
 from .torch_gc import torch_gc
-from ldm.util import instantiate_from_config
+from ldm.util import instantiate_from_config, get_free_memory, get_torch_device
 from ainodes_frontend import singleton as gs
 
 from .ESRGAN import model as upscaler
@@ -92,7 +95,7 @@ class ModelLoader(torch.nn.Module):
         vae = VAE(scale_factor=scale_factor, config=vae_config)
         w.first_stage_model = vae.first_stage_model
         load_state_dict_to = [w]
-        vae.first_stage_model = w.first_stage_model.cuda()
+        #vae.first_stage_model = w.first_stage_model.cuda()
 
         clip = CLIP(config=clip_config, embedding_directory="models/embeddings")
         w.cond_stage_model = clip.cond_stage_model
@@ -383,74 +386,91 @@ def make_linear_decode(model_version, device='cuda:0'):
 
 
 class VAE:
-    def __init__(self, ckpt_path=None, scale_factor=0.18215, device="cuda", config=None):
+    def __init__(self, ckpt_path=None, scale_factor=0.18215, device=None, config=None):
         if config is None:
             #default SD1.x/SD2.x VAE parameters
             ddconfig = {'double_z': True, 'z_channels': 4, 'resolution': 256, 'in_channels': 3, 'out_ch': 3, 'ch': 128, 'ch_mult': [1, 2, 4, 4], 'num_res_blocks': 2, 'attn_resolutions': [], 'dropout': 0.0}
-            self.first_stage_model = AutoencoderKL(ddconfig, {'target': 'torch.nn.Identity'}, 4, monitor="val/rec_loss", ckpt_path=ckpt_path)
+            self.first_stage_model = AutoencoderKL(ddconfig, {'target': 'torch.nn.Identity'}, 4, monitor="val/rec_loss")
         else:
-            self.first_stage_model = AutoencoderKL(**(config['params']), ckpt_path=ckpt_path)
+            self.first_stage_model = AutoencoderKL(**(config['params']))
         self.first_stage_model = self.first_stage_model.eval()
-        self.first_stage_model.float()
+        if ckpt_path is not None:
+            sd = load_torch_file(ckpt_path)
+            if 'decoder.up_blocks.0.resnets.0.norm1.weight' in sd.keys(): #diffusers format
+                sd = diffusers_convert.convert_vae_state_dict(sd)
+            self.first_stage_model.load_state_dict(sd, strict=False)
+
         self.scale_factor = scale_factor
+        if device is None:
+            device = get_torch_device()
         self.device = device
 
-    def decode(self, samples):
+    def decode_tiled_(self, samples, tile_x=64, tile_y=64, overlap = 16):
+        steps = samples.shape[0] * get_tiled_scale_steps(samples.shape[3], samples.shape[2], tile_x, tile_y, overlap)
+        steps += samples.shape[0] * get_tiled_scale_steps(samples.shape[3], samples.shape[2], tile_x // 2, tile_y * 2, overlap)
+        steps += samples.shape[0] * get_tiled_scale_steps(samples.shape[3], samples.shape[2], tile_x * 2, tile_y // 2, overlap)
+        #pbar = utils.ProgressBar(steps)
+
+        decode_fn = lambda a: (self.first_stage_model.decode(1. / self.scale_factor * a.to(self.device)) + 1.0)
+        output = torch.clamp((
+            (tiled_scale(samples, decode_fn, tile_x // 2, tile_y * 2, overlap, upscale_amount = 8, pbar = None) +
+            tiled_scale(samples, decode_fn, tile_x * 2, tile_y // 2, overlap, upscale_amount = 8, pbar = None) +
+             tiled_scale(samples, decode_fn, tile_x, tile_y, overlap, upscale_amount = 8, pbar = None))
+            / 3.0) / 2.0, min=0.0, max=1.0)
+        return output
+
+    def decode(self, samples_in):
         #model_management.unload_model()
-        #self.first_stage_model = self.first_stage_model.to(self.device)
-        #samples = samples.to(self.device)
-        #samples = samples.float().cpu()
-        #self.first_stage_model.float()
-        pixel_samples = self.first_stage_model.decode(1. / self.scale_factor * samples)
-        pixel_samples = torch.clamp((pixel_samples + 1.0) / 2.0, min=0.0, max=1.0)
-        #self.first_stage_model = self.first_stage_model.cpu()
+        self.first_stage_model = self.first_stage_model.to(self.device)
+        try:
+            free_memory = get_free_memory(self.device)
+            batch_number = int((free_memory * 0.7) / (2562 * samples_in.shape[2] * samples_in.shape[3] * 64))
+            batch_number = max(1, batch_number)
+
+            pixel_samples = torch.empty((samples_in.shape[0], 3, round(samples_in.shape[2] * 8), round(samples_in.shape[3] * 8)), device="cpu")
+            for x in range(0, samples_in.shape[0], batch_number):
+                samples = samples_in[x:x+batch_number].to(self.device)
+                pixel_samples[x:x+batch_number] = torch.clamp((self.first_stage_model.decode(1. / self.scale_factor * samples) + 1.0) / 2.0, min=0.0, max=1.0).cpu()
+        except OOM_EXCEPTION as e:
+            print("Warning: Ran out of memory when regular VAE decoding, retrying with tiled VAE decoding.")
+            pixel_samples = self.decode_tiled_(samples_in)
+
+        self.first_stage_model = self.first_stage_model.cpu()
         pixel_samples = pixel_samples.cpu().movedim(1,-1)
         return pixel_samples
 
-    def decode_tiled(self, samples, tile_x=64, tile_y=64, overlap = 8):
+    def decode_tiled(self, samples, tile_x=64, tile_y=64, overlap = 16):
         #model_management.unload_model()
-        output = torch.empty((samples.shape[0], 3, samples.shape[2] * 8, samples.shape[3] * 8), device="cpu")
-        #self.first_stage_model = self.first_stage_model.to(self.device)
-        for b in range(samples.shape[0]):
-            s = samples[b:b+1]
-            out = torch.zeros((s.shape[0], 3, s.shape[2] * 8, s.shape[3] * 8), device="cpu")
-            out_div = torch.zeros((s.shape[0], 3, s.shape[2] * 8, s.shape[3] * 8), device="cpu")
-            for y in range(0, s.shape[2], tile_y - overlap):
-                for x in range(0, s.shape[3], tile_x - overlap):
-                    s_in = s[:,:,y:y+tile_y,x:x+tile_x]
-
-                    pixel_samples = self.first_stage_model.decode(1. / self.scale_factor * s_in.to(self.device))
-                    pixel_samples = torch.clamp((pixel_samples + 1.0) / 2.0, min=0.0, max=1.0)
-                    ps = pixel_samples.cpu()
-                    mask = torch.ones_like(ps)
-                    feather = overlap * 8
-                    for t in range(feather):
-                            mask[:,:,t:1+t,:] *= ((1.0/feather) * (t + 1))
-                            mask[:,:,mask.shape[2] -1 -t: mask.shape[2]-t,:] *= ((1.0/feather) * (t + 1))
-                            mask[:,:,:,t:1+t] *= ((1.0/feather) * (t + 1))
-                            mask[:,:,:,mask.shape[3]- 1 - t: mask.shape[3]- t] *= ((1.0/feather) * (t + 1))
-                    out[:,:,y*8:(y+tile_y)*8,x*8:(x+tile_x)*8] += ps * mask
-                    out_div[:,:,y*8:(y+tile_y)*8,x*8:(x+tile_x)*8] += mask
-
-            output[b:b+1] = out/out_div
-        #self.first_stage_model = self.first_stage_model.cpu()
+        self.first_stage_model = self.first_stage_model.to(self.device)
+        output = self.decode_tiled_(samples, tile_x, tile_y, overlap)
+        self.first_stage_model = self.first_stage_model.cpu()
         return output.movedim(1,-1)
 
     def encode(self, pixel_samples):
-        #pixel_samples = pixel_samples.cuda()
-        #self.first_stage_model = self.first_stage_model.to(self.device)
-        #pixel_samples = pixel_samples.movedim(-1,1).to(self.device)
+        #model_management.unload_model()
+        self.first_stage_model = self.first_stage_model.to(self.device)
+        pixel_samples = pixel_samples.movedim(-1,1).to(self.device)
         samples = self.first_stage_model.encode(2. * pixel_samples - 1.).sample() * self.scale_factor
-        #pixel_samples = pixel_samples.detach().cpu()
-        #self.first_stage_model = self.first_stage_model.cpu()
-        samples = samples.detach().cpu()
-
-        del pixel_samples
-
-        torch_gc()
-
+        self.first_stage_model = self.first_stage_model.cpu()
+        samples = samples.cpu()
         return samples
 
+    def encode_tiled(self, pixel_samples, tile_x=512, tile_y=512, overlap = 64):
+        #model_management.unload_model()
+        self.first_stage_model = self.first_stage_model.to(self.device)
+        pixel_samples = pixel_samples.movedim(-1,1).to(self.device)
+
+        steps = pixel_samples.shape[0] * get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2], tile_x, tile_y, overlap)
+        steps += pixel_samples.shape[0] * get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2], tile_x // 2, tile_y * 2, overlap)
+        steps += pixel_samples.shape[0] * get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2], tile_x * 2, tile_y // 2, overlap)
+
+        samples = tiled_scale(pixel_samples, lambda a: self.first_stage_model.encode(2. * a - 1.).sample() * self.scale_factor, tile_x, tile_y, overlap, upscale_amount = (1/8), out_channels=4, pbar=None)
+        samples += tiled_scale(pixel_samples, lambda a: self.first_stage_model.encode(2. * a - 1.).sample() * self.scale_factor, tile_x * 2, tile_y // 2, overlap, upscale_amount = (1/8), out_channels=4, pbar=None)
+        samples += tiled_scale(pixel_samples, lambda a: self.first_stage_model.encode(2. * a - 1.).sample() * self.scale_factor, tile_x // 2, tile_y * 2, overlap, upscale_amount = (1/8), out_channels=4, pbar=None)
+        samples /= 3.0
+        self.first_stage_model = self.first_stage_model.cpu()
+        samples = samples.cpu()
+        return samples
 
 class CLIP:
     def __init__(self, config={}, embedding_directory=None, no_init=False):
@@ -716,7 +736,7 @@ class SD1Tokenizer:
         self.pad_with_end = pad_with_end
         vocab = self.tokenizer.get_vocab()
         self.inv_vocab = {v: k for k, v in vocab.items()}
-        self.embedding_directory = embedding_directory
+        self.embedding_directory = gs.embeddings
         self.max_word_length = 8
 
     def tokenize_with_weights(self, text):
@@ -732,6 +752,9 @@ class SD1Tokenizer:
                 embedding_identifier = "embedding:"
                 if word.startswith(embedding_identifier) and self.embedding_directory is not None:
                     embedding_name = word[len(embedding_identifier):].strip('\n')
+
+                    print("EMBED NAME", embedding_name)
+
                     embed = load_embed(embedding_name, self.embedding_directory)
                     if embed is None:
                         stripped = embedding_name.strip(',')
@@ -893,3 +916,191 @@ def load_model_weights(model, sd, verbose=False, load_state_dict_to=[]):
 
     model.eval()
     return model
+
+
+def load_torch_file(ckpt, safe_load=False):
+    if ckpt.lower().endswith(".safetensors"):
+        import safetensors.torch
+        sd = safetensors.torch.load_file(ckpt, device="cpu")
+    else:
+        if safe_load:
+            if not 'weights_only' in torch.load.__code__.co_varnames:
+                print("Warning torch.load doesn't support weights_only on this pytorch version, loading unsafely.")
+                safe_load = False
+        if safe_load:
+            pl_sd = torch.load(ckpt, map_location="cpu", weights_only=True)
+        else:
+            pl_sd = torch.load(ckpt, map_location="cpu")
+        if "global_step" in pl_sd:
+            print(f"Global Step: {pl_sd['global_step']}")
+        if "state_dict" in pl_sd:
+            sd = pl_sd["state_dict"]
+        else:
+            sd = pl_sd
+    return sd
+
+
+def transformers_convert(sd, prefix_from, prefix_to, number):
+    resblock_to_replace = {
+        "ln_1": "layer_norm1",
+        "ln_2": "layer_norm2",
+        "mlp.c_fc": "mlp.fc1",
+        "mlp.c_proj": "mlp.fc2",
+        "attn.out_proj": "self_attn.out_proj",
+    }
+
+    for resblock in range(number):
+        for x in resblock_to_replace:
+            for y in ["weight", "bias"]:
+                k = "{}.transformer.resblocks.{}.{}.{}".format(prefix_from, resblock, x, y)
+                k_to = "{}.encoder.layers.{}.{}.{}".format(prefix_to, resblock, resblock_to_replace[x], y)
+                if k in sd:
+                    sd[k_to] = sd.pop(k)
+
+        for y in ["weight", "bias"]:
+            k_from = "{}.transformer.resblocks.{}.attn.in_proj_{}".format(prefix_from, resblock, y)
+            if k_from in sd:
+                weights = sd.pop(k_from)
+                shape_from = weights.shape[0] // 3
+                for x in range(3):
+                    p = ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"]
+                    k_to = "{}.encoder.layers.{}.{}.{}".format(prefix_to, resblock, p[x], y)
+                    sd[k_to] = weights[shape_from * x:shape_from * (x + 1)]
+    return sd
+
+
+def bislerp(samples, width, height):
+    def slerp(b1, b2, r):
+        '''slerps batches b1, b2 according to ratio r, batches should be flat e.g. NxC'''
+
+        c = b1.shape[-1]
+
+        # norms
+        b1_norms = torch.norm(b1, dim=-1, keepdim=True)
+        b2_norms = torch.norm(b2, dim=-1, keepdim=True)
+
+        # normalize
+        b1_normalized = b1 / b1_norms
+        b2_normalized = b2 / b2_norms
+
+        # zero when norms are zero
+        b1_normalized[b1_norms.expand(-1, c) == 0.0] = 0.0
+        b2_normalized[b2_norms.expand(-1, c) == 0.0] = 0.0
+
+        # slerp
+        dot = (b1_normalized * b2_normalized).sum(1)
+        omega = torch.acos(dot)
+        so = torch.sin(omega)
+
+        # technically not mathematically correct, but more pleasing?
+        res = (torch.sin((1.0 - r.squeeze(1)) * omega) / so).unsqueeze(1) * b1_normalized + (
+                    torch.sin(r.squeeze(1) * omega) / so).unsqueeze(1) * b2_normalized
+        res *= (b1_norms * (1.0 - r) + b2_norms * r).expand(-1, c)
+
+        # edge cases for same or polar opposites
+        res[dot > 1 - 1e-5] = b1[dot > 1 - 1e-5]
+        res[dot < 1e-5 - 1] = (b1 * (1.0 - r) + b2 * r)[dot < 1e-5 - 1]
+        return res
+
+    def generate_bilinear_data(length_old, length_new):
+        coords_1 = torch.arange(length_old).reshape((1, 1, 1, -1)).to(torch.float32)
+        coords_1 = torch.nn.functional.interpolate(coords_1, size=(1, length_new), mode="bilinear")
+        ratios = coords_1 - coords_1.floor()
+        coords_1 = coords_1.to(torch.int64)
+
+        coords_2 = torch.arange(length_old).reshape((1, 1, 1, -1)).to(torch.float32) + 1
+        coords_2[:, :, :, -1] -= 1
+        coords_2 = torch.nn.functional.interpolate(coords_2, size=(1, length_new), mode="bilinear")
+        coords_2 = coords_2.to(torch.int64)
+        return ratios, coords_1, coords_2
+
+    n, c, h, w = samples.shape
+    h_new, w_new = (height, width)
+
+    # linear w
+    ratios, coords_1, coords_2 = generate_bilinear_data(w, w_new)
+    coords_1 = coords_1.expand((n, c, h, -1))
+    coords_2 = coords_2.expand((n, c, h, -1))
+    ratios = ratios.expand((n, 1, h, -1))
+
+    pass_1 = samples.gather(-1, coords_1).movedim(1, -1).reshape((-1, c))
+    pass_2 = samples.gather(-1, coords_2).movedim(1, -1).reshape((-1, c))
+    ratios = ratios.movedim(1, -1).reshape((-1, 1))
+
+    result = slerp(pass_1, pass_2, ratios)
+    result = result.reshape(n, h, w_new, c).movedim(-1, 1)
+
+    # linear h
+    ratios, coords_1, coords_2 = generate_bilinear_data(h, h_new)
+    coords_1 = coords_1.reshape((1, 1, -1, 1)).expand((n, c, -1, w_new))
+    coords_2 = coords_2.reshape((1, 1, -1, 1)).expand((n, c, -1, w_new))
+    ratios = ratios.reshape((1, 1, -1, 1)).expand((n, 1, -1, w_new))
+
+    pass_1 = result.gather(-2, coords_1).movedim(1, -1).reshape((-1, c))
+    pass_2 = result.gather(-2, coords_2).movedim(1, -1).reshape((-1, c))
+    ratios = ratios.movedim(1, -1).reshape((-1, 1))
+
+    result = slerp(pass_1, pass_2, ratios)
+    result = result.reshape(n, h_new, w_new, c).movedim(-1, 1)
+    return result
+
+
+def common_upscale(samples, width, height, upscale_method, crop):
+    if crop == "center":
+        old_width = samples.shape[3]
+        old_height = samples.shape[2]
+        old_aspect = old_width / old_height
+        new_aspect = width / height
+        x = 0
+        y = 0
+        if old_aspect > new_aspect:
+            x = round((old_width - old_width * (new_aspect / old_aspect)) / 2)
+        elif old_aspect < new_aspect:
+            y = round((old_height - old_height * (old_aspect / new_aspect)) / 2)
+        s = samples[:, :, y:old_height - y, x:old_width - x]
+    else:
+        s = samples
+
+    if upscale_method == "bislerp":
+        return bislerp(s, width, height)
+    else:
+        return torch.nn.functional.interpolate(s, size=(height, width), mode=upscale_method)
+
+
+def get_tiled_scale_steps(width, height, tile_x, tile_y, overlap):
+    return math.ceil((height / (tile_y - overlap))) * math.ceil((width / (tile_x - overlap)))
+
+
+@torch.inference_mode()
+def tiled_scale(samples, function, tile_x=64, tile_y=64, overlap=8, upscale_amount=4, out_channels=3, pbar=None):
+    output = torch.empty((samples.shape[0], out_channels, round(samples.shape[2] * upscale_amount),
+                          round(samples.shape[3] * upscale_amount)), device="cpu")
+    for b in range(samples.shape[0]):
+        s = samples[b:b + 1]
+        out = torch.zeros(
+            (s.shape[0], out_channels, round(s.shape[2] * upscale_amount), round(s.shape[3] * upscale_amount)),
+            device="cpu")
+        out_div = torch.zeros(
+            (s.shape[0], out_channels, round(s.shape[2] * upscale_amount), round(s.shape[3] * upscale_amount)),
+            device="cpu")
+        for y in range(0, s.shape[2], tile_y - overlap):
+            for x in range(0, s.shape[3], tile_x - overlap):
+                s_in = s[:, :, y:y + tile_y, x:x + tile_x]
+
+                ps = function(s_in).cpu()
+                mask = torch.ones_like(ps)
+                feather = round(overlap * upscale_amount)
+                for t in range(feather):
+                    mask[:, :, t:1 + t, :] *= ((1.0 / feather) * (t + 1))
+                    mask[:, :, mask.shape[2] - 1 - t: mask.shape[2] - t, :] *= ((1.0 / feather) * (t + 1))
+                    mask[:, :, :, t:1 + t] *= ((1.0 / feather) * (t + 1))
+                    mask[:, :, :, mask.shape[3] - 1 - t: mask.shape[3] - t] *= ((1.0 / feather) * (t + 1))
+                out[:, :, round(y * upscale_amount):round((y + tile_y) * upscale_amount),
+                round(x * upscale_amount):round((x + tile_x) * upscale_amount)] += ps * mask
+                out_div[:, :, round(y * upscale_amount):round((y + tile_y) * upscale_amount),
+                round(x * upscale_amount):round((x + tile_x) * upscale_amount)] += mask
+                if pbar is not None:
+                    pbar.update(1)
+
+        output[b:b + 1] = out / out_div
+    return output
