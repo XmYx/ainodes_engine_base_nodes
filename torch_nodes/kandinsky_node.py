@@ -98,7 +98,12 @@ class KandinskyNode(AiNode):
             task_type = 'inpainting'
 
         if f"kandinsky" not in gs.models or gs.loaded_kandinsky != task_type:
-            gs.models["kandinsky"] = get_kandinsky2('cuda', task_type=task_type, model_version='2.1', use_flash_attention=False)
+            try:
+                import flash_attn
+                flash = True
+            except:
+                flash = False
+            gs.models["kandinsky"] = get_kandinsky2('cuda', task_type=task_type, model_version='2.1', use_flash_attention=flash)
             gs.loaded_kandinsky = task_type
         masks = self.getInputData(0)
         images = self.getInputData(1)
