@@ -1,7 +1,12 @@
+import os
+
 import numpy as np
+import requests
 from PIL import Image
 import onnxruntime
 import insightface
+
+from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import poorman_wget
 
 
 class FaceReplacementModel():
@@ -12,7 +17,7 @@ class FaceReplacementModel():
 
         providers = onnxruntime.get_available_providers()
         #providers = [("CUDAExecutionProvider", {"cudnn_conv_use_max_workspace": '1'})]
-        providers = [("TensorrtExecutionProvider", {'trt_engine_cache_path': '.',
+        """providers = [("TensorrtExecutionProvider", {'trt_engine_cache_path': '.',
                                                     'trt_int8_use_native_calibration_table': False,
                                                     'device_id': '0',
                                                     'trt_max_partition_iterations': '1000',
@@ -34,8 +39,15 @@ class FaceReplacementModel():
                                                     'trt_build_heuristics_enable': False,
                                                     'trt_sparsity_enable': False,
                                                     'trt_builder_optimization_level': '3',
-                                                    'trt_auxiliary_streams': '-1'})]
-        self.face_swapper = insightface.model_zoo.get_model('models/other/roopVideoFace_v10.onnx', providers=providers)
+                                                    'trt_auxiliary_streams': '-1'})]"""
+        model_path = 'models/other/roopVideoFace_v10.onnx'
+        if not os.path.isfile(model_path):
+            import gdown
+            url = '1JxYLMECet8pU3Jq7EEcCw5p5xnFWTg5I'
+            gdown.download(id=url, output=model_path, quiet=False)
+
+
+        self.face_swapper = insightface.model_zoo.get_model(model_path, providers=providers)
         self.face_analyser = insightface.app.FaceAnalysis(name='buffalo_l', providers=providers)
         self.face_analyser.prepare(ctx_id=0, det_size=(640, 640))
         self.source_face_tensor = None
@@ -67,3 +79,13 @@ class FaceReplacementModel():
             return sorted(analysed, key=lambda x: x.bbox[0])[0]
         except IndexError:
             return None
+
+def download_file(url, save_path):
+    response = requests.get(url, stream=True)
+    if response.status_code == 200:
+        with open(save_path, 'wb') as file:
+            for chunk in response.iter_content(1024):
+                file.write(chunk)
+        print("File downloaded successfully!")
+    else:
+        print("Failed to download the file.")
