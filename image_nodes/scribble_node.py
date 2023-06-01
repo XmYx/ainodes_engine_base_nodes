@@ -16,13 +16,15 @@ class DrawingWidget(QtWidgets.QWidget):
         self.drawing = False
         self.last_point = None
         self.brush_size = 10
-        self.setCursor(self.createBrushCursor())
         self.dec_button = QtWidgets.QPushButton()
         self.color = Qt.white
         self.alt_color = Qt.black
-        self.setCursor(self.createBrushCursor(self.alt_color))
         self.history = []
         self.redo_history = []
+        cursor = self.createBrushCursor(self.color)
+        self.setCursor(cursor)
+        self.update()
+
     def switch_color(self):
         if self.color == Qt.white:
             self.color = Qt.black
@@ -30,8 +32,10 @@ class DrawingWidget(QtWidgets.QWidget):
         else:
             self.color = Qt.white
             self.alt_color = Qt.black
-        cursor = self.createBrushCursor(self.alt_color)
+        cursor = self.createBrushCursor(self.color)
         self.setCursor(cursor)
+        self.update()
+
     def get_image(self):
         pixmap = QtGui.QPixmap.fromImage(self.image)
         return pixmap
@@ -71,13 +75,9 @@ class DrawingWidget(QtWidgets.QWidget):
                 pen.setColor(self.alt_color)
             else:
                 pen.setColor(self.color)
-
             pen.setWidth(self.brush_size)
             pen.setCapStyle(Qt.RoundCap)
             pen.setJoinStyle(Qt.RoundJoin)
-
-
-
             painter.setPen(pen)
             painter.drawLine(self.last_point, event.pos())
             self.last_point = event.pos()
@@ -111,6 +111,9 @@ class DrawingWidget(QtWidgets.QWidget):
             self.history.append(self.image)
             self.image = self.redo_history.pop()
             self.update()
+    def enterEvent(self, event) -> None:
+        self.setCursor(self.createBrushCursor(self.color))
+        self.update()
 
 class ScribbleWidget(QDMNodeContentWidget):
     preview_signal = QtCore.Signal(object)
@@ -191,12 +194,9 @@ class ScribbleNode(AiNode):
     def switch_color(self):
         if self.color == Qt.black:
             self.color = Qt.white
-            self.content.image.switch_color()
-
         else:
             self.color = Qt.black
-            self.content.image.switch_color()
-
+        self.content.image.switch_color()
         self.onMarkedInvalid()
     def new_image(self):
         image = get_custom_size_image()

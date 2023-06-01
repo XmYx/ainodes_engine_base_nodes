@@ -106,6 +106,7 @@ class ImageListNode(AiNode):
 
     @QtCore.Slot(object)
     def set_pixmap(self, pixmap):
+        print("PIXMAP SELECTED", pixmap)
         self.pixmap = pixmap
 
     def select_next_item(self):
@@ -115,14 +116,15 @@ class ImageListNode(AiNode):
             self.content.image.list_widget.setCurrentRow(0)
         else:
             self.content.image.list_widget.setCurrentRow(current_row + 1)
+
     def evalImplementation_thread(self, index=0):
-        #self.grNode.toggleHelp()
-        pixmap = self.pixmap
-        self.markDirty(False)
         self.select_next_item()
+        pixmap = self.pixmap
+        print(pixmap)
         return pixmap
 
     def onWorkerFinished(self, result):
+        super().onWorkerFinished(None)
         self.setOutput(0, [result])
         self.executeChild(2)
 

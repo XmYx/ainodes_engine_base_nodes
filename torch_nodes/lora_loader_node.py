@@ -27,8 +27,8 @@ class LoraLoaderWidget(QDMNodeContentWidget):
         self.dropdown = self.create_combo_box(lora_files, "Lora")
 
         self.force_load = self.create_check_box("Force Load")
-        self.model_weight = self.create_double_spin_box("Model Weight", 0.0, 1.0, 0.1, 1.0)
-        self.clip_weight = self.create_double_spin_box("Clip Weight", 0.0, 1.0, 0.1, 1.0)
+        self.model_weight = self.create_double_spin_box("Model Weight", 0.0, 10.0, 0.1, 1.0)
+        self.clip_weight = self.create_double_spin_box("Clip Weight", 0.0, 10.0, 0.1, 1.0)
 
         self.help_prompt = self.create_label("Trained Words:")
 
@@ -93,14 +93,31 @@ class LoraLoaderNode(AiNode):
 
         force = None if self.content.force_load.isChecked() == False else True
 
-        if gs.loaded_loras == []:
+        strength_model = self.content.model_weight.value()
+        strength_clip = self.content.clip_weight.value()
+
+        data = {"m_w": strength_model,
+                "m_C": strength_clip
+                }
+
+        if self.values != data or self.current_lora != file:
+            print("LOADING LORA")
+            if not force:
+                gs.models["sd"].unpatch_model()
+                gs.models["clip"].patcher.unpatch_model()
+            self.load_lora_to_ckpt(file)
+            self.current_lora = file
+            self.values = data
+
+
+        """if gs.loaded_loras == []:
             self.current_lora = ""
         if self.current_lora != file or force:
             if file not in gs.loaded_loras or force:
                 self.load_lora_to_ckpt(file)
                 if file not in gs.loaded_loras:
                     gs.loaded_loras.append(file)
-                self.current_lora = file
+                self.current_lora = file"""
         return self.value
     @QtCore.Slot(object)
     def handle_response(self, data):

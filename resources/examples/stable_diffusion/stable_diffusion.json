@@ -7,7 +7,7 @@
             "id": 1858037328256,
             "title": "Torch Loader",
             "pos_x": -971.5,
-            "pos_y": 176.25,
+            "pos_y": 174.25,
             "inputs": [
                 {
                     "id": 1858089772816,
@@ -27,13 +27,13 @@
                 }
             ],
             "content": {
-                "Model:": "perpetual-v1-sun.safetensors",
-                "Config:": "v2-inference-v.yaml",
+                "Model:": "dreamlike-diffusion-1.0.safetensors",
+                "Config:": "v1-inference_fp16.yaml",
                 "Vae": "default",
                 "LDM Optimization": "sdp",
                 "Force Reload": "False"
             },
-            "op_code": 35,
+            "op_code": 36,
             "content_label_objname": "torch_loader_node"
         },
         {
@@ -84,7 +84,7 @@
                 "Prompt": "Alien landscape, highly detailed",
                 "Use embeds": "False"
             },
-            "op_code": 20,
+            "op_code": 21,
             "content_label_objname": "cond_node"
         },
         {
@@ -135,7 +135,7 @@
                 "Prompt": "",
                 "Use embeds": "False"
             },
-            "op_code": 20,
+            "op_code": 21,
             "content_label_objname": "cond_node"
         },
         {
@@ -218,7 +218,7 @@
                 "Denoise:": "1.0",
                 "Guidance Scale:": "7.5"
             },
-            "op_code": 28,
+            "op_code": 29,
             "content_label_objname": "K_sampling_node"
         },
         {
@@ -330,7 +330,7 @@
                 }
             ],
             "content": {},
-            "op_code": 15,
+            "op_code": 16,
             "content_label_objname": "image_output_node"
         },
         {
@@ -382,7 +382,7 @@
                 "Height": "512",
                 "Latent Rescale": "False"
             },
-            "op_code": 24,
+            "op_code": 25,
             "content_label_objname": "empty_latent_node"
         }
     ],

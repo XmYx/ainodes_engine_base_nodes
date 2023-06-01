@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from qtpy import QtCore
 
@@ -42,6 +43,7 @@ class ConditioningCombineWidget(QDMNodeContentWidget):
 
     def create_widgets(self):
         self.strength = self.create_double_spin_box("Strength", 0.00, 10.00, 0.01, 0.00)
+        self.cond_list_length = self.create_spin_box("Blended Cond List Length", min_val=1, max_val=2500, default_val=1)
 
 
 
@@ -89,16 +91,33 @@ class ConditioningCombineNode(AiNode):
                     print("COND COMBINE NODE: Conditionings weighted.")
                 return [c]
             else:
-                c = cond1_list[0] + cond2_list[0]
-                if gs.logging:
-                    print("COND COMBINE NODE: Conditionings combined.")
-                return [c]
+                ###c = cond1_list[0] + cond2_list[0]
+                ###if gs.logging:
+                ###    print("COND COMBINE NODE: Conditionings combined.")
+                conds = self.calculate_blended_conditionings(cond1_list[0], cond2_list[0], self.content.cond_list_length.value())
+                print(len(conds))
+                return conds
 
 
         except Exception as e:
-            print(f"COND COMBINE NODE: \nFailed: {e}")
+            print(f"COND COMBINE NODE: \nFailed: {repr(e)}")
             return None
 
+    def calculate_blended_conditionings(self, conditioning_to, conditioning_from, divisions):
+
+        if len(conditioning_from) > 1:
+            print(
+                "Warning: ConditioningAverage conditioning_from contains more than 1 cond, only the first one will actually be applied to conditioning_to.")
+
+        alpha_values = torch.linspace(0, 1, divisions + 2)[1:-1]  # Exclude 0 and 1
+        blended_conditionings = []
+
+        for alpha in alpha_values:
+            n = self.addWeighted(conditioning_to, conditioning_from, alpha)
+            blended_conditionings.append(n)
+
+
+        return blended_conditionings
     def addWeighted(self, conditioning_to, conditioning_from, conditioning_to_strength):
         out = []
 

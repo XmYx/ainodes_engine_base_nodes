@@ -122,6 +122,7 @@ class KSamplerNode(AiNode):
                 cond_list = new_cond_list
 
             for cond in cond_list:
+
                 if len(latent_list) == len(cond_list):
                     latent = latent_list[x]
                 else:
@@ -145,15 +146,14 @@ class KSamplerNode(AiNode):
                     print("BEFORE", self.steps)
                     self.update_vars(data)
 
-                if cond_override is not None:
-                    denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
-                    if latent_override is not None:
-                        latent = latent_override
-
+                if cond_override:
+                    self.denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
+                    latent = latent_override
                     self.seed = args.seed
                     self.steps = args.steps
                     self.cfg = args.scale
                     self.start_step = 0
+                    print("using seed", self.seed)
                 self.last_step = self.steps if self.content.stop_early.isChecked() == False else self.content.last_step.value()
                 short_steps = self.last_step - self.content.start_step.value()
 
