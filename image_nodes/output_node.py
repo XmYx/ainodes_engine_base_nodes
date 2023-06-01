@@ -121,11 +121,11 @@ class ImagePreviewNode(AiNode):
         if self.content.checkbox.isChecked() == True:
             #for image in val:
             self.save_image(result[0])
-        self.setOutput(0, result)
+        self.setOutput(0, self.images)
+        print("RESULT", result)
         self.markInvalid(False)
         self.markDirty(False)
         if gs.should_run:
-
             self.executeChild(2)
 
     def manual_save(self):
