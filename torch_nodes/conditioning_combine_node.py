@@ -43,6 +43,7 @@ class ConditioningCombineWidget(QDMNodeContentWidget):
 
     def create_widgets(self):
         self.strength = self.create_double_spin_box("Strength", 0.00, 10.00, 0.01, 0.00)
+        self.cond_list_length = self.create_spin_box("Blended Cond List Length", min_val=1, max_val=2500, default_val=1)
 
 
 
@@ -93,7 +94,7 @@ class ConditioningCombineNode(AiNode):
                 ###c = cond1_list[0] + cond2_list[0]
                 ###if gs.logging:
                 ###    print("COND COMBINE NODE: Conditionings combined.")
-                conds = self.calculate_blended_conditionings(cond1_list[0], cond2_list[0], 125)
+                conds = self.calculate_blended_conditionings(cond1_list[0], cond2_list[0], self.content.cond_list_length.value())
                 print(len(conds))
                 return conds
 

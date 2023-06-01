@@ -26,6 +26,8 @@ class ImagePreviewWidget(QDMNodeContentWidget):
         self.image.setObjectName(self.node.content_label_objname)
         self.checkbox = QtWidgets.QCheckBox("Autosave")
         self.meta_checkbox = QtWidgets.QCheckBox("Embed Node graph in PNG")
+        self.checkbox.setChecked(True)
+        self.meta_checkbox.setChecked(True)
         palette = QtGui.QPalette()
         palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
         palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
@@ -55,9 +57,6 @@ class ImagePreviewNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
-        self.content.button.clicked.connect(self.manual_save)
-        self.content.next_button.clicked.connect(self.show_next_image)
-        pass
 
     def initInnerClasses(self):
         self.content = ImagePreviewWidget(self)
@@ -68,7 +67,8 @@ class ImagePreviewNode(AiNode):
         self.index = 0
         self.content.preview_signal.connect(self.show_image)
         self.content.eval_signal.connect(self.evalImplementation)
-
+        self.content.button.clicked.connect(self.manual_save)
+        self.content.next_button.clicked.connect(self.show_next_image)
 
     def show_next_image(self):
         length = len(self.images)
@@ -76,24 +76,7 @@ class ImagePreviewNode(AiNode):
             self.index = 0
         if length > 0:
             img = self.images[self.index]
-            #print(img)
-            # Create a new RGBA image with the same dimensions as the greyscale image
-            mask_image = Image.new("RGBA", img.size, (0, 0, 0, 0))
-
-            # Get the pixel data from the greyscale image
-            pixels = img.load()
-
-            # Loop over all the pixels in the image
-            for x in range(img.width):
-                for y in range(img.height):
-                    # Get the pixel value
-                    value = pixels[x, y]
-
-                    # Set the RGBA value of the corresponding pixel in the mask image
-                    mask_image.putpixel((x, y), (255, 255, 255, value))
-
-
-            pixmap = pil_image_to_pixmap(mask_image)
+            pixmap = pil_image_to_pixmap(img)
             self.content.image.setPixmap(pixmap)
             self.setOutput(0, [pixmap])
             self.index += 1
@@ -107,6 +90,7 @@ class ImagePreviewNode(AiNode):
             if input_images is not None:
                 for image in input_images:
                     self.content.preview_signal.emit(image)
+                    self.resize()
                     if len(input_images) > 1:
                         time.sleep(0.1)
             return input_images
@@ -132,6 +116,7 @@ class ImagePreviewNode(AiNode):
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        self.images = result
         super().onWorkerFinished(None)
         if self.content.checkbox.isChecked() == True:
             #for image in val:
@@ -144,6 +129,9 @@ class ImagePreviewNode(AiNode):
             self.executeChild(2)
 
     def manual_save(self):
+
+        print("SAVING")
+
         for image in self.images:
             self.save_image(image)
 
@@ -175,10 +163,6 @@ class ImagePreviewNode(AiNode):
                 print(f"IMAGE PREVIEW NODE: File saved at {filename}")
         except Exception as e:
             print(f"IMAGE PREVIEW NODE: Image could not be saved because: {e}")
-
-    def onInputChanged(self, socket=None):
-        pass
-
 
     def resize(self):
         self.grNode.setToolTip("")
