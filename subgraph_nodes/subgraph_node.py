@@ -250,8 +250,8 @@ class SubGraphInputNode(AiNode):
 class SubGraphOutputNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/exec.png"
     op_code = OP_NODE_SUBGRAPH_OUTPUT
-    op_title = "Subgraph Inputs"
-    content_label_objname = "subgraph_input_node"
+    op_title = "Subgraph Outputs"
+    content_label_objname = "subgraph_output_node"
     category = "exec"
     help_text = "Execution Node\n\n" \
                 "Execution chain is essential\n" \
