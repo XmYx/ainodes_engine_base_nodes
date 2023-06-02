@@ -36,8 +36,6 @@ class ExecNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[1])
-        self.content.run_button.clicked.connect(self.start)
-        self.content.stop_button.clicked.connect(self.stop)
         self.interrupt = False
 
     def initInnerClasses(self):
@@ -49,6 +47,9 @@ class ExecNode(AiNode):
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(160)
         self.content.eval_signal.connect(self.evalImplementation)
+        self.content.run_button.clicked.connect(self.start)
+        self.content.stop_button.clicked.connect(self.stop)
+
 
     def evalImplementation_thread(self, index=0, *args, **kwargs):
         return True
@@ -63,7 +64,7 @@ class ExecNode(AiNode):
         gs.should_run = None
 
     def start(self):
-        self.interrupt = False
+        gs.should_run = True
         self.content.eval_signal.emit()
 
 

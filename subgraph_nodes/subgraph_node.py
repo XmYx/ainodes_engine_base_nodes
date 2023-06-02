@@ -59,10 +59,8 @@ class SubgraphNode(AiNode):
         self.content = SubgraphNodeWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
-        self.grNode.height = 1024
-        self.grNode.width = 800
-        self.content.setMinimumWidth(600)
-        self.content.setMinimumHeight(400)
+        self.grNode.height = 220
+        self.grNode.width = 220
         self.content.eval_signal.connect(self.evalImplementation)
         self.graph_window = None
         self.name = f"{self.getID(0)}_Subgraph"
@@ -79,20 +77,24 @@ class SubgraphNode(AiNode):
     def evalImplementation_thread(self, index=0, *args, **kwargs):
 
         nodes = self.graph_window.widget().scene.nodes
-
-        print(nodes)
-        self.graph_window.widget().scene.traversing = None
         for node in nodes:
             if isinstance(node, SubGraphOutputNode):
                 #self.graph_window.widget().scene.traversing = True
                 node.true_parent = self
+                break
         for node in nodes:
             if isinstance(node, SubGraphInputNode):
-                self.graph_window.widget().scene.traversing = True
-                node.content.eval_signal.emit()
 
-        while self.graph_window.widget().scene.traversing:
-            time.sleep(0.1)
+                node.data = self.getInputData(3)
+                node.images = self.getInputData(2)
+                node.latents = self.getInputData(0)
+                node.conds = self.getInputData(1)
+
+                node.content.eval_signal.emit()
+                break
+
+        #while self.graph_window.widget().scene.traversing:
+            #time.sleep(0.1)
             #timer = QtCore.QTimer()
             #timer.setSingleShot(True)
             #timer.setInterval(5)
@@ -140,7 +142,7 @@ class SubgraphNode(AiNode):
             #window = self.scene.getView().parent().window().findMdiChild()
             for window in self.scene.getView().parent().window().mdiArea.subWindowList():
 
-                print(window.widget().filename)
+                #print(window.widget().filename)
                 if window.widget().filename == f"{self.getID(0)}_Subgraph":
 
                     self.scene.getView().parent().window().mdiArea.setActiveSubWindow(window)
@@ -225,17 +227,26 @@ class SubGraphInputNode(AiNode):
         self.content = SubgraphNodeWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
-        self.grNode.height = 1024
-        self.grNode.width = 800
-        self.content.setMinimumWidth(600)
-        self.content.setMinimumHeight(400)
+        self.grNode.height = 180
+        #self.grNode.width = 800
+        #self.content.setMinimumWidth(600)
+        #self.content.setMinimumHeight(400)
         self.content.eval_signal.connect(self.evalImplementation)
+        self.latents = None
+        self.conds = None
+        self.images = None
+        self.data = None
 
     def run(self, data, images, latens, conds):
         pass
 
 
     def evalImplementation_thread(self, index=0, *args, **kwargs):
+
+        self.setOutput(0, self.latents)
+        self.setOutput(1, self.conds)
+        self.setOutput(2, self.images)
+        self.setOutput(3, self.data)
         print("REACHED SUBGRAPH INPUT NODE")
         return True
 
@@ -271,11 +282,12 @@ class SubGraphOutputNode(AiNode):
         self.content = SubgraphNodeWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
-        self.grNode.height = 1024
-        self.grNode.width = 800
-        self.content.setMinimumWidth(600)
-        self.content.setMinimumHeight(400)
+        self.grNode.height = 180
+        #self.grNode.width = 800
+        #self.content.setMinimumWidth(600)
+        #self.content.setMinimumHeight(400)
         self.content.eval_signal.connect(self.evalImplementation)
+        self.true_parent = None
 
     def run(self, data, images, latens, conds):
         pass
@@ -304,7 +316,8 @@ class SubGraphOutputNode(AiNode):
         #self.scene.traversing = None
 
         #print(self.true_parent.onWorkerFinished(result))
-        self.true_parent.onWorkerFinished(result)
+        if self.true_parent:
+            self.true_parent.onWorkerFinished(result)
         #self.content.done_signal.emit()
 
 
