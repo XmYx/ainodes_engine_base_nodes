@@ -113,7 +113,7 @@ class InpaintNode(AiNode):
 
             result = run_inpaint(init_image, mask_image, prompt, seed, scale, steps, blend_mask, mask_blur, recons_blur)
 
-            print("RESULT", result)
+            #print("RESULT", result)
             pixmap = pil_image_to_pixmap(result)
             return pixmap
 

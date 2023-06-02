@@ -122,7 +122,7 @@ class ImagePreviewNode(AiNode):
             #for image in val:
             self.save_image(result[0])
         self.setOutput(0, self.images)
-        print("RESULT", result)
+        #print("RESULT", result)
         self.markInvalid(False)
         self.markDirty(False)
         if gs.should_run:
@@ -130,7 +130,7 @@ class ImagePreviewNode(AiNode):
 
     def manual_save(self):
 
-        print("SAVING")
+        #print("SAVING")
 
         for image in self.images:
             self.save_image(image)
