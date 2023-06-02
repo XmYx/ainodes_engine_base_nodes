@@ -76,7 +76,22 @@ class SubgraphNode(AiNode):
 
 
     def evalImplementation_thread(self, index=0, *args, **kwargs):
-        print(self.graph_json)
+
+        nodes = self.graph_window.widget().scene.nodes
+
+        print(nodes)
+        self.graph_window.widget().scene.traversing = None
+        for node in nodes:
+            if isinstance(node, SubGraphInputNode):
+                self.graph_window.widget().scene.traversing = True
+                node.content.eval_signal.emit()
+
+        while self.graph_window.widget().scene.traversing:
+            timer = QtCore.QTimer()
+            timer.setSingleShot(True)
+            timer.setInterval(5)
+            timer.start()
+        #print(self.graph_json)
 
         #print(self.graph_window.widget().scene.nodes)
         #print(self.graph_window.widget().scene.serialize())
