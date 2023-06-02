@@ -1,3 +1,4 @@
+import threading
 import time
 
 from qtpy import QtCore
@@ -13,6 +14,7 @@ OP_NODE_SUBGRAPH_INPUT = get_next_opcode()
 OP_NODE_SUBGRAPH_OUTPUT = get_next_opcode()
 
 class SubgraphNodeWidget(QDMNodeContentWidget):
+    done_signal = QtCore.Signal()
     def initUI(self):
         #self.graph_json = {}
         pass
@@ -49,7 +51,7 @@ class SubgraphNode(AiNode):
     load_graph = True
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[2,3,5,6,1], outputs=[1])
+        super().__init__(scene, inputs=[2,3,5,6,1], outputs=[2,3,5,6,1])
 
 
     def initInnerClasses(self):
@@ -74,7 +76,6 @@ class SubgraphNode(AiNode):
             self.graph_window.widget().filename = f"{self.getID(0)}_Subgraph"
             print("INIT COMPLETE", self.graph_json)"""
 
-
     def evalImplementation_thread(self, index=0, *args, **kwargs):
 
         nodes = self.graph_window.widget().scene.nodes
@@ -82,34 +83,54 @@ class SubgraphNode(AiNode):
         print(nodes)
         self.graph_window.widget().scene.traversing = None
         for node in nodes:
+            if isinstance(node, SubGraphOutputNode):
+                #self.graph_window.widget().scene.traversing = True
+                node.true_parent = self
+        for node in nodes:
             if isinstance(node, SubGraphInputNode):
                 self.graph_window.widget().scene.traversing = True
                 node.content.eval_signal.emit()
 
         while self.graph_window.widget().scene.traversing:
-            timer = QtCore.QTimer()
-            timer.setSingleShot(True)
-            timer.setInterval(5)
-            timer.start()
+            time.sleep(0.1)
+            #timer = QtCore.QTimer()
+            #timer.setSingleShot(True)
+            #timer.setInterval(5)
+            #timer.start()
         #print(self.graph_json)
 
         #print(self.graph_window.widget().scene.nodes)
         #print(self.graph_window.widget().scene.serialize())
 
 
-        data = self.getInputData(3)
-        images = self.getInputData(2)
-        latents = self.getInputData(0)
-        conds = self.getInputData(1)
+        #data = self.getInputData(3)
+        #images = self.getInputData(2)
+        #latents = self.getInputData(0)
+        #conds = self.getInputData(1)
 
+        """for node in nodes:
+            if isinstance(node, SubGraphOutputNode):
+                self.graph_window.widget().scene.traversing = True
+                node.content.eval_signal.emit()
+                data = node.getOutput(3)
+                images = node.getOutput(2)
+                latents = node.getOutput(0)
+                conds = node.getOutput(1)
+                print(images)"""
 
-
-        return True
+        return None
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
-        self.executeChild(0)
+        print("SUBGRAPH DONE SKIPPING EXECUTION")
+        if result:
+            print("SUBGRAPH DONE EXECUTING NEXT NODE IF ANY")
+            self.setOutput(0, result[0])
+            self.setOutput(1, result[1])
+            self.setOutput(2, result[2])
+            self.setOutput(3, result[3])
+            self.executeChild(4)
 
     def onDoubleClicked(self, event):
         print("Opening Graph")
@@ -216,15 +237,75 @@ class SubGraphInputNode(AiNode):
 
     def evalImplementation_thread(self, index=0, *args, **kwargs):
         print("REACHED SUBGRAPH INPUT NODE")
-        time.sleep(5)
-        self.scene.traversing = None
         return True
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        print("REACHED SUBGRAPH INPUT NODE END")
         super().onWorkerFinished(None)
         self.executeChild(4)
 
+
+@register_node(OP_NODE_SUBGRAPH_OUTPUT)
+class SubGraphOutputNode(AiNode):
+    icon = "ainodes_frontend/icons/base_nodes/exec.png"
+    op_code = OP_NODE_SUBGRAPH_OUTPUT
+    op_title = "Subgraph Inputs"
+    content_label_objname = "subgraph_input_node"
+    category = "exec"
+    help_text = "Execution Node\n\n" \
+                "Execution chain is essential\n" \
+                "in aiNodes. You control the flow\n" \
+                "You control the magic. Each value\n" \
+                "is created and stored at execution\n" \
+                "once a node is validated, you don't\n" \
+                "have to run it again in order to get\n" \
+                "it's value, just simply connect the\n" \
+                "relevant data line. Only execute, if you\n" \
+                "want, or have to get a new value."
+
+    def __init__(self, scene):
+        super().__init__(scene, inputs=[2, 3, 5, 6, 1], outputs=[])
+
+    def initInnerClasses(self):
+        self.content = SubgraphNodeWidget(self)
+        self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+        self.grNode.height = 1024
+        self.grNode.width = 800
+        self.content.setMinimumWidth(600)
+        self.content.setMinimumHeight(400)
+        self.content.eval_signal.connect(self.evalImplementation)
+
+    def run(self, data, images, latens, conds):
+        pass
+
+
+    def evalImplementation_thread(self, index=0, *args, **kwargs):
+        print("REACHED SUBGRAPH OUTPUT NODE")
+
+        latents = self.getInputData(0)
+        conds = self.getInputData(1)
+        images = self.getInputData(2)
+        data = self.getInputData(3)
+
+        return[latents, conds, images, data]
+
+
+    @QtCore.Slot(object)
+    def onWorkerFinished(self, result):
+        print("REACHED SUBGRAPH OUTPUT NODE END")
+        super().onWorkerFinished(None)
+
+        self.setOutput(0, result[0])
+        self.setOutput(1, result[1])
+        self.setOutput(2, result[2])
+        self.setOutput(3, result[3])
+        #self.scene.traversing = None
+
+        #print(self.true_parent.onWorkerFinished(result))
+        self.true_parent.onWorkerFinished(result)
+        #self.content.done_signal.emit()
 
 
 
