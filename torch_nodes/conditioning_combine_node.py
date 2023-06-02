@@ -23,9 +23,7 @@ class ConditioningSetAreaWidget(QDMNodeContentWidget):
         self.x_spinbox = self.create_spin_box("X", 0, 4096, 0, 64)
         self.y_spinbox = self.create_spin_box("Y", 0, 4096, 0, 64)
         self.strength = self.create_double_spin_box("strength", 0.01, 10.00, 0.01, 1.00)
-
         self.resolution_label = self.create_label("Result resolution: 512 x 512")
-
         self.width.valueChanged.connect(self.update_resolution_label)
         self.height.valueChanged.connect(self.update_resolution_label)
         self.x_spinbox.valueChanged.connect(self.update_resolution_label)
@@ -84,7 +82,6 @@ class ConditioningCombineNode(AiNode):
             cond1_list = self.getInputData(1)
             cond2_list = self.getInputData(0)
             strength = self.content.strength.value()
-
             if strength > 0:
                 c = self.addWeighted(cond1_list[0], cond2_list[0], strength)
                 if gs.logging:
@@ -95,7 +92,6 @@ class ConditioningCombineNode(AiNode):
                 ###if gs.logging:
                 ###    print("COND COMBINE NODE: Conditionings combined.")
                 conds = self.calculate_blended_conditionings(cond1_list[0], cond2_list[0], self.content.cond_list_length.value())
-                print(len(conds))
                 return conds
 
 
@@ -140,12 +136,14 @@ class ConditioningCombineNode(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
-
-        # Update the node value and mark it as dirty
-        self.setOutput(0, result)
-        self.markDirty(False)
-        self.markInvalid(False)
-        self.executeChild(1)
+        if result is not None:
+            # Update the node value and mark it as dirty
+            self.setOutput(0, result)
+            self.markDirty(False)
+            self.markInvalid(False)
+            self.executeChild(1)
+        else:
+            print(self, "Failed to blend conditionings")
 
     def onInputChanged(self, socket=None):
         pass
@@ -178,23 +176,25 @@ class ConditioningAreaNode(AiNode):
 
     @QtCore.Slot()
     def evalImplementation_thread(self, index=0):
-        #try:
-        cond = self.append_conditioning()
-
-        return cond
-        #except:
+        try:
+            cond = self.append_conditioning()
+            return cond
+        except:
         #    print("COND AREA NODE: Failed, please make sure that the conditioning is valid.")
         #    self.markDirty(True)
-        #    return None
+            return None
+
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
-
-        self.setOutput(0, result)
-        if gs.logging:
-            print("COND AREA NODE: Conditionings Area Set.")
-        self.markDirty(False)
-        self.executeChild(1)
+        if result is not None:
+            self.setOutput(0, result)
+            if gs.logging:
+                print("COND AREA NODE: Conditionings Area Set.")
+            self.markDirty(False)
+            self.executeChild(1)
+        else:
+            print(self, "Failed to get conditioning")
 
 
 
