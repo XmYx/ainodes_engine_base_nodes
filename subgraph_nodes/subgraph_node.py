@@ -37,7 +37,7 @@ class SubgraphNode(AiNode):
     op_code = OP_NODE_SUBGRAPH
     op_title = "Subgraph"
     content_label_objname = "subgraph_node"
-    category = "exec"
+    category = "Subgraphs"
     help_text = "Execution Node\n\n" \
                 "Execution chain is essential\n" \
                 "in aiNodes. You control the flow\n" \
@@ -125,9 +125,9 @@ class SubgraphNode(AiNode):
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
-        print("SUBGRAPH DONE SKIPPING EXECUTION")
+        #print("SUBGRAPH DONE SKIPPING EXECUTION")
         if result:
-            print("SUBGRAPH DONE EXECUTING NEXT NODE IF ANY")
+            #print("SUBGRAPH DONE EXECUTING NEXT NODE IF ANY")
             self.setOutput(0, result[0])
             self.setOutput(1, result[1])
             self.setOutput(2, result[2])
@@ -135,10 +135,10 @@ class SubgraphNode(AiNode):
             self.executeChild(4)
 
     def onDoubleClicked(self, event):
-        print("Opening Graph")
+        #print("Opening Graph")
         found = None
         if self.graph_window:
-            print("SEARCH FOR THE WINDOW")
+            #print("SEARCH FOR THE WINDOW")
             #window = self.scene.getView().parent().window().findMdiChild()
             for window in self.scene.getView().parent().window().mdiArea.subWindowList():
 
@@ -148,10 +148,10 @@ class SubgraphNode(AiNode):
                     self.scene.getView().parent().window().mdiArea.setActiveSubWindow(window)
                     found = True
             if not found:
-                self.scene.getView().parent().window().file_new_signal.emit(self)
-                print("CREATING WINDOW WITH GRAPH", self.graph_json)
-                time.sleep(0.2)
-                self.graph_window.widget().scene.deserialize(self.graph_json)
+                self.scene.getView().parent().window().json_open_signal.emit(self)
+                #print("CREATING WINDOW WITH GRAPH", self.graph_json)
+                #time.sleep(0.01)
+                #self.graph_window.widget().scene.deserialize(self.graph_json)
                 self.graph_window.widget().filename = f"{self.getID(0)}_Subgraph"
 
         else:
@@ -173,7 +173,7 @@ class SubgraphNode(AiNode):
         res['content_label_objname'] = self.__class__.content_label_objname
         if self.graph_window:
             res['node_graph'] = self.graph_window.widget().scene.serialize()
-        print("SERIALIZED", res)
+        #print("SERIALIZED", res)
         return res
 
     def deserialize(self, data, hashmap={}, restore_id=True):
@@ -188,7 +188,7 @@ class SubgraphNode(AiNode):
         Returns:
             bool: True if deserialization is successful, False otherwise.
         """
-        print(data)
+        #print(data)
         if 'node_graph' in data:
             self.graph_json = data['node_graph']
             if self.load_graph:
@@ -196,7 +196,7 @@ class SubgraphNode(AiNode):
                 self.load_graph = None
         res = super().deserialize(data, hashmap, restore_id)
 
-        print("Deserialized AiNode '%s'" % self.__class__.__name__, "res:", self.graph_json)
+        #print("Deserialized AiNode '%s'" % self.__class__.__name__, "res:", self.graph_json)
 
         #print(self.content.graph_json)
         return res
@@ -208,7 +208,7 @@ class SubGraphInputNode(AiNode):
     op_code = OP_NODE_SUBGRAPH_INPUT
     op_title = "Subgraph Inputs"
     content_label_objname = "subgraph_input_node"
-    category = "exec"
+    category = "Subgraphs"
     help_text = "Execution Node\n\n" \
                 "Execution chain is essential\n" \
                 "in aiNodes. You control the flow\n" \
@@ -247,12 +247,12 @@ class SubGraphInputNode(AiNode):
         self.setOutput(1, self.conds)
         self.setOutput(2, self.images)
         self.setOutput(3, self.data)
-        print("REACHED SUBGRAPH INPUT NODE")
+        #print("REACHED SUBGRAPH INPUT NODE")
         return True
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        print("REACHED SUBGRAPH INPUT NODE END")
+        #print("REACHED SUBGRAPH INPUT NODE END")
         super().onWorkerFinished(None)
         self.executeChild(4)
 
@@ -263,7 +263,7 @@ class SubGraphOutputNode(AiNode):
     op_code = OP_NODE_SUBGRAPH_OUTPUT
     op_title = "Subgraph Outputs"
     content_label_objname = "subgraph_output_node"
-    category = "exec"
+    category = "Subgraphs"
     help_text = "Execution Node\n\n" \
                 "Execution chain is essential\n" \
                 "in aiNodes. You control the flow\n" \
@@ -294,7 +294,7 @@ class SubGraphOutputNode(AiNode):
 
 
     def evalImplementation_thread(self, index=0, *args, **kwargs):
-        print("REACHED SUBGRAPH OUTPUT NODE")
+        #print("REACHED SUBGRAPH OUTPUT NODE")
 
         latents = self.getInputData(0)
         conds = self.getInputData(1)
@@ -306,7 +306,7 @@ class SubGraphOutputNode(AiNode):
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        print("REACHED SUBGRAPH OUTPUT NODE END")
+        #print("REACHED SUBGRAPH OUTPUT NODE END")
         super().onWorkerFinished(None)
 
         self.setOutput(0, result[0])
