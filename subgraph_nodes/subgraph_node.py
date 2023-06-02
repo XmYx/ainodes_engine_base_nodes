@@ -212,13 +212,18 @@ class SubGraphInputNode(AiNode):
 
     def run(self, data, images, latens, conds):
         pass
+
+
     def evalImplementation_thread(self, index=0, *args, **kwargs):
+        print("REACHED SUBGRAPH INPUT NODE")
+        time.sleep(5)
+        self.scene.traversing = None
         return True
 
     @QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
-        self.executeChild(0)
+        self.executeChild(4)
 
 
 
