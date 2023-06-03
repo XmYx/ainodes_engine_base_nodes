@@ -37,7 +37,7 @@ class SubgraphNode(AiNode):
     op_code = OP_NODE_SUBGRAPH
     op_title = "Subgraph"
     content_label_objname = "subgraph_node"
-    category = "Subgraphs"
+    category = "Subgraph Nodes"
     help_text = "Execution Node\n\n" \
                 "Execution chain is essential\n" \
                 "in aiNodes. You control the flow\n" \
@@ -135,25 +135,10 @@ class SubgraphNode(AiNode):
             self.executeChild(4)
 
     def onDoubleClicked(self, event):
-        #print("Opening Graph")
-        found = None
         if self.graph_window:
-            #print("SEARCH FOR THE WINDOW")
-            #window = self.scene.getView().parent().window().findMdiChild()
             for window in self.scene.getView().parent().window().mdiArea.subWindowList():
-
-                #print(window.widget().filename)
-                if window.widget().filename == f"{self.getID(0)}_Subgraph":
-
+                if window == self.graph_window:
                     self.scene.getView().parent().window().mdiArea.setActiveSubWindow(window)
-                    found = True
-            if not found:
-                self.scene.getView().parent().window().json_open_signal.emit(self)
-                #print("CREATING WINDOW WITH GRAPH", self.graph_json)
-                #time.sleep(0.01)
-                #self.graph_window.widget().scene.deserialize(self.graph_json)
-                self.graph_window.widget().filename = f"{self.getID(0)}_Subgraph"
-
         else:
             self.scene.getView().parent().window().file_new_signal.emit(self)
             self.graph_window.widget().filename = f"{self.getID(0)}_Subgraph"
@@ -173,7 +158,6 @@ class SubgraphNode(AiNode):
         res['content_label_objname'] = self.__class__.content_label_objname
         if self.graph_window:
             res['node_graph'] = self.graph_window.widget().scene.serialize()
-        #print("SERIALIZED", res)
         return res
 
     def deserialize(self, data, hashmap={}, restore_id=True):
@@ -195,10 +179,6 @@ class SubgraphNode(AiNode):
                 self.scene.getView().parent().window().json_open_signal.emit(self)
                 self.load_graph = None
         res = super().deserialize(data, hashmap, restore_id)
-
-        #print("Deserialized AiNode '%s'" % self.__class__.__name__, "res:", self.graph_json)
-
-        #print(self.content.graph_json)
         return res
 
 
@@ -208,7 +188,7 @@ class SubGraphInputNode(AiNode):
     op_code = OP_NODE_SUBGRAPH_INPUT
     op_title = "Subgraph Inputs"
     content_label_objname = "subgraph_input_node"
-    category = "Subgraphs"
+    category = "Subgraph Nodes"
     help_text = "Execution Node\n\n" \
                 "Execution chain is essential\n" \
                 "in aiNodes. You control the flow\n" \
@@ -263,7 +243,7 @@ class SubGraphOutputNode(AiNode):
     op_code = OP_NODE_SUBGRAPH_OUTPUT
     op_title = "Subgraph Outputs"
     content_label_objname = "subgraph_output_node"
-    category = "Subgraphs"
+    category = "Subgraph Nodes"
     help_text = "Execution Node\n\n" \
                 "Execution chain is essential\n" \
                 "in aiNodes. You control the flow\n" \
