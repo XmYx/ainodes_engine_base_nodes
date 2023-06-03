@@ -3,11 +3,9 @@ import time
 
 from qtpy import QtCore
 from qtpy import QtWidgets
-from ainodes_frontend.base import register_node, get_next_opcode, CalculatorSubWindow
+from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ainodes_frontend import singleton as gs
-from ainodes_frontend.node_engine.node_editor_widget import NodeEditorWidget
 
 OP_NODE_SUBGRAPH = get_next_opcode()
 OP_NODE_SUBGRAPH_INPUT = get_next_opcode()
@@ -50,8 +48,9 @@ class SubgraphNode(AiNode):
                 "want, or have to get a new value."
     load_graph = True
 
-    def __init__(self, scene):
+    def __init__(self, scene, graph_json=None):
         super().__init__(scene, inputs=[2,3,5,6,1], outputs=[2,3,5,6,1])
+        self.graph_json = graph_json
 
 
     def initInnerClasses(self):
@@ -134,14 +133,18 @@ class SubgraphNode(AiNode):
             self.setOutput(3, result[3])
             self.executeChild(4)
 
-    def onDoubleClicked(self, event):
+    def onDoubleClicked(self, event=None):
         if self.graph_window:
             for window in self.scene.getView().parent().window().mdiArea.subWindowList():
                 if window == self.graph_window:
                     self.scene.getView().parent().window().mdiArea.setActiveSubWindow(window)
         else:
-            self.scene.getView().parent().window().file_new_signal.emit(self)
-            self.graph_window.widget().filename = f"{self.getID(0)}_Subgraph"
+            if self.graph_json:
+                self.scene.getView().parent().window().json_open_signal.emit(self)
+            else:
+
+                self.scene.getView().parent().window().file_new_signal.emit(self)
+                self.graph_window.widget().filename = f"{self.getID(0)}_Subgraph"
 
     def serialize(self):
         """
