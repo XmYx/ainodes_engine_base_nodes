@@ -70,9 +70,7 @@ class ModelLoader(torch.nn.Module):
     def __init__(self, parent=None):
         super().__init__()
         self.device = "cuda"
-        print("PyTorch model loader")
 
-        ldm.modules.diffusionmodules.model.nonlinearity = silu
 
 
     def load_model(self, file=None, config_name=None, inpaint=False, verbose=False, style="sdp"):
@@ -118,11 +116,11 @@ class ModelLoader(torch.nn.Module):
         gs.models["sd"] = ModelPatcher(model)
         gs.models["clip"] = clip
         gs.models["vae"] = vae
-        print("LOADED")
+        #print("LOADED")
         if gs.debug:
             print(gs.models["sd"],gs.models["clip"],gs.models["vae"])
 
-        apply_optimizations(style)
+        #apply_optimizations(style)
     def load_model_old(self, file=None, config=None, inpaint=False, verbose=False):
 
         if file not in gs.loaded_models["loaded"]:

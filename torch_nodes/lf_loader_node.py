@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QLineEdit
+from qtpy.QtWidgets import QLineEdit
 from qtpy import QtCore
 from qtpy import QtWidgets
 
@@ -102,7 +102,7 @@ class DeepFloydLoaderNode(AiNode):
         except Exception as e:
             print("Could not load DeepFloyd because of ", e)
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
 

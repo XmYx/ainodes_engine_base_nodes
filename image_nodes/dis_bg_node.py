@@ -51,7 +51,7 @@ class DISBGNode(AiNode):
                 return([bg_pixmap, fg_pixmap, mask_pixmap])
         return self.value
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
         self.setOutput(0, [result[0]])

@@ -60,7 +60,7 @@ class FILMNode(AiNode):
         self.content.eval_signal.connect(self.evalImplementation)
 
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self):
         return_frames = []
         if "FILM" not in gs.models:
@@ -108,7 +108,7 @@ class FILMNode(AiNode):
                     self.FILM_temp = [self.FILM_temp[1]]
         print(f"FILM NODE: Using only First input, created {len(return_frames) - 2} between frames, returning {len(return_frames)} frames.")
         return return_frames
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, return_frames):
         super().onWorkerFinished(None)
         self.setOutput(0, return_frames)

@@ -45,8 +45,8 @@ class DataMergeNode(AiNode):
         self.grNode.height = 180
         self.content.setMinimumHeight(140)
         self.content.setMinimumWidth(340)
-        pass
-        self.content.eval_signal.connect(self.evalImplementation)
+
+
 
     def evalImplementation_thread(self, index=0):
         self.busy = True
@@ -76,7 +76,7 @@ class DataMergeNode(AiNode):
             return new_data
 
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.markDirty(False)
         self.setOutput(0, result)

@@ -54,15 +54,18 @@ class ExecNode(AiNode):
     def evalImplementation_thread(self, index=0, *args, **kwargs):
         return True
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
         self.executeChild(0)
 
+    #@QtCore.Slot()
     def stop(self):
         print("Interrupting Execution of Graph")
         gs.should_run = None
 
+
+    #@QtCore.Slot()
     def start(self):
         gs.should_run = True
         self.content.eval_signal.emit()

@@ -130,7 +130,7 @@ class DataNode(AiNode):
         self.content.setMinimumHeight(160)
         self.input_socket_name = ["EXEC", "DATA"]
         self.output_socket_name = ["EXEC", "DATA"]
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def resize(self):
         y = 300
         for i in range(self.content.layout().count()):

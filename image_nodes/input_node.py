@@ -172,7 +172,7 @@ class ImageInputNode(AiNode):
         bytes_per_line = channel * width
         return QtGui.QImage(cv_img.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888).rgbSwapped()
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def resize(self):
         self.content.setMinimumHeight(self.content.image.pixmap().size().height())
         self.content.setMinimumWidth(self.content.image.pixmap().size().width())
@@ -232,7 +232,7 @@ class ImageInputNode(AiNode):
 
 
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         self.markDirty(False)
         self.markInvalid(False)
@@ -250,7 +250,7 @@ class ImageInputNode(AiNode):
         else:
             pixmap = self.content.image.pixmap()
         return pixmap
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, pixmap):
         super().onWorkerFinished(None)
         if pixmap is not None:

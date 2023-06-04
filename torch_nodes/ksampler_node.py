@@ -47,6 +47,7 @@ class KSamplerWidget(QDMNodeContentWidget):
         self.tensor_preview = self.create_check_box("Show Tensor Preview", checked=True)
         self.disable_noise = self.create_check_box("Disable noise generation")
         self.iterate_seed = self.create_check_box("Iterate seed")
+        self.use_internal_latent = self.create_check_box("Use latent from loop")
         self.denoise = self.create_double_spin_box("Denoise:", 0.00, 2.00, 0.01, 1.00)
         self.guidance_scale = self.create_double_spin_box("Guidance Scale:", 1.01, 100.00, 0.01, 7.50)
         self.button = QtWidgets.QPushButton("Run")
@@ -83,7 +84,7 @@ class KSamplerNode(AiNode):
 
 
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
         #pass
         # Add a task to the task queue
@@ -97,17 +98,9 @@ class KSamplerNode(AiNode):
         if latent_list == None:
             latent_list = [torch.zeros([1, 4, 512 // 8, 512 // 8])]
 
-        self.seed = self.content.seed.text()
-        try:
-            self.seed = int(self.seed)
-        except:
-            self.seed = get_fixed_seed('')
-        if self.content.iterate_seed.isChecked() == True:
-            self.content.seed_signal.emit()
-            self.seed += 1
+
         return_pixmaps = []
         return_samples = []
-        generator = torch.manual_seed(self.seed)
         try:
             x=0
             if cond_override is not None:
@@ -120,8 +113,17 @@ class KSamplerNode(AiNode):
                     new_cond_list.append(cond_list[0])
                 # cond_list = len(latent_list) * cond_list[0]
                 cond_list = new_cond_list
-
+            cpu_s = None
             for cond in cond_list:
+                self.seed = self.content.seed.text()
+                try:
+                    self.seed = int(self.seed)
+                except:
+                    self.seed = get_fixed_seed('')
+                if self.content.iterate_seed.isChecked() == True:
+                    self.content.seed_signal.emit()
+                    self.seed += 1
+                generator = torch.manual_seed(self.seed)
 
                 if len(latent_list) == len(cond_list):
                     latent = latent_list[x]
@@ -159,7 +161,12 @@ class KSamplerNode(AiNode):
 
                 self.single_step = 100 / self.steps if self.content.start_step.value() == 0 and self.last_step == self.steps else short_steps
                 self.progress_value = 0
-
+                if self.content.use_internal_latent.isChecked():
+                    if cpu_s is not None:
+                        latent = cpu_s
+                        self.denoise = self.content.denoise.value()
+                    else:
+                        self.denoise = 1.0
                 sample = common_ksampler(device="cuda",
                                          seed=self.seed,
                                          steps=self.steps,
@@ -186,7 +193,16 @@ class KSamplerNode(AiNode):
                 return_samples.append(cpu_s)
 
                 image = Image.fromarray(x_sample.astype(np.uint8))
-                return_pixmaps.append(pil_image_to_pixmap(image))
+                pm = pil_image_to_pixmap(image)
+                return_pixmaps.append(pm)
+
+                if len(self.getOutputs(2)) > 0:
+                    nodes = self.getOutputs(0)
+                    for node in nodes:
+                        if isinstance(node, ImagePreviewNode):
+                            node.content.preview_signal.emit(pm)
+
+
                 x+=1
             return [return_pixmaps, return_samples]
         except Exception as e:
@@ -231,7 +247,7 @@ class KSamplerNode(AiNode):
                         if isinstance(node, VideoOutputNode):
                             frame = np.array(img)
                             node.content.video.add_frame(frame, dump=node.content.dump_at.value())
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
 
         super().onWorkerFinished(None)
@@ -250,15 +266,15 @@ class KSamplerNode(AiNode):
             if len(self.getOutputs(2)) > 0:
                 self.executeChild(output_index=2)
 
-    @QtCore.Slot(str)
+    #@QtCore.Slot(str)
     def setSeed(self):
         self.content.seed.setText(str(self.seed))
-    @QtCore.Slot(int)
+    #@QtCore.Slot(int)
     def setProgress(self, progress=None):
 
         self.progress_value += self.single_step
         if progress < 100:
-            self.content.progress_bar.setValue(self.progress_value)
+            self.content.progress_bar.setValue(int(self.progress_value))
         else:
             self.content.progress_bar.setValue(100)
     def onInputChanged(self, socket=None):

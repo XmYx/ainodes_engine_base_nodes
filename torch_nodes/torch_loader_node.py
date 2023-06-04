@@ -101,7 +101,7 @@ class TorchLoaderNode(AiNode):
             gs.models["inpaint"] = None
             torch_gc()
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         self.busy = True
         model_name = self.content.dropdown.currentText()
@@ -129,7 +129,7 @@ class TorchLoaderNode(AiNode):
             gs.loaded_vae = model
         return self.value
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.markDirty(False)
         self.markInvalid(False)

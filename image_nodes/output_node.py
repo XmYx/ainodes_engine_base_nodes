@@ -26,8 +26,8 @@ class ImagePreviewWidget(QDMNodeContentWidget):
         self.image.setObjectName(self.node.content_label_objname)
         self.checkbox = QtWidgets.QCheckBox("Autosave")
         self.meta_checkbox = QtWidgets.QCheckBox("Embed Node graph in PNG")
-        self.checkbox.setChecked(True)
-        self.meta_checkbox.setChecked(True)
+        #self.checkbox.setChecked(True)
+        #self.meta_checkbox.setChecked(True)
         palette = QtGui.QPalette()
         palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
         palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
@@ -82,7 +82,7 @@ class ImagePreviewNode(AiNode):
             self.index += 1
             self.resize()
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         self.busy = True
         if len(self.getInputs(0)) > 0:
@@ -90,7 +90,6 @@ class ImagePreviewNode(AiNode):
             if input_images is not None:
                 for image in input_images:
                     self.content.preview_signal.emit(image)
-                    self.resize()
                     if len(input_images) > 1:
                         time.sleep(0.1)
             return input_images
@@ -107,17 +106,19 @@ class ImagePreviewNode(AiNode):
                             #print(key[0], image)
 
         return self.images"""
-    @QtCore.Slot(object)
+    ##@QtCore.Slot(object)
     def show_image(self, image):
         self.content.image.setPixmap(image)
         self.resize()
         self.resize()
 
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        self.busy = False
+
         self.images = result
-        super().onWorkerFinished(None)
+        #super().onWorkerFinished(None)
         if self.content.checkbox.isChecked() == True:
             #for image in val:
             self.save_image(result[0])

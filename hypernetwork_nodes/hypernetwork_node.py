@@ -71,7 +71,7 @@ class HypernetworkLoaderNode(AiNode):
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.button.clicked.connect(self.unpatch_model)
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         hypernetwork = self.content.hypernetwork.currentText()
         if hypernetwork in gs.loaded_hypernetworks:
@@ -95,7 +95,7 @@ class HypernetworkLoaderNode(AiNode):
         m.unpatch_model()
         gs.models["sd"] = m
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
         self.executeChild(0)

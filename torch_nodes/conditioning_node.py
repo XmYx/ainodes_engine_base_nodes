@@ -2,8 +2,9 @@ import os
 
 import requests
 import torch
-from PySide6.QtCore import QObject, Signal
-from PySide6.QtGui import Qt
+from qtpy.QtCore import Qt
+from qtpy.QtCore import QObject, Signal
+#from qtpy.QtGui import Qt
 from qtpy import QtWidgets, QtCore
 
 from ainodes_frontend.base import register_node, get_next_opcode
@@ -13,7 +14,7 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 
 from ainodes_frontend import singleton as gs
 
-from PySide6.QtWidgets import QDialog, QListWidget, QCheckBox, QDoubleSpinBox, QVBoxLayout, QDialogButtonBox, \
+from qtpy.QtWidgets import QDialog, QListWidget, QCheckBox, QDoubleSpinBox, QVBoxLayout, QDialogButtonBox, \
     QListWidgetItem, QHBoxLayout, QWidget
 
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.hash import sha256
@@ -118,7 +119,6 @@ class ConditioningNode(AiNode):
         self.grNode.width = 320
         self.content.setMinimumHeight(200)
         self.content.setMinimumWidth(320)
-        #pass
         self.content.button.clicked.connect(self.evalImplementation)
         self.content.set_embeds.clicked.connect(self.show_embeds)
         self.input_socket_name = ["EXEC"]
@@ -154,10 +154,10 @@ class ConditioningNode(AiNode):
             return None
 
 
-
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0, prompt_override=None):
         try:
+            result = None
             data = None
             prompt = self.content.prompt.toPlainText()
             if prompt_override is not None:
@@ -192,19 +192,16 @@ class ConditioningNode(AiNode):
                 result = [self.get_conditioning(prompt=prompt)]
             if gs.logging:
                 print(f"CONDITIONING NODE: Applying conditioning with prompt: {prompt}")
-
-
             return result, data
         except Exception as e:
             done = handle_ainodes_exception()
-
             if type(e) is KeyError and 'clip' in str(e):
                 print("Clip / SD Model not loaded yet, please place and validate a Torch loader node")
             else:
                 print(repr(e))
             return None
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def handle_response(self, data):
         if 'files' in data:
             file = data['files'][0]['name']
@@ -213,13 +210,10 @@ class ConditioningNode(AiNode):
                 if item['embed']['filename'] == file:
                     item['embed']['word'] = "\n".join(data["trainedWords"])
                     item['embed']['word'] = item['embed']['filename']
-
         string = ""
-
         for item in self.embed_dict:
             if item['embed']['word'] != "":
                 string = f'{string} embedding:{item["embed"]["word"]}'
-
         self.string = string
 
     def get_conditioning(self, prompt="", progress_callback=None):
@@ -231,13 +225,13 @@ class ConditioningNode(AiNode):
                     #print("Node found")"""
         with torch.autocast("cuda"):
             with torch.no_grad():
-                clip = gs.models["clip"].clone()
-                c = clip.encode(prompt)
+                #clip = gs.models["clip"].clone()
+                c = gs.models["clip"].encode(prompt)
                 uc = {}
-                del clip
+                #del clip
                 return [[c, uc]]
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
         if result is not None:
@@ -247,9 +241,6 @@ class ConditioningNode(AiNode):
             self.markInvalid(False)
             if gs.should_run:
                 self.executeChild(2)
-
-    def onInputChanged(self, socket=None):
-        pass
 
 
 SCHEDULERS = ["karras", "normal", "simple", "ddim_uniform"]

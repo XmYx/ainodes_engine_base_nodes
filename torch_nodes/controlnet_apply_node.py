@@ -73,7 +73,7 @@ class CNApplyNode(AiNode):
             except:
                 pass
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         self.markDirty(True)
         self.markInvalid(True)
@@ -212,7 +212,7 @@ class CNApplyNode(AiNode):
             n[1]['control_strength'] = self.content.strength.value()
             c.append(n)
         return c
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
 

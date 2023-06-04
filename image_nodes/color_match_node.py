@@ -34,7 +34,7 @@ class ColorMatch(AiNode):
         self.content.eval_signal.connect(self.evalImplementation)
         import cv2
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
 
         if self.getInput(0) != None and self.getInput(1) != None:
@@ -62,7 +62,7 @@ class ColorMatch(AiNode):
         else:
             self.markDirty(True)
             return None
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
         if result is not None:

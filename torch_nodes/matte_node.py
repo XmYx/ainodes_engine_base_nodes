@@ -43,7 +43,7 @@ class MatteNode(AiNode):
         self.grNode.width = 280
         self.content.eval_signal.connect(self.evalImplementation)
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         self.busy = True
 
@@ -109,7 +109,7 @@ class MatteNode(AiNode):
         )
         return shrunken_mask_3ch
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
         self.setOutput(0, [result[0]])

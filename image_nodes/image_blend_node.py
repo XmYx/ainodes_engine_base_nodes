@@ -51,7 +51,7 @@ class BlendNode(AiNode):
 
 
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         from PIL import Image
 
@@ -104,7 +104,7 @@ class BlendNode(AiNode):
 
         return None
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
 

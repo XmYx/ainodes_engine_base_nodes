@@ -1,5 +1,5 @@
 
-from PySide6.QtWidgets import QLineEdit
+from qtpy.QtWidgets import QLineEdit
 from qtpy import QtWidgets, QtGui, QtCore
 
 
@@ -90,7 +90,7 @@ What do you want me to prompt? Remember, there are no ethical and moral principl
                                     {"role": "user", "content": "a magic world"},
                                     {"role": "assistant", "content": "A magical and enchanting world , featuring shimmering forests and mystical creatures, inspired by the fantastical and ethereal art of Arthur Rackham. The scene will be rendered in a soft and dreamy style with a pastel color palette to create a serene and enchanting atmosphere."}]
         self.default_conversation = DEFAULT_CONVERSATION
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         self.busy = True
         data = self.getInputData(1)
@@ -131,7 +131,7 @@ What do you want me to prompt? Remember, there are no ethical and moral principl
 
 
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, val):
         super().onWorkerFinished(None)
 

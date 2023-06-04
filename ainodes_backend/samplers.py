@@ -11,6 +11,7 @@ import contextlib
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.modules.diffusionmodules.util import make_ddim_timesteps
 from ainodes_frontend import singleton as gs
+from .model_wrap import CFGDenoiserWithGrad
 
 
 def get_free_memory(dev=None, torch_free_too=False):
@@ -471,6 +472,7 @@ class KSampler:
             self.model_wrap = CompVisVDenoiser(self.model_denoise, quantize=True)
         else:
             self.model_wrap = k_diffusion_external.CompVisDenoiser(self.model_denoise, quantize=True)
+            #self.model_wrap = CFGDenoiserWithGrad(self.model_denoise, quantize=True)
         self.model_wrap.parameterization = self.model.model.parameterization
         self.model_k = KSamplerX0Inpaint(self.model_wrap)
         self.device = device

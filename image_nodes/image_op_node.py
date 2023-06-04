@@ -142,7 +142,7 @@ class ImageOpNode(AiNode):
         self.content.setMinimumWidth(260)
         self.content.eval_signal.connect(self.evalImplementation)
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self):
         return_pixmap = None
         return_pixmap_list = []
@@ -156,7 +156,7 @@ class ImageOpNode(AiNode):
                     return_pixmap_list.append(return_pixmap)
         return return_pixmap_list
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, pixmap_list):
         super().onWorkerFinished(None)
         self.setOutput(0, pixmap_list)

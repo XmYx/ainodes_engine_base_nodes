@@ -43,11 +43,13 @@ ldm.modules.attention.MemoryEfficientCrossAttention = ldm.modules.attention.Cros
 # silence new console spam from SD2
 ldm.modules.attention.print = lambda *args: None
 ldm.modules.diffusionmodules.model.print = lambda *args: None
+orig_linear = ldm.modules.diffusionmodules.model.nonlinearity
 
 valid_optimizations = ["sdp", "sdp_quick", "sdp-no-mem", "doggetx"]
 
 def apply_optimizations(style=""):
     undo_optimizations()
+
     if style in valid_optimizations:
         hijack_style = style
     if style == "":
@@ -84,6 +86,7 @@ def apply_optimizations(style=""):
 
 def undo_optimizations():
     #from ..hypernetwork import hypernetwork
+    ldm.modules.diffusionmodules.model.nonlinearity = orig_linear
 
     ldm.modules.attention.CrossAttention.forward = attention_CrossAttention_forward
     ldm.modules.diffusionmodules.model.nonlinearity = diffusionmodules_model_nonlinearity

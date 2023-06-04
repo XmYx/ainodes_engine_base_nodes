@@ -63,7 +63,7 @@ class T2ILoaderNode(AiNode):
         else:
             return self.value
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
         self.markDirty(False)

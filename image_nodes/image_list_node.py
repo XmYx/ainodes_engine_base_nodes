@@ -104,7 +104,7 @@ class ImageListNode(AiNode):
         self.content.image.pixmap_selected.connect(self.set_pixmap)
         self.content.eval_signal.connect(self.evalImplementation)
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def set_pixmap(self, pixmap):
         print("PIXMAP SELECTED", pixmap)
         self.pixmap = pixmap

@@ -100,7 +100,7 @@ class TorchLoaderNode(AiNode):
 
         return return_pixmaps
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
         if result:

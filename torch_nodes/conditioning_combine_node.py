@@ -42,7 +42,7 @@ class ConditioningCombineWidget(QDMNodeContentWidget):
     def create_widgets(self):
         self.strength = self.create_double_spin_box("Strength", 0.00, 10.00, 0.01, 0.00)
         self.cond_list_length = self.create_spin_box("Blended Cond List Length", min_val=1, max_val=2500, default_val=1)
-
+        self.exp_checkbox = self.create_check_box("Exponential Blends")
 
 
 
@@ -60,7 +60,7 @@ class ConditioningCombineNode(AiNode):
     def initInnerClasses(self):
         self.content = ConditioningCombineWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 128
+        self.grNode.height = 250
         self.grNode.width = 320
         #self.content.setMinimumHeight(200)
         #self.content.setMinimumWidth(320)
@@ -105,9 +105,15 @@ class ConditioningCombineNode(AiNode):
             print(
                 "Warning: ConditioningAverage conditioning_from contains more than 1 cond, only the first one will actually be applied to conditioning_to.")
 
-        alpha_values = torch.linspace(0, 1, divisions + 2)[1:-1]  # Exclude 0 and 1
-        blended_conditionings = []
+        alpha_values = torch.linspace(0, 1, divisions + 2)#  [1:-1]  # Exclude 0 and 1
+        #print(alpha_values)
 
+        if self.content.exp_checkbox.isChecked():
+            alpha_values = (torch.exp(alpha_values) - 1) / 2
+            #print(alpha_values)
+
+
+        blended_conditionings = []
         for alpha in alpha_values:
             n = self.addWeighted(conditioning_to, conditioning_from, alpha)
             blended_conditionings.append(n)
@@ -133,7 +139,7 @@ class ConditioningCombineNode(AiNode):
             out.append(n)
         return out
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
         if result is not None:
@@ -174,7 +180,7 @@ class ConditioningAreaNode(AiNode):
         self.content.eval_signal.connect(self.evalImplementation)
 
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         try:
             cond = self.append_conditioning()
@@ -184,7 +190,7 @@ class ConditioningAreaNode(AiNode):
         #    self.markDirty(True)
             return None
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
         if result is not None:

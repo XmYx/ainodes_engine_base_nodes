@@ -119,7 +119,7 @@ class LoraLoaderNode(AiNode):
                     gs.loaded_loras.append(file)
                 self.current_lora = file"""
         return self.value
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def handle_response(self, data):
         # Process the received data
         if "trainedWords" in data:
@@ -127,7 +127,7 @@ class LoraLoaderNode(AiNode):
             words = "\n".join(data["trainedWords"])
             self.content.help_prompt.setText(f"Trained Words:\n{words}")
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
 

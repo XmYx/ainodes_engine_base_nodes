@@ -56,7 +56,7 @@ class RIFENode(AiNode):
 
         self.grNode.height = 220
 
-    @QtCore.Slot()
+    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         exp = self.content.exp.value()
         ratio = self.content.ratio.value()
@@ -124,7 +124,7 @@ class RIFENode(AiNode):
             self.executeChild(output_index=2)
         pass
         return None
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, return_frames):
         self.setOutput(0, return_frames)
         if len(self.getOutputs(1)) > 0:

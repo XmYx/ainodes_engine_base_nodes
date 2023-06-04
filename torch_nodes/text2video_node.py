@@ -231,7 +231,7 @@ class Text2VideoNode(AiNode):
                 pass
         finally:
             return return_pixmaps
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         super().onWorkerFinished(None)
 

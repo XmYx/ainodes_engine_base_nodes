@@ -1,5 +1,9 @@
 from torch import nn
 from .k_diffusion import utils as k_utils
+
+from .k_diffusion import external as k_diffusion_external, \
+    sampling as k_diffusion_sampling
+
 import torch
 from .k_diffusion.external import CompVisDenoiser
 from torchvision.utils import make_grid
@@ -18,9 +22,21 @@ class CFGDenoiser(nn.Module):
         uncond, cond = self.inner_model(x_in, sigma_in, cond=cond_in).chunk(2)
         return uncond + (cond - uncond) * cond_scale
 
-class CFGDenoiserWithGrad(CompVisDenoiser):
+
+    def __init__(self, model, quantize=False, device='cpu'):
+        super().__init__(model, model.alphas_cumprod, quantize=quantize)
+
+    def get_eps(self, *args, **kwargs):
+        return self.inner_model.apply_model(*args, **kwargs)
+
+
+
+
+class CFGDenoiserWithGrad(k_diffusion_external.CompVisDenoiser):
     def __init__(self, model,
-                       loss_fns_scales, # List of [cond_function, scale] pairs
+                       quantize=False,
+                       device="cuda",
+                       loss_fns_scales=[], # List of [cond_function, scale] pairs
                        clamp_func=None,  # Gradient clamping function, clamp_func(grad, sigma)
                        gradient_wrt=None, # Calculate gradient with respect to ["x", "x0_pred", "both"]
                        gradient_add_to=None, # Add gradient to ["cond", "uncond", "both"]
@@ -29,7 +45,7 @@ class CFGDenoiserWithGrad(CompVisDenoiser):
                        grad_inject_timing_fn=None, # Option to use grad in only a few of the steps
                        grad_consolidate_fn=None, # Function to add grad to image fn(img, grad, sigma)
                        verbose=False):
-        super().__init__(model.inner_model)
+        super().__init__(model, model.alphas_cumprod)
         self.inner_model = model
         self.cond_uncond_sync = cond_uncond_sync
 
@@ -225,3 +241,6 @@ class CFGDenoiserWithGrad(CompVisDenoiser):
         grid = make_grid(images, 4).cpu()
         #display.display(to_pil_image(grid))
         return
+
+    def get_eps(self, *args, **kwargs):
+        return self.inner_model.apply_model(*args, **kwargs)

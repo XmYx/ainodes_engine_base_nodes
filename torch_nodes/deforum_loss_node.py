@@ -92,7 +92,7 @@ class KSamplerNode(AiNode):
         # Add a task to the task queue
         return "Done"
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.markDirty(False)
         self.markInvalid(False)

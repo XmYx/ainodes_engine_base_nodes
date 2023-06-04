@@ -33,7 +33,7 @@
                 "LDM Optimization": "sdp",
                 "Force Reload": "False"
             },
-            "op_code": 36,
+            "op_code": 38,
             "content_label_objname": "torch_loader_node"
         },
         {
@@ -81,10 +81,10 @@
                 }
             ],
             "content": {
-                "Prompt": "Alien landscape, highly detailed",
+                "Prompt": "landscape!",
                 "Use embeds": "False"
             },
-            "op_code": 21,
+            "op_code": 23,
             "content_label_objname": "cond_node"
         },
         {
@@ -135,7 +135,7 @@
                 "Prompt": "",
                 "Use embeds": "False"
             },
-            "op_code": 21,
+            "op_code": 23,
             "content_label_objname": "cond_node"
         },
         {
@@ -207,7 +207,7 @@
                 "Scheduler:": "karras",
                 "Sampler:": "euler",
                 "Seed:": "-270771908045683849",
-                "Steps:": "200",
+                "Steps:": "10",
                 "Start Step:": "0",
                 "Last Step:": "5",
                 "Stop Sampling Early": "False",
@@ -218,7 +218,7 @@
                 "Denoise:": "1.0",
                 "Guidance Scale:": "7.5"
             },
-            "op_code": 29,
+            "op_code": 31,
             "content_label_objname": "K_sampling_node"
         },
         {
@@ -330,7 +330,7 @@
                 }
             ],
             "content": {},
-            "op_code": 16,
+            "op_code": 15,
             "content_label_objname": "image_output_node"
         },
         {
@@ -382,7 +382,7 @@
                 "Height": "512",
                 "Latent Rescale": "False"
             },
-            "op_code": 25,
+            "op_code": 27,
             "content_label_objname": "empty_latent_node"
         }
     ],

@@ -182,7 +182,7 @@ class ScribbleNode(AiNode):
         pixmap = self.content.image.get_image()
         return pixmap
 
-    @QtCore.Slot(object)
+    #@QtCore.Slot(object)
     def onWorkerFinished(self, pixmap):
         super().onWorkerFinished(None)
 

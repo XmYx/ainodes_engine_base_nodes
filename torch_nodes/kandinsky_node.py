@@ -35,7 +35,10 @@ class KandinskyWidget(QDMNodeContentWidget):
         self.create_main_layout(grid=1)
     def create_widgets(self):
         self.task = self.create_combo_box(["TXT2IMG", "INPAINT"], "Task")
+        self.tensor_preview = self.create_check_box("Tensor Preview")
         self.prompt = self.create_text_edit("Prompt:")
+        self.negative_prompt = self.create_text_edit("Negative Prompt:")
+        self.negative_prior_prompt = self.create_text_edit("Negative Prior Prompt:")
         self.seed = self.create_line_edit("Seed:")
         self.steps = self.create_spin_box("Steps:", 1, 10000, 25)
         self.cfg_scale = self.create_spin_box("Guidance Scale:", 0, 1000, 4)
@@ -44,7 +47,7 @@ class KandinskyWidget(QDMNodeContentWidget):
         self.strength = self.create_double_spin_box("Strength:", 0.00, 1.00, 0.01, 0.84)
         self.sampler = self.create_combo_box(["p_sampler", "ddim_sampler", "plms_sampler"], "Sampler:")
         self.prior_cf_scale = self.create_spin_box("Prior Scale:", 0, 1000, 4)
-        self.prior_steps = self.create_spin_box("Prior Scale:", 0, 1000, 5)
+        self.prior_steps = self.create_spin_box("Prior Steps:", 0, 1000, 5)
         self.force_values = self.create_check_box("Force Values:", False)
         self.button = QtWidgets.QPushButton("Run")
 
@@ -64,7 +67,7 @@ class KandinskyNode(AiNode):
     def initInnerClasses(self):
         self.content = KandinskyWidget(self)
         self.grNode = CalcGraphicsNode(self)
-        self.grNode.height = 550
+        self.grNode.height = 750
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(256)
@@ -82,9 +85,9 @@ class KandinskyNode(AiNode):
             [0.187, 0.286, 0.173],  # L2
             [-0.158, 0.189, 0.264],  # L3
             [-0.184, -0.271, -0.473],  # L4
-        ], dtype=torch.float, device='cuda')
+        ], dtype=torch.float, device='cpu')
 
-    @QtCore.Slot(str)
+    ##@QtCore.Slot(str)
     def set_prompt(self, text):
         self.content.prompt.setText(text)
 
@@ -105,6 +108,8 @@ class KandinskyNode(AiNode):
         data = self.getInputData(2)
 
         prompt = self.content.prompt.toPlainText()
+        n_prompt = self.content.negative_prompt.toPlainText()
+        n_p_prompt = self.content.negative_prior_prompt.toPlainText()
         if data:
             if "prompt" in data:
                 prompt = data["prompt"]
@@ -191,6 +196,8 @@ class KandinskyNode(AiNode):
         else:
             return_pil_images = gs.models["kandinsky"].generate_text2img(
                 prompt,
+                negative_prior_prompt=n_p_prompt,
+                negative_decoder_prompt=n_prompt,
                 num_steps=num_steps,
                 batch_size=1,
                 guidance_scale=guidance_scale,
@@ -207,45 +214,45 @@ class KandinskyNode(AiNode):
         return return_images
     def callback(self, tensors):
         i = tensors["i"]
-        #self.content.progress_signal.emit(1)
-        #if self.content.tensor_preview.isChecked():
-        if i < self.content.steps.value() - 2:
 
-            latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
-            latent = (((latent + 1) / 2)
-                      .clamp(0, 1)  # change scale from -1..1 to 0..1
-                      .mul(0xFF)  # to 0..255
-                      .byte())
-            # Copying to cpu as numpy array
-            latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
-            img = Image.fromarray(latent)
-            img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
-            latent_pixmap = pil_image_to_pixmap(img)
-            #self.setOutput(0, [latent_pixmap])
-            if len(self.getOutputs(0)) > 0:
-                nodes = self.getOutputs(0)
-                for node in nodes:
-                    if isinstance(node, ImagePreviewNode):
-                        node.content.preview_signal.emit(latent_pixmap)
-                    if isinstance(node, VideoOutputNode):
-                        frame = np.array(img)
-                        node.content.video.add_frame(frame, dump=node.content.dump_at.value())
+        if self.content.tensor_preview.isChecked():
+            if i < self.content.steps.value() - 2:
+                latent = tensors["denoised"][0].detach().to("cpu")
+                latent = torch.einsum('...lhw,lr -> ...rhw', latent, self.latent_rgb_factors)
+                latent = (((latent + 1) / 2)
+                          .clamp(0, 1)  # change scale from -1..1 to 0..1
+                          .mul(0xFF)  # to 0..255
+                          .byte())
+                # Copying to cpu as numpy array
+                latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
+                img = Image.fromarray(latent)
+                img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
+                latent_pixmap = pil_image_to_pixmap(img)
+                if len(self.getOutputs(0)) > 0:
+                    nodes = self.getOutputs(0)
+                    for node in nodes:
+                        if isinstance(node, ImagePreviewNode):
+                            node.content.preview_signal.emit(latent_pixmap)
+                        if isinstance(node, VideoOutputNode):
+                            frame = np.array(img)
+                            node.content.video.add_frame(frame, dump=node.content.dump_at.value())
 
 
-    @QtCore.Slot(object)
+    ##@QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        #super().onWorkerFinished(None)
+        self.busy = False
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result)
         self.progress_value = 0
         self.executeChild(output_index=1)
 
-    @QtCore.Slot()
+    ##@QtCore.Slot()
     def setSeed(self):
         self.content.seed.setText(str(self.seed))
 
-    @QtCore.Slot()
+    ##@QtCore.Slot()
     def setProgress(self, progress=None):
         if progress != 100 and progress != 0:
             self.progress_value = self.progress_value + self.single_step

@@ -4,6 +4,8 @@ import threading
 import sys
 from threading import Event
 import signal
+
+
 class TrainingThread(threading.Thread):
     def __init__(self, stdout_redirect):
         super().__init__()
