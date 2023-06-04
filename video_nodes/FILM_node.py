@@ -110,7 +110,7 @@ class FILMNode(AiNode):
         return return_frames
     #@QtCore.Slot(object)
     def onWorkerFinished(self, return_frames):
-        super().onWorkerFinished(None)
+        #super().onWorkerFinished(None)
         self.setOutput(0, return_frames)
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)

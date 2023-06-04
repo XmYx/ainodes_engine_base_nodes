@@ -131,11 +131,12 @@ class TorchLoaderNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        self.busy = False
         self.markDirty(False)
         self.markInvalid(False)
         self.grNode.setToolTip("")
 
-        super().onWorkerFinished(None)
+        #super().onWorkerFinished(None)
         self.executeChild(0)
 
     def onInputChanged(self, socket=None):

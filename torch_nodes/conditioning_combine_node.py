@@ -141,7 +141,8 @@ class ConditioningCombineNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
         if result is not None:
             # Update the node value and mark it as dirty
             self.setOutput(0, result)
@@ -192,7 +193,8 @@ class ConditioningAreaNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
         if result is not None:
             self.setOutput(0, result)
             if gs.logging:

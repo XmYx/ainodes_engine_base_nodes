@@ -65,7 +65,8 @@ class T2ILoaderNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
         self.markDirty(False)
         self.markInvalid(False)
         if len(self.getOutputs(0)) > 0:

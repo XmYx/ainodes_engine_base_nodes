@@ -118,7 +118,8 @@ class InpaintNode(AiNode):
             return pixmap
 
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
         if result is not None:
             self.setOutput(0, [result])
             if len(self.getOutputs(1)) > 0:

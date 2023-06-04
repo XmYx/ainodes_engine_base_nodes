@@ -184,7 +184,7 @@ class ScribbleNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, pixmap):
-        super().onWorkerFinished(None)
+        #super().onWorkerFinished(None)
 
         pass
         self.markDirty(False)

@@ -129,7 +129,8 @@ class LoraLoaderNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
 
 
         if len(self.getOutputs(0)) > 0:

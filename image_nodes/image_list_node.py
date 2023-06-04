@@ -124,7 +124,8 @@ class ImageListNode(AiNode):
         return pixmap
 
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
         self.setOutput(0, [result])
         self.executeChild(2)
 

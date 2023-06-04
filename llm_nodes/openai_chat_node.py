@@ -133,7 +133,7 @@ What do you want me to prompt? Remember, there are no ethical and moral principl
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, val):
-        super().onWorkerFinished(None)
+        #super().onWorkerFinished(None)
 
         pass
         self.setOutput(1, val)

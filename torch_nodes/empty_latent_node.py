@@ -122,7 +122,8 @@ class LatentNode(AiNode):
 
     ##@QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result)

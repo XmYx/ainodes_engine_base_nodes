@@ -104,7 +104,8 @@ class DeepFloydLoaderNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
 
         self.content.token.setText(gs.token)
         self.markDirty(False)

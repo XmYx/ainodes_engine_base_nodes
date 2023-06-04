@@ -120,7 +120,7 @@ class ModelLoader(torch.nn.Module):
         if gs.debug:
             print(gs.models["sd"],gs.models["clip"],gs.models["vae"])
 
-        #apply_optimizations(style)
+        apply_optimizations(style)
     def load_model_old(self, file=None, config=None, inpaint=False, verbose=False):
 
         if file not in gs.loaded_models["loaded"]:

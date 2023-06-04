@@ -38,7 +38,8 @@ class ExecSplitterNode(AiNode):
         return None
 
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
         self.executeChild(1)
         self.executeChild(0)
 

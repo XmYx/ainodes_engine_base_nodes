@@ -249,8 +249,9 @@ class KSamplerNode(AiNode):
                             node.content.video.add_frame(frame, dump=node.content.dump_at.value())
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        self.busy = False
 
-        super().onWorkerFinished(None)
+        #super().onWorkerFinished(None)
 
         #if gs.logging:
         #    print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed, "images", result[0])

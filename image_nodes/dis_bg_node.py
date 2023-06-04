@@ -53,7 +53,8 @@ class DISBGNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
         self.setOutput(0, [result[0]])
         self.setOutput(1, [result[1]])
         self.setOutput(2, [result[2]])

@@ -85,7 +85,8 @@ class SubgraphNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
         if result:
             self.setOutput(0, result[0])
             self.setOutput(1, result[1])
@@ -182,8 +183,9 @@ class SubGraphInputNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
+        self.busy = False
         #print("REACHED SUBGRAPH INPUT NODE END")
-        super().onWorkerFinished(None)
+        #super().onWorkerFinished(None)
         self.executeChild(4)
 
 
@@ -232,7 +234,8 @@ class SubGraphOutputNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
 
         self.setOutput(0, result[0])
         self.setOutput(1, result[1])

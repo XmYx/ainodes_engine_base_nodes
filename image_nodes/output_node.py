@@ -116,6 +116,7 @@ class ImagePreviewNode(AiNode):
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
+        self.busy = False
 
         self.images = result
         #super().onWorkerFinished(None)

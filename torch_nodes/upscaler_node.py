@@ -102,7 +102,8 @@ class TorchLoaderNode(AiNode):
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
-        super().onWorkerFinished(None)
+        self.busy = False
+        #super().onWorkerFinished(None)
         if result:
             self.setOutput(0, result)
             self.markDirty(False)
