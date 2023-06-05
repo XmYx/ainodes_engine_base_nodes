@@ -19,7 +19,7 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 
 from queue import Queue
 
-from ..image_nodes.output_node import ImagePreviewNode
+from ..image_nodes.image_preview_node import ImagePreviewNode
 from ..video_nodes.video_save_node import VideoOutputNode
 
 OP_NODE_K_SAMPLER = get_next_opcode()

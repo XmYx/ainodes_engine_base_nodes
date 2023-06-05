@@ -147,7 +147,7 @@ class ScribbleWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_IMG_SCRIBBLE)
 class ScribbleNode(AiNode):
-    icon = "icons/out.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/scribble.png"
     op_code = OP_NODE_IMG_SCRIBBLE
     op_title = "Scribble"
     content_label_objname = "image_scribble_node"

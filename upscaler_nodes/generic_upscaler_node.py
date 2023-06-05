@@ -4,12 +4,11 @@ import os
 import numpy as np
 import torch
 from PIL import Image
-from qtpy import QtCore
 from qtpy import QtWidgets
 
 
-from ..ainodes_backend.model_loader import ModelLoader, UpscalerLoader
-from ..ainodes_backend import torch_gc, pixmap_to_pil_image, pil_image_to_pixmap
+from ..ainodes_backend.model_loader import UpscalerLoader
+from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode

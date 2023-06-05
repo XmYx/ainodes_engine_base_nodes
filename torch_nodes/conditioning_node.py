@@ -102,7 +102,7 @@ class APIHandler(QObject):
 
 @register_node(OP_NODE_CONDITIONING)
 class ConditioningNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/cond.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/conditioning.png"
     op_code = OP_NODE_CONDITIONING
     op_title = "Conditioning"
     content_label_objname = "cond_node"

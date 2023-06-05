@@ -94,7 +94,6 @@ class FILMNode(AiNode):
                 self.FILM_temp.append(np_image)
                 if len(self.FILM_temp) == 2:
                     frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
-
                     skip_first, skip_last = False, True
                     if skip_first:
                         frames.pop(0)

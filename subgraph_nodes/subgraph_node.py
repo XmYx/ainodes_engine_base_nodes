@@ -22,7 +22,7 @@ class SubgraphNodePathwayWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_SUBGRAPH)
 class SubgraphNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/exec.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/subgraph.png"
     op_code = OP_NODE_SUBGRAPH
     op_title = "Subgraph"
     content_label_objname = "subgraph_node"
@@ -143,7 +143,7 @@ class SubgraphNode(AiNode):
 
 @register_node(OP_NODE_SUBGRAPH_INPUT)
 class SubGraphInputNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/exec.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/subgraph_in.png"
     op_code = OP_NODE_SUBGRAPH_INPUT
     op_title = "Subgraph Inputs"
     content_label_objname = "subgraph_input_node"
@@ -191,7 +191,7 @@ class SubGraphInputNode(AiNode):
 
 @register_node(OP_NODE_SUBGRAPH_OUTPUT)
 class SubGraphOutputNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/exec.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/subgraph_out.png"
     op_code = OP_NODE_SUBGRAPH_OUTPUT
     op_title = "Subgraph Outputs"
     content_label_objname = "subgraph_output_node"

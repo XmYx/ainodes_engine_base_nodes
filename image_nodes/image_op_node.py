@@ -159,6 +159,7 @@ class ImageOpNode(AiNode):
     #@QtCore.Slot(object)
     def onWorkerFinished(self, pixmap_list):
         #super().onWorkerFinished(None)
+        self.busy = False
         self.setOutput(0, pixmap_list)
         if gs.should_run:
 

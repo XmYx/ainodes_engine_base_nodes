@@ -199,7 +199,7 @@ class GifRecorder:
                 self.filename = filename
                 self.fps = fps
                 print(f"VIDEO SAVE NODE: Video saving {len(self.frames)} frames at {self.fps}fps as {self.filename}")
-                imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), subrectangles=True, quantizer='nq')
+                imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), subrectangles=True, quantizer='nq-fs', palettesize=8)
             else:
                 print("The buffer is empty, cannot save.")
         elif type == 'mp4_ffmpeg':

@@ -16,7 +16,7 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 
 from kandinsky2 import get_kandinsky2
 
-from ..image_nodes.output_node import ImagePreviewNode
+from ..image_nodes.image_preview_node import ImagePreviewNode
 from ..video_nodes.video_save_node import VideoOutputNode
 
 OP_NODE_KANDINSKY = get_next_opcode()
@@ -54,7 +54,7 @@ class KandinskyWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_KANDINSKY)
 class KandinskyNode(AiNode):
-    icon = "ainodes_frontend/icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/kandinsky.png"
     op_code = OP_NODE_KANDINSKY
     op_title = "Kandinsky"
     content_label_objname = "kandinsky_node"

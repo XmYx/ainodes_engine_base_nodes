@@ -29,7 +29,7 @@ class BlendWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_IMAGE_BLEND)
 class BlendNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/image_blend.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/compositing.png"
     op_code = OP_NODE_IMAGE_BLEND
     op_title = "Image Blend"
     content_label_objname = "image_blend_node"

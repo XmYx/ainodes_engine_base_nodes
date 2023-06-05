@@ -63,7 +63,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_TORCH_LOADER)
 class TorchLoaderNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/torch.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/torch.png"
     op_code = OP_NODE_TORCH_LOADER
     op_title = "Torch Loader"
     content_label_objname = "torch_loader_node"
