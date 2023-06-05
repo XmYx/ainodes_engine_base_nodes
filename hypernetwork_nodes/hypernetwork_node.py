@@ -64,6 +64,8 @@ class HypernetworkLoaderNode(AiNode):
     def initInnerClasses(self):
         self.content = HypernetworkLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.width = 340
         self.grNode.height = 240
         self.content.setMinimumHeight(140)

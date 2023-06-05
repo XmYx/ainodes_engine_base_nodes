@@ -99,6 +99,8 @@ class ImageListNode(AiNode):
         self.grNode = CalcGraphicsNode(self)
         self.grNode.height = 640
         self.grNode.width = 512
+        self.grNode.icon = self.icon
+
         self.images = []
         self.index = 0
         self.content.image.pixmap_selected.connect(self.set_pixmap)

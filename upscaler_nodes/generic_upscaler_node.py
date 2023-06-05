@@ -44,7 +44,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 
 @register_node(OP_NODE_TORCH_UPSCALER)
-class TorchLoaderNode(AiNode):
+class UpscalerNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/torch.png"
     op_code = OP_NODE_TORCH_UPSCALER
     op_title = "Torch Upscaler"
@@ -58,6 +58,8 @@ class TorchLoaderNode(AiNode):
     def initInnerClasses(self):
         self.content = UpscalerWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.width = 340
         self.grNode.height = 180
         self.content.setMinimumHeight(140)

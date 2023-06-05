@@ -80,6 +80,8 @@ class Text2VideoNode(AiNode):
     def initInnerClasses(self):
         self.content = Text2VideoWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.width = 340
         self.grNode.height = 600
         self.content.setMinimumHeight(400)

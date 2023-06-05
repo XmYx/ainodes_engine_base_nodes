@@ -29,6 +29,8 @@ class DISBGNode(AiNode):
     def initInnerClasses(self):
         self.content = DISBGWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 200
         self.grNode.width = 280
         self.content.eval_signal.connect(self.evalImplementation)

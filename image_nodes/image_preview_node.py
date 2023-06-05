@@ -61,6 +61,8 @@ class ImagePreviewNode(AiNode):
     def initInnerClasses(self):
         self.content = ImagePreviewWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 400
         self.grNode.width = 320
         self.images = []

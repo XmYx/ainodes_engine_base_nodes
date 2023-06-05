@@ -51,6 +51,8 @@ class RIFENode(AiNode):
     def initInnerClasses(self):
         self.content = RIFEWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.output_socket_name = ["EXEC", "EXEC/F", "IMAGE"]
         self.input_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
 

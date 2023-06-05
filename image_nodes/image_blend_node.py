@@ -44,6 +44,8 @@ class BlendNode(AiNode):
     def initInnerClasses(self):
         self.content = BlendWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.output_socket_name = ["EXEC", "IMAGE"]
         self.input_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
         self.grNode.height = 220

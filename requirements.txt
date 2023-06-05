@@ -37,3 +37,5 @@ lark>=1.1.5
 fonts
 font-roboto
 gdown
+git+https://github.com/xinntao/Real-ESRGAN.git
+

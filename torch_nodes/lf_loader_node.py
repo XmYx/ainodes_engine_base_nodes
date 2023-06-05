@@ -53,6 +53,8 @@ class DeepFloydLoaderNode(AiNode):
     def initInnerClasses(self):
         self.content = TorchLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.width = 340
         self.grNode.height = 180
         self.content.setMinimumHeight(140)

@@ -48,6 +48,8 @@ class T2ILoaderNode(AiNode):
     def initInnerClasses(self):
         self.content = T2ILoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.width = 280
         self.grNode.height = 100
 

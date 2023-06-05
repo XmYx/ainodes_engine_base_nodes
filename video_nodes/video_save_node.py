@@ -83,6 +83,8 @@ class VideoOutputNode(AiNode):
     def initInnerClasses(self):
         self.content = VideoOutputWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.content.save_button.clicked.connect(self.start_new_video)
         self.grNode.height = 300
         self.grNode.width = 260
@@ -199,7 +201,8 @@ class GifRecorder:
                 self.filename = filename
                 self.fps = fps
                 print(f"VIDEO SAVE NODE: Video saving {len(self.frames)} frames at {self.fps}fps as {self.filename}")
-                imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), subrectangles=True, quantizer='nq-fs', palettesize=8)
+                #imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), subrectangles=True, quantizer='nq-fs', palettesize=8)
+                imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), palettesize=8)
             else:
                 print("The buffer is empty, cannot save.")
         elif type == 'mp4_ffmpeg':

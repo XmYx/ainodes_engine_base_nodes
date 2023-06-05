@@ -73,6 +73,8 @@ class VideoInputNode(AiNode):
     def initInnerClasses(self):
         self.content = VideoInputWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         #self.resize()
         self.grNode.height = 200
         self.grNode.width = 200

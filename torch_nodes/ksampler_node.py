@@ -70,6 +70,8 @@ class KSamplerNode(AiNode):
     def initInnerClasses(self):
         self.content = KSamplerWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 700
         self.grNode.width = 256
         self.content.setMinimumWidth(250)

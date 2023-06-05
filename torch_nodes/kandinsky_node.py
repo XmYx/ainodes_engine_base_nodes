@@ -67,6 +67,8 @@ class KandinskyNode(AiNode):
     def initInnerClasses(self):
         self.content = KandinskyWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 750
         self.grNode.width = 256
         self.content.setMinimumWidth(256)

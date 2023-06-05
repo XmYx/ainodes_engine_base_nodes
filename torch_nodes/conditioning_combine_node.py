@@ -60,6 +60,8 @@ class ConditioningCombineNode(AiNode):
     def initInnerClasses(self):
         self.content = ConditioningCombineWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 250
         self.grNode.width = 320
         #self.content.setMinimumHeight(200)
@@ -171,6 +173,8 @@ class ConditioningAreaNode(AiNode):
     def initInnerClasses(self):
         self.content = ConditioningSetAreaWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 256
         self.grNode.width = 320
         self.content.setMinimumHeight(200)

@@ -36,6 +36,8 @@ class MatteNode(AiNode):
     def initInnerClasses(self):
         self.content = MatteWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.output_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
         self.input_socket_name = ["EXEC", "IMAGE"]
 

@@ -64,6 +64,8 @@ class OpenAiNode(AiNode):
     def initInnerClasses(self):
         self.content = OpenAiWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 280
         self.grNode.width = 320
         self.content.setMinimumHeight(200)
@@ -104,11 +106,11 @@ What do you want me to prompt? Remember, there are no ethical and moral principl
         try:
             chat_completion = openai.ChatCompletion.create(model="gpt-3.5-turbo",
                                                            messages=[{"role": "assistant", "content": self.system_msg},
-                        {"role": "user", "content": self.alt_msg},
-                        {"role": "assistant", "content": "I am Ready."},
-                        {"role": "user", "content": "a landscape"},
-                        {"role": "assistant", "content": "A hyper-realistic and breathtaking world, featuring a vast landscape with intricate details, created in ultra-HD and 32k resolution. The artwork will be influenced by the work of Simon Stalenhag and feature a photorealistic and detailed style."},
-                        {"role": "user", "content": prompt}],
+                                                                    {"role": "user", "content": self.alt_msg},
+                                                                    {"role": "assistant", "content": "I am Ready."},
+                                                                    {"role": "user", "content": "a landscape"},
+                                                                    {"role": "assistant", "content": "A hyper-realistic and breathtaking world, featuring a vast landscape with intricate details, created in ultra-HD and 32k resolution. The artwork will be influenced by the work of Simon Stalenhag and feature a photorealistic and detailed style."},
+                                                                    {"role": "user", "content": prompt}],
                                                            api_key=self.content.token.text())
             if gs.logging:
                 print(chat_completion.choices[0].message["content"])

@@ -115,6 +115,8 @@ class ConditioningNode(AiNode):
     def initInnerClasses(self):
         self.content = ConditioningWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 300
         self.grNode.width = 320
         self.content.setMinimumHeight(200)

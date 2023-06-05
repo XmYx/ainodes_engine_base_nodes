@@ -60,7 +60,7 @@ class APIHandler(QObject):
 
 @register_node(OP_NODE_LORA_LOADER)
 class LoraLoaderNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/lora.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/lora.png"
     op_code = OP_NODE_LORA_LOADER
     op_title = "Lora Loader"
     content_label_objname = "lora_loader_node"
@@ -74,6 +74,8 @@ class LoraLoaderNode(AiNode):
     def initInnerClasses(self):
         self.content = LoraLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.width = 340
         self.grNode.height = 300
         self.content.setMinimumWidth(320)

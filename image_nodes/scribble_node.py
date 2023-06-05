@@ -164,6 +164,8 @@ class ScribbleNode(AiNode):
         self.content.setMinimumHeight(512)
         self.content.setGeometry(QtCore.QRect(15,15,512,512))
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 640
         self.grNode.width = 512
         self.images = []

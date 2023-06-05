@@ -48,6 +48,8 @@ class ControlnetLoaderNode(AiNode):
     def initInnerClasses(self):
         self.content = ControlnetLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.content.control_net_name.currentIndexChanged.connect(self.resize)
         self.grNode.width = 280
         self.grNode.height = 100

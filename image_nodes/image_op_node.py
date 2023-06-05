@@ -133,6 +133,8 @@ class ImageOpNode(AiNode):
     def initInnerClasses(self):
         self.content = ImageOpsWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         #self.content.dropdown.currentIndexChanged.connect(self.evalImplementation)
         self.output_socket_name = ["EXEC", "DATA","IMAGE"]
         self.input_socket_name = ["EXEC", "DATA", "IMAGE"]

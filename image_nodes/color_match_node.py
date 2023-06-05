@@ -29,6 +29,8 @@ class ColorMatch(AiNode):
     def initInnerClasses(self):
         self.content = MatteWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 140
         self.grNode.width = 256
         self.content.eval_signal.connect(self.evalImplementation)

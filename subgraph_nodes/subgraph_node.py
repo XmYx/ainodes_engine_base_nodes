@@ -45,6 +45,7 @@ class SubgraphNode(AiNode):
     def __init__(self, scene, graph_json=None):
         super().__init__(scene, inputs=[2,3,5,6,1], outputs=[2,3,5,6,1])
         self.graph_json = graph_json
+
         if self.graph_json:
             self.scene.getView().parent().window().json_open_signal.emit(self)
 

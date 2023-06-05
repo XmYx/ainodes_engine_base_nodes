@@ -53,6 +53,8 @@ class FILMNode(AiNode):
     def initInnerClasses(self):
         self.content = FILMWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.output_socket_name = ["EXEC", "EXEC/F", "IMAGE"]
         self.input_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
 

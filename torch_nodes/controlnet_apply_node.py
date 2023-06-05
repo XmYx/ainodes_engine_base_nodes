@@ -60,6 +60,8 @@ class CNApplyNode(AiNode):
     def initInnerClasses(self):
         self.content = CNApplyWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 600
         self.grNode.width = 256
         self.content.setMinimumWidth(256)

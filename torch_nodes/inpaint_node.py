@@ -75,6 +75,8 @@ class InpaintNode(AiNode):
     def initInnerClasses(self):
         self.content = InpaintWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.grNode.height = 500
         self.grNode.width = 256
         self.content.setMinimumWidth(256)

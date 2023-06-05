@@ -40,6 +40,8 @@ class LatentNode(AiNode):
     def initInnerClasses(self):
         self.content = LatentWidget(self)
         self.grNode = CalcGraphicsNode(self)
+        self.grNode.icon = self.icon
+
         self.input_socket_name = ["EXEC", "IMAGE", "LATENT"]
         self.output_socket_name = ["EXEC", "LATENT"]
         self.grNode.height = 210
