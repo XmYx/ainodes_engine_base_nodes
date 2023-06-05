@@ -33,9 +33,9 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 class DataIfNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/torch.png"
     op_code = OP_NODE_DATA_IF
-    op_title = "DataMerger"
-    content_label_objname = "datamerge_node"
-    category = "Data"
+    op_title = "Data IF Node"
+    content_label_objname = "data_if_node"
+    category = "Experimental"
     #input_socket_name = ["EXEC"]
     #output_socket_name = ["EXEC", "MODEL"]
     def __init__(self, scene):

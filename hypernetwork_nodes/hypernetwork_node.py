@@ -55,7 +55,7 @@ class HypernetworkLoaderNode(AiNode):
     op_code = OP_NODE_HYPERNETWORK
     op_title = "Hypernetwork Loader"
     content_label_objname = "hypernetwork_loader_node"
-    category = "Model"
+    category = "Model Loading"
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC"]
     def __init__(self, scene):

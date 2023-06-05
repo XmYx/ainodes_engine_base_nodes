@@ -49,7 +49,7 @@ class UpscalerNode(AiNode):
     op_code = OP_NODE_TORCH_UPSCALER
     op_title = "Torch Upscaler"
     content_label_objname = "torch_upscaler_node"
-    category = "Sampling"
+    category = "Upscalers"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])

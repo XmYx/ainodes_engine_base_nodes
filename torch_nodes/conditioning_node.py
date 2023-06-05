@@ -106,7 +106,7 @@ class ConditioningNode(AiNode):
     op_code = OP_NODE_CONDITIONING
     op_title = "Conditioning"
     content_label_objname = "cond_node"
-    category = "Sampling"
+    category = "Conditioning"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[6,1], outputs=[6,3,1])

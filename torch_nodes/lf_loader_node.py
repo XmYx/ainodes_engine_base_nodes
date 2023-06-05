@@ -43,7 +43,7 @@ class DeepFloydLoaderNode(AiNode):
     op_code = OP_NODE_DEEPFLOYD_LOADER
     op_title = "DeepFloyd Loader"
     content_label_objname = "deepfloyd_loader_node"
-    category = "Model"
+    category = "Model Loading"
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC", "MODEL"]
     def __init__(self, scene):

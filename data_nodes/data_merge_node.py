@@ -32,7 +32,7 @@ class DataMergeNode(AiNode):
     op_code = OP_NODE_DATA_MERGE
     op_title = "DataMerger"
     content_label_objname = "datamerge_node"
-    category = "Data"
+    category = "Experimental"
     #input_socket_name = ["EXEC"]
     #output_socket_name = ["EXEC", "MODEL"]
     def __init__(self, scene):

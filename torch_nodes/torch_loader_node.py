@@ -67,7 +67,7 @@ class TorchLoaderNode(AiNode):
     op_code = OP_NODE_TORCH_LOADER
     op_title = "Torch Loader"
     content_label_objname = "torch_loader_node"
-    category = "Model"
+    category = "Model Loading"
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC"]
     def __init__(self, scene):
