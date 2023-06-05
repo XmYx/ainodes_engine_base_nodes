@@ -45,7 +45,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_TORCH_UPSCALER)
 class UpscalerNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/torch.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/upscaler.png"
     op_code = OP_NODE_TORCH_UPSCALER
     op_title = "Torch Upscaler"
     content_label_objname = "torch_upscaler_node"

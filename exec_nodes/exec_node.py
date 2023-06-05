@@ -18,7 +18,7 @@ class ExecWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_EXEC)
 class ExecNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/exec.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/execute.png"
     op_code = OP_NODE_EXEC
     op_title = "Execute"
     content_label_objname = "exec_node"

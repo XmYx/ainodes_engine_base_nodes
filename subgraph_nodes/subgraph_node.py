@@ -103,7 +103,7 @@ class SubgraphNode(AiNode):
                 self.scene.getView().parent().window().json_open_signal.emit(self)
             else:
                 self.scene.getView().parent().window().file_new_signal.emit(self)
-                self.graph_window.widget().filename = f"{self.getID(0)}_Subgraph"
+                self.graph_window.widget().json_name = f"{self.getID(0)}_Subgraph"
 
     def serialize(self):
         """

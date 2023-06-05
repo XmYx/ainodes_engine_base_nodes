@@ -81,7 +81,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_RESRGAN)
 class REALESRGANNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/torch.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/realesrgan.png"
     op_code = OP_NODE_RESRGAN
     op_title = "REALESRGan"
     content_label_objname = "realesrgan_node"

@@ -43,7 +43,7 @@ class CNApplyWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_CN_APPLY)
 class CNApplyNode(AiNode):
-    icon = "ainodes_frontend/icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/apply_cnet.png"
     op_code = OP_NODE_CN_APPLY
     op_title = "Apply ControlNet"
     content_label_objname = "CN_apply_node"

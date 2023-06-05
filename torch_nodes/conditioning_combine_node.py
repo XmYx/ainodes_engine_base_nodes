@@ -48,7 +48,7 @@ class ConditioningCombineWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_CONDITIONING_COMBINE)
 class ConditioningCombineNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/cond_comb.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/cond_combine.png"
     op_code = OP_NODE_CONDITIONING_COMBINE
     op_title = "Combine Conditioning"
     content_label_objname = "cond_combine_node"
