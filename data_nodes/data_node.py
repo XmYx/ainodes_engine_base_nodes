@@ -15,7 +15,7 @@ class DataWidget(QDMNodeContentWidget):
         self.node_data_types = {
             "KSampler":[("steps", "int"), ("scale", "float"), ("seed", "text")],
             "Warp3D":[("translation_x", "int"),("translation_y", "int"),("translation_z", "int"),("rotation_3d_x", "int"),("rotation_3d_y", "int"),("rotation_3d_z", "int")],
-            "Debug":[("debug", "text")]
+            "Debug":[("prompt", "text")]
         }
         self.add_button = QtWidgets.QPushButton("Add more")
         self.print_button = QtWidgets.QPushButton("Print")
@@ -89,7 +89,7 @@ class DataWidget(QDMNodeContentWidget):
                         if accessible_name:
                             node_type, data_type = accessible_name.split("_", 1)
                             if isinstance(widget, QtWidgets.QLineEdit):
-                                widget_values[(node_type, data_type)] = widget.text()
+                                widget_values[data_type] = widget.text()
                             elif isinstance(widget, QtWidgets.QSpinBox):
                                 widget_values[(node_type, data_type)] = widget.value()
                             elif isinstance(widget, QtWidgets.QDoubleSpinBox):
@@ -130,6 +130,7 @@ class DataNode(AiNode):
         self.content.setMinimumHeight(160)
         self.input_socket_name = ["EXEC", "DATA"]
         self.output_socket_name = ["EXEC", "DATA"]
+        self.content.eval_signal.connect(self.evalImplementation)
     #@QtCore.Slot()
     def resize(self):
         y = 300
@@ -146,7 +147,7 @@ class DataNode(AiNode):
             socket.setSocketPosition()
         self.updateConnectedEdges()
 
-    def evalImplementation(self, index=0):
+    def evalImplementation_thread(self, index=0):
         self.resize()
         self.markDirty(True)
         data = self.getInputData(0)
@@ -155,11 +156,17 @@ class DataNode(AiNode):
             data = merge_dicts(data, values)
         else:
             data = values
-        self.setOutput(0, data)
-        self.executeChild(1)
+        print(data)
+        return data
+
+
+    def onWorkerFinished(self, result):
+        self.busy = False
         self.markDirty(False)
-        self.markInvalid(False)
-        return None
+        self.setOutput(0, result)
+        if len(self.getOutputs(1)) > 0:
+            self.executeChild(output_index=1)
+
     def onMarkedDirty(self):
         self.value = None
 
