@@ -7,7 +7,6 @@ from ainodes_frontend.base.settings import handle_ainodes_exception
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
 
-
 OP_NODE_DATA_MERGE = get_next_opcode()
 class DataMergeWidget(QDMNodeContentWidget):
     def initUI(self):
@@ -33,8 +32,6 @@ class DataMergeNode(AiNode):
     op_title = "DataMerger"
     content_label_objname = "datamerge_node"
     category = "Experimental"
-    #input_socket_name = ["EXEC"]
-    #output_socket_name = ["EXEC", "MODEL"]
     def __init__(self, scene):
         super().__init__(scene, inputs=[6,6,1], outputs=[6,1])
 
@@ -43,6 +40,7 @@ class DataMergeNode(AiNode):
         self.grNode = CalcGraphicsNode(self)
         self.grNode.width = 340
         self.grNode.height = 180
+        self.grNode.icon = self.icon
         self.content.setMinimumHeight(140)
         self.content.setMinimumWidth(340)
 

@@ -5,6 +5,7 @@ import subprocess
 import cv2
 import imageio
 import numpy as np
+from PIL import Image
 from qtpy import QtWidgets, QtGui
 from qtpy.QtWidgets import QPushButton, QVBoxLayout
 
@@ -203,6 +204,12 @@ class GifRecorder:
                 print(f"VIDEO SAVE NODE: Video saving {len(self.frames)} frames at {self.fps}fps as {self.filename}")
                 #imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), subrectangles=True, quantizer='nq-fs', palettesize=8)
                 imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), palettesize=8)
+                pils = []
+                for frame in self.frames:
+                    pils.append(Image.fromarray(frame))
+
+                pils[0].save("test_gif.gif", "GIF", save_all=True, duration=40, append_images=pils[1:], loop=0, quality=1)
+
             else:
                 print("The buffer is empty, cannot save.")
         elif type == 'mp4_ffmpeg':

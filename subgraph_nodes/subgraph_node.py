@@ -1,4 +1,5 @@
-from qtpy import QtCore
+from PyQt6.QtCore import Qt
+from qtpy import QtCore, QtGui
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -8,10 +9,12 @@ OP_NODE_SUBGRAPH_INPUT = get_next_opcode()
 OP_NODE_SUBGRAPH_OUTPUT = get_next_opcode()
 
 class SubgraphNodeWidget(QDMNodeContentWidget):
+    image_signal = QtCore.Signal(object)
     def initUI(self):
         self.label = self.create_label(str(f"ID: {self.node.name}"))
         self.edit_label = self.create_line_edit("Name")
         self.description = self.create_text_edit("Description")
+        self.image_label = self.create_label("")
         self.create_main_layout(grid=1)
 
 
@@ -54,15 +57,19 @@ class SubgraphNode(AiNode):
         self.content = SubgraphNodeWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
-        self.grNode.height = 400
-        self.grNode.width = 300
-        self.content.setMinimumHeight(260)
-        self.content.setMinimumWidth(300)
+        self.grNode.height = 640
+        self.grNode.width = 400
+        self.content.setMinimumHeight(500)
+        self.content.setMinimumWidth(384)
         self.content.eval_signal.connect(self.evalImplementation)
+        self.content.image_signal.connect(self.set_image)
         self.init_done = True
 
     def force_init(self):
         self.scene.getView().parent().window().json_open_signal.emit(self)
+
+    def set_image(self, pixmap):
+        self.content.image_label.setPixmap(pixmap.scaled(QtCore.QSize(384,384), aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio))
 
     def evalImplementation_thread(self, index=0, *args, **kwargs):
 
@@ -92,6 +99,10 @@ class SubgraphNode(AiNode):
             self.setOutput(0, result[0])
             self.setOutput(1, result[1])
             self.setOutput(2, result[2])
+            if result[2] is not None:
+                print(result[2])
+                #if len(result[2] > 0):
+                self.content.image_signal.emit(result[2][0])
             self.setOutput(3, result[3])
             self.executeChild(4)
 
