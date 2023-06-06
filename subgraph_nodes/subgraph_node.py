@@ -1,6 +1,6 @@
 from PyQt6.QtCore import Qt
 from qtpy import QtCore, QtGui
-from ainodes_frontend.base import register_node, get_next_opcode
+from ainodes_frontend.base import register_node, get_next_opcode, handle_ainodes_exception
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 
@@ -69,7 +69,10 @@ class SubgraphNode(AiNode):
         self.scene.getView().parent().window().json_open_signal.emit(self)
 
     def set_image(self, pixmap):
-        self.content.image_label.setPixmap(pixmap.scaled(QtCore.QSize(384,384), aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio))
+        try:
+            self.content.image_label.setPixmap(pixmap.scaled(QtCore.QSize(384,384), aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio))
+        except:
+            done = handle_ainodes_exception()
 
     def evalImplementation_thread(self, index=0, *args, **kwargs):
 
@@ -100,8 +103,6 @@ class SubgraphNode(AiNode):
             self.setOutput(1, result[1])
             self.setOutput(2, result[2])
             if result[2] is not None:
-                print(result[2])
-                #if len(result[2] > 0):
                 self.content.image_signal.emit(result[2][0])
             self.setOutput(3, result[3])
             self.executeChild(4)
