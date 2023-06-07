@@ -109,9 +109,8 @@ class FILMNode(AiNode):
                     self.FILM_temp = [self.FILM_temp[1]]
         print(f"FILM NODE: Using only First input, created {len(return_frames) - 2} between frames, returning {len(return_frames)} frames.")
         return return_frames
-    #@QtCore.Slot(object)
     def onWorkerFinished(self, return_frames):
-        #super().onWorkerFinished(None)
+        self.busy = False
         self.setOutput(0, return_frames)
         if len(self.getOutputs(1)) > 0:
             self.executeChild(output_index=1)
@@ -130,9 +129,5 @@ class FILMNode(AiNode):
         self.iterating = False
     def onMarkedDirty(self):
         self.value = None
-    def eval(self, index=0):
-        self.markDirty()
-        self.content.eval_signal.emit()
-
 
 

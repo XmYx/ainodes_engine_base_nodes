@@ -81,9 +81,9 @@ class LatentNode(AiNode):
 
                     image = image.convert("RGB")
                     image = np.array(image).astype(np.float32) / 255.0
-                    image = image[None].transpose(0, 3, 1, 2)
+                    image = image[None] #.transpose(0, 3, 1, 2)
                     image = torch.from_numpy(image)
-                    image = image.detach().half().cpu()
+                    image = image.detach().cpu()
                     torch_gc()
 
                     latent = gs.models["vae"].encode(image)

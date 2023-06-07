@@ -23,7 +23,7 @@ class VideoOutputWidget(QDMNodeContentWidget):
         self.current_frame = 0
         self.type_select = QtWidgets.QComboBox()
         self.type_select.addItems(["GIF", "mp4_ffmpeg", "mp4_fourcc"])
-        self.save_button = QPushButton("Save buffer to GIF", self)
+        self.save_button = QPushButton("Save buffer to selected type", self)
         #self.new_button = QPushButton("New Video", self)
         #self.save_button.clicked.connect(self.loadVideo)
 
