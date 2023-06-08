@@ -66,7 +66,7 @@ class CondMaskNode(AiNode):
             uc = {}
 
 
-            return [c]
+            return [[c]]
         else:
             print("No valid input image found")
             return [[conds]]

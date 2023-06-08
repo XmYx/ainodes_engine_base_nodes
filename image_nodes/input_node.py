@@ -46,9 +46,6 @@ class ImageInputWidget(QDMNodeContentWidget):
             self.video.load_video(file_name)
             self.advance_frame()
 
-    def set_image(self, pixmap: object):
-        self.image.setPixmap(pixmap)
-        self.parent_resize_signal.emit()
 
     def openFileDialog(self):
         print("OPENING")
@@ -89,9 +86,13 @@ class ImageInputNode(AiNode):
         self.content.open_graph_button.clicked.connect(self.tryOpenGraph)
         self.content_type = None
         self.content.frame_string_signal.connect(self.set_frame_string)
-        self.content.set_image_signal.connect(self.content.set_image)
+        self.content.set_image_signal.connect(self.set_image)
         self.content.parent_resize_signal.connect(self.resize)
 
+    def set_image(self, pixmap: object):
+        self.content.image.setPixmap(pixmap)
+        self.content.parent_resize_signal.emit()
+        self.images = [pixmap]
 
     def set_frame_string(self, string: str):
         self.content.current_frame.setText(str(string))

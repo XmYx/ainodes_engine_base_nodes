@@ -97,7 +97,10 @@ class ConditioningCombineNode(AiNode):
                                                              self.content.cond_list_length.value())
                     return c
                 else:
+
+
                     c = cond1_list[0] + cond2_list[0]
+                    print("C", c)
                     return [c]
 
 

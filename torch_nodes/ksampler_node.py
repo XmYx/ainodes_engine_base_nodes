@@ -90,7 +90,6 @@ class KSamplerNode(AiNode):
         #pass
         # Add a task to the task queue
         cond_list = self.getInputData(3)
-        print(cond_list)
         n_cond_list = self.getInputData(2)
         self.steps = self.content.steps.value()
         latent_list = self.getInputData(1)

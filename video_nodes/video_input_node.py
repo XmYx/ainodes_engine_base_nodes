@@ -2,6 +2,7 @@ import time
 
 import cv2
 from PIL import Image
+from qtpy import QtGui, QtCore
 from qtpy.QtWidgets import QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFileDialog
 from qtpy.QtCore import Qt
 
