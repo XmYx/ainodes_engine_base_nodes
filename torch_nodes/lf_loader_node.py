@@ -39,7 +39,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_DEEPFLOYD_LOADER)
 class DeepFloydLoaderNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/torch.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/deep_floyd.png"
     op_code = OP_NODE_DEEPFLOYD_LOADER
     op_title = "DeepFloyd Loader"
     content_label_objname = "deepfloyd_loader_node"

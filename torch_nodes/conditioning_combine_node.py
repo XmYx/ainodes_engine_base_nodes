@@ -229,5 +229,5 @@ class ConditioningAreaNode(AiNode):
                 n[1]['max_sigma'] = max_sigma
                 c.append(n)
             return_list.append(c)
-        print(return_list)
+        #print(return_list)
         return return_list

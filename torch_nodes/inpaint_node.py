@@ -67,7 +67,7 @@ class InpaintNode(AiNode):
     op_code = OP_NODE_INPAINT
     op_title = "InPaint Alpha"
     content_label_objname = "inpaint_sampling_node"
-    category = "Sampling"
+    category = "Experimental"
     custom_input_socket_names = ["MASK", "IMAGE", "EXEC"]
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,5,1], outputs=[5,1])

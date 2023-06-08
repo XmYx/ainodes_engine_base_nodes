@@ -36,7 +36,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_CONTROLNET_LOADER)
 class ControlnetLoaderNode(AiNode):
-    icon = "ainodes_frontend/icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/cnet_loader.png"
     op_code = OP_NODE_CONTROLNET_LOADER
     op_title = "ControlNet Loader"
     content_label_objname = "controlnet_loader_node"

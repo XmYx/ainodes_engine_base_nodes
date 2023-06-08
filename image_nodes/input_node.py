@@ -22,6 +22,7 @@ OP_NODE_IMG_INPUT = get_next_opcode()
 
 class ImageInputWidget(QDMNodeContentWidget):
     fileName = None
+    frame_string_signal = QtCore.Signal(str)
     parent_resize_signal = QtCore.Signal()
     def initUI(self):
         self.create_widgets()
@@ -33,6 +34,8 @@ class ImageInputWidget(QDMNodeContentWidget):
         self.open_button.clicked.connect(self.openFileDialog)
         self.open_graph_button = QtWidgets.QPushButton("Open Graph")
         self.create_button_layout([self.open_button, self.open_graph_button])
+        self.rewind_button = QtWidgets.QPushButton("Reset to Frame 0")
+        self.current_frame = self.create_label("Frame:")
         self.firstRun_done = None
 
     def load_image(self):
@@ -60,7 +63,7 @@ class ImageInputWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_IMG_INPUT)
 class ImageInputNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/input_image.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/input_image.png"
     op_code = OP_NODE_IMG_INPUT
     op_title = "Input Image"
     content_label_objname = "image_input_node"
@@ -77,12 +80,15 @@ class ImageInputNode(AiNode):
         self.content = ImageInputWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
-
         self.grNode.height = 220
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.open_graph_button.clicked.connect(self.tryOpenGraph)
         self.video = VideoPlayer()
         self.content_type = None
+        self.content.frame_string_signal.connect(self.set_frame_string)
+
+    def set_frame_string(self, string: str):
+        self.content.current_frame.setText(str(string))
 
     def add_urls(self, url_list):
 
@@ -96,26 +102,20 @@ class ImageInputNode(AiNode):
                 if gs.debug:
                     print("LOCAL")
                 if file_ext in ['.png', '.jpg', '.jpeg']:
-
                     self.url = url.toLocalFile()
-
                     image = Image.open(url.toLocalFile())
-
                     metadata = image.info
-
                     # Check if the image has metadata
                     if metadata != {}:
                         self.content.open_graph_button.setVisible(True)
                     else:
                         self.content.open_graph_button.setVisible(False)
-
-
                     pixmap = pil_image_to_pixmap(image)
                     self.images.append(pixmap)
                     self.content.image.setPixmap(pixmap)
                     self.resize()
                     self.content_type = "image"
-                elif file_ext in ['.mp4', '.avi', '.mov']:
+                elif file_ext in ['.mp4', '.avi', '.mov', '.gif']:
                     pixmap = self.process_video_file(url.toLocalFile())
                     #for pixmap in pixmaps:
                     self.content.image.setPixmap(pixmap)
@@ -146,6 +146,7 @@ class ImageInputNode(AiNode):
             print("VIDEO", file_path)
         self.video.load_video(file_path)
         pixmap = self.video.get_frame()
+        self.content_type = 'video'
         return pixmap
 
         """cap = cv2.VideoCapture(file_path)
@@ -247,14 +248,16 @@ class ImageInputNode(AiNode):
             if gs.debug:
                 print("GETTING VIDEO FRAME")
             pixmap = self.video.get_frame()
+            strings = f"Frame: {self.video.current_frame} of {self.video.frame_count}"
+            self.content.frame_string_signal.emit(str(strings))
             if pixmap is not None:
                 self.content.image.setPixmap(pixmap)
         else:
             pixmap = self.content.image.pixmap()
         return pixmap
-    #@QtCore.Slot(object)
+
     def onWorkerFinished(self, pixmap):
-        #super().onWorkerFinished(None)
+        self.busy = False
         if pixmap is not None:
             self.setOutput(0, [pixmap])
             if len(self.getOutputs(1)) > 0:
@@ -281,6 +284,8 @@ class VideoPlayer:
     def __init__(self):
         self.video_file = None
         self.video_capture = None
+        self.current_frame = 0
+        self.frame_count = 0
 
     def load_video(self, video_file):
         try:
@@ -289,6 +294,8 @@ class VideoPlayer:
             pass
         self.video_file = video_file
         self.video_capture = cv2.VideoCapture(self.video_file)
+        self.frame_count = int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.current_frame = 0  # Reset current_frame to 0 when loading a new video
 
     def get_frame(self, skip=1):
         # Skip frames based on the specified interval
@@ -300,6 +307,7 @@ class VideoPlayer:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             image = Image.fromarray(frame)
             pixmap = pil_image_to_pixmap(image)
+            self.current_frame += skip  # Increment current frame by skip value
         except:
             ret = None
 
@@ -311,3 +319,10 @@ class VideoPlayer:
 
     def reset(self):
         self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        self.current_frame = 0
+
+    def get_current_frame(self):
+        return self.current_frame
+
+    def get_frame_count(self):
+        return self.frame_count

@@ -50,7 +50,7 @@ class OpenAiWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_LLM)
 class OpenAiNode(AiNode):
-    icon = "icons/out.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/openai.png"
     op_code = OP_NODE_LLM
     op_title = "OpenAI Prompter"
     content_label_objname = "openai_chat"

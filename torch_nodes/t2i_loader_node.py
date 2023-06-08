@@ -36,7 +36,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_T2I_LOADER)
 class T2ILoaderNode(AiNode):
-    icon = "ainodes_frontend/icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/t2i_loader.png"
     op_code = OP_NODE_T2I_LOADER
     op_title = "T2I Loader"
     content_label_objname = "t2i_loader_node"

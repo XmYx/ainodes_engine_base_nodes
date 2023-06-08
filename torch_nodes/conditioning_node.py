@@ -229,6 +229,11 @@ class ConditioningNode(AiNode):
             with torch.no_grad():
                 #clip = gs.models["clip"].clone()
                 c = gs.models["clip"].encode(prompt)
+
+                #print(c.shape)
+                #for value in c[0]:
+                #    print("value", value)
+
                 uc = {}
                 #del clip
                 return [[c, uc]]

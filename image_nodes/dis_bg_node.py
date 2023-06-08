@@ -15,7 +15,7 @@ class DISBGWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_DIS)
 class DISBGNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/bg.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/bg_removal.png"
     op_code = OP_NODE_DIS
     op_title = "Background Separation"
     content_label_objname = "image_disbg_node"
@@ -30,7 +30,6 @@ class DISBGNode(AiNode):
         self.content = DISBGWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
-
         self.grNode.height = 200
         self.grNode.width = 280
         self.content.eval_signal.connect(self.evalImplementation)
@@ -51,12 +50,9 @@ class DISBGNode(AiNode):
                 bg_pixmap = pil_image_to_pixmap(bg)
                 mask_pixmap = pil_image_to_pixmap(mask)
                 return([bg_pixmap, fg_pixmap, mask_pixmap])
-        return self.value
 
-    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
-        #super().onWorkerFinished(None)
         self.setOutput(0, [result[0]])
         self.setOutput(1, [result[1]])
         self.setOutput(2, [result[2]])

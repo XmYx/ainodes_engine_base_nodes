@@ -28,7 +28,7 @@ class FILMWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_FILM)
 class FILMNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/film.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/film.png"
     op_code = OP_NODE_FILM
     op_title = "FILM"
     content_label_objname = "FILM_node"

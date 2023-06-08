@@ -26,7 +26,7 @@ class LatentWidget(QDMNodeContentWidget):
         self.rescale_latent = self.create_check_box("Latent Rescale")
 @register_node(OP_NODE_LATENT)
 class LatentNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/latent.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/empty_latent.png"
     op_code = OP_NODE_LATENT
     op_title = "Empty Latent Image"
     content_label_objname = "empty_latent_node"
@@ -193,7 +193,7 @@ class LatentCompositeWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_LATENT_COMPOSITE)
 class LatentCompositeNode(AiNode):
-    icon = "ainodes_frontend/icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/comp_latent.png"
     op_code = OP_NODE_LATENT_COMPOSITE
     op_title = "Composite Latent Images"
     content_label_objname = "latent_comp_node"
@@ -208,27 +208,25 @@ class LatentCompositeNode(AiNode):
         self.output_socket_name = ["EXEC", "LATENT"]
         self.grNode.height = 220
         self.grNode.width = 240
-    #@QtCore.Slot()
-    def evalImplementation(self, index=0):
+        self.grNode.icon = self.icon
+        self.content.eval_signal.connect(self.evalImplementation)
+
+    def evalImplementation_thread(self, index=0):
 
         if self.isDirty() == True:
             if self.getInput(index) != None:
-                #self.markInvalid()
-                #self.markDescendantsDirty()
+
                 self.value = self.composite()
-                self.setOutput(0, self.value)
-                self.markDirty(False)
-                self.markInvalid(False)
-                if len(self.getOutputs(1)) > 0:
-                    self.executeChild(output_index=1)
-                return self.value
         else:
-            self.markDirty(False)
-            self.markInvalid(False)
-            #self.markDescendantsDirty()
-            if len(self.getOutputs(1)) > 0:
-                self.executeChild(output_index=1)
             return self.value
+
+    def onWorkerFinished(self, result):
+        self.setOutput(0, result)
+        self.markDirty(False)
+        self.markInvalid(False)
+        if len(self.getOutputs(1)) > 0:
+            self.executeChild(output_index=1)
+        return self.value
 
     def onMarkedDirty(self):
         self.value = None
@@ -263,7 +261,6 @@ class LatentCompositeNode(AiNode):
             s[:,:,y:y+samples_from.shape[2],x:x+samples_from.shape[3]] = samples_from[:,:,:samples_to.shape[2] - y, :samples_to.shape[3] - x] * mask + s[:,:,y:y+samples_from.shape[2],x:x+samples_from.shape[3]] * rev_mask
 
         self.setOutput(0, s)
-        #samples_out["samples"] = s
         return s
 def load_img(image, shape=None, use_alpha_as_mask=False):
     # use_alpha_as_mask: Read the alpha channel of the image as the mask image

@@ -57,7 +57,7 @@ class DeforumLossWidget(QDMNodeContentWidget):
         self.progress_bar = self.create_progress_bar("progress", 0, 100, 0)
 
 
-@register_node(OP_NODE_DEFORUM_LOSS)
+#@register_node(OP_NODE_DEFORUM_LOSS)
 class KSamplerNode(AiNode):
     icon = "ainodes_frontend/icons/in.png"
     op_code = OP_NODE_DEFORUM_LOSS

@@ -57,7 +57,7 @@ class VideoInputWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_VIDEO_INPUT)
 class VideoInputNode(AiNode):
-    icon = "ainodes_frontend/icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/video_input.png"
     op_code = OP_NODE_VIDEO_INPUT
     op_title = "Video Input"
     content_label_objname = "video_input_node"
@@ -114,9 +114,6 @@ class VideoPlayer:
     def __init__(self):
         self.video_file = None
         self.video_capture = None
-
-
-
     def load_video(self, video_file):
         try:
             self.video_capture.release()

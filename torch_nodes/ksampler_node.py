@@ -57,7 +57,7 @@ class KSamplerWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_K_SAMPLER)
 class KSamplerNode(AiNode):
-    icon = "ainodes_frontend/icons/in.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/k_sampler.png"
     op_code = OP_NODE_K_SAMPLER
     op_title = "K Sampler"
     content_label_objname = "K_sampling_node"
@@ -96,6 +96,8 @@ class KSamplerNode(AiNode):
         latent_list = self.getInputData(1)
         data = self.getInputData(0)
 
+
+        print(cond_list)
 
         if latent_list == None:
             latent_list = [torch.zeros([1, 4, 512 // 8, 512 // 8])]

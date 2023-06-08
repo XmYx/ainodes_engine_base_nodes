@@ -63,7 +63,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_T2V)
 class Text2VideoNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/torch.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/text2video.png"
     op_code = OP_NODE_T2V
     op_title = "Text2Video Node"
     content_label_objname = "t2v_loader_node"
