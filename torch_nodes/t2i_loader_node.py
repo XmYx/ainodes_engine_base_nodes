@@ -1,6 +1,6 @@
 import os
 
-from qtpy import QtWidgets, QtCore
+from qtpy import QtWidgets, QtCore, QtGui
 
 from ..ainodes_backend import torch_gc
 

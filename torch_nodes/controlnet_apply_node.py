@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from qtpy import QtWidgets, QtCore
+from qtpy import QtWidgets, QtCore, QtGui
 
 from ..ainodes_backend import pixmap_to_pil_image
 

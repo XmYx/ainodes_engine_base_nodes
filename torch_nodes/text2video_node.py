@@ -3,7 +3,7 @@ import random
 import secrets
 import time
 
-from qtpy import QtCore
+from qtpy import QtCore, QtGui
 from qtpy import QtWidgets
 from PIL import Image
 import cv2

@@ -1,5 +1,5 @@
 from qtpy.QtWidgets import QLineEdit
-from qtpy import QtCore
+from qtpy import QtCore, QtGui
 from qtpy import QtWidgets
 
 from ..ainodes_backend.model_loader import ModelLoader

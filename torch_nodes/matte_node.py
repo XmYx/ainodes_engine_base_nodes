@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from PIL import Image
-from qtpy import QtCore
+from qtpy import QtCore, QtGui
 
 from ..ainodes_backend.matte.matte import MatteInference
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap

@@ -4,8 +4,7 @@ import os
 import numpy as np
 import torch
 from PIL import Image
-from qtpy import QtWidgets
-
+from qtpy import QtWidgets, QtGui, QtCore
 
 from ..ainodes_backend.model_loader import UpscalerLoader
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap

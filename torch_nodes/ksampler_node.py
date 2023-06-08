@@ -64,7 +64,6 @@ class KSamplerNode(AiNode):
     category = "Sampling"
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[6,2,3,3,1], outputs=[5,2,1])
-        #pass
 
         # Create a worker object
     def initInnerClasses(self):
@@ -72,7 +71,6 @@ class KSamplerNode(AiNode):
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
-
         self.grNode.height = 700
         self.grNode.width = 256
         self.content.setMinimumWidth(250)
@@ -92,6 +90,7 @@ class KSamplerNode(AiNode):
         #pass
         # Add a task to the task queue
         cond_list = self.getInputData(3)
+        print(cond_list)
         n_cond_list = self.getInputData(2)
         self.steps = self.content.steps.value()
         latent_list = self.getInputData(1)

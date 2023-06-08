@@ -2,7 +2,7 @@ import os
 
 import requests
 from qtpy.QtCore import QObject, Signal
-from qtpy import QtWidgets, QtCore
+from qtpy import QtWidgets, QtCore, QtGui
 
 from ..ainodes_backend.hash import sha256
 from ..ainodes_backend.lora_loader import load_lora_for_models
