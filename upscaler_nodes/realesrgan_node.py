@@ -18,8 +18,7 @@ import os
 import numpy as np
 import torch
 from PIL import Image
-from qtpy import QtWidgets
-
+from qtpy import QtWidgets, QtGui, QtCore
 
 from ..ainodes_backend.model_loader import UpscalerLoader
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
@@ -94,6 +93,7 @@ class REALESRGANNode(AiNode):
         self.content = RealESRGWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.width = 340
         self.grNode.height = 360

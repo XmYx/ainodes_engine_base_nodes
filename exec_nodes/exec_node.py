@@ -1,4 +1,4 @@
-from qtpy import QtCore
+from qtpy import QtCore, QtGui
 from qtpy import QtWidgets
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -42,6 +42,8 @@ class ExecNode(AiNode):
         self.content = ExecWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
+
         self.grNode.height = 200
         self.grNode.width = 256
         self.content.setMinimumWidth(256)

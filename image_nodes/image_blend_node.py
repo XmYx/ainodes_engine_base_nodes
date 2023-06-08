@@ -45,6 +45,7 @@ class BlendNode(AiNode):
         self.content = BlendWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.output_socket_name = ["EXEC", "IMAGE"]
         self.input_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]

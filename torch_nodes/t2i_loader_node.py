@@ -49,6 +49,7 @@ class T2ILoaderNode(AiNode):
         self.content = T2ILoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.width = 280
         self.grNode.height = 100

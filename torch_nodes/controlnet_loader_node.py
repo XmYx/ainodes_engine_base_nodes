@@ -1,6 +1,6 @@
 import os
 
-from qtpy import QtWidgets, QtCore
+from qtpy import QtWidgets, QtCore, QtGui
 
 from ..ainodes_backend import torch_gc, load_controlnet
 
@@ -49,6 +49,7 @@ class ControlnetLoaderNode(AiNode):
         self.content = ControlnetLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.content.control_net_name.currentIndexChanged.connect(self.resize)
         self.grNode.width = 280

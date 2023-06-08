@@ -6,7 +6,7 @@ import cv2
 import imageio
 import numpy as np
 from PIL import Image
-from qtpy import QtWidgets, QtGui
+from qtpy import QtWidgets, QtGui, QtCore
 from qtpy.QtWidgets import QPushButton, QVBoxLayout
 
 from ..ainodes_backend import pixmap_to_pil_image
@@ -85,6 +85,7 @@ class VideoOutputNode(AiNode):
         self.content = VideoOutputWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.content.save_button.clicked.connect(self.start_new_video)
         self.grNode.height = 300

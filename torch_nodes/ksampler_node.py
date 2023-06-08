@@ -71,6 +71,7 @@ class KSamplerNode(AiNode):
         self.content = KSamplerWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.height = 700
         self.grNode.width = 256
@@ -95,9 +96,6 @@ class KSamplerNode(AiNode):
         self.steps = self.content.steps.value()
         latent_list = self.getInputData(1)
         data = self.getInputData(0)
-
-
-        print(cond_list)
 
         if latent_list == None:
             latent_list = [torch.zeros([1, 4, 512 // 8, 512 // 8])]

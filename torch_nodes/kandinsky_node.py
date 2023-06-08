@@ -68,6 +68,7 @@ class KandinskyNode(AiNode):
         self.content = KandinskyWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.height = 750
         self.grNode.width = 256

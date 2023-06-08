@@ -74,6 +74,7 @@ class VideoInputNode(AiNode):
         self.content = VideoInputWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         #self.resize()
         self.grNode.height = 200

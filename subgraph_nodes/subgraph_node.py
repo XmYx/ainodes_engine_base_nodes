@@ -57,6 +57,7 @@ class SubgraphNode(AiNode):
         self.content = SubgraphNodeWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
         self.grNode.height = 640
         self.grNode.width = 400
         self.content.setMinimumHeight(500)
@@ -179,6 +180,7 @@ class SubGraphInputNode(AiNode):
         self.content = SubgraphNodePathwayWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
         self.grNode.height = 180
         self.content.eval_signal.connect(self.evalImplementation)
         self.latents = None
@@ -227,6 +229,7 @@ class SubGraphOutputNode(AiNode):
         self.content = SubgraphNodePathwayWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
         self.grNode.height = 180
         self.content.eval_signal.connect(self.evalImplementation)
         self.true_parent = None

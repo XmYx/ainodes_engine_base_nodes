@@ -1,10 +1,8 @@
-from qtpy import QtCore
-from ..ainodes_backend.dis_bg.dis_gb_removal import DISRemoval
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
+from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 
 OP_NODE_DIS = get_next_opcode()
 
@@ -27,16 +25,21 @@ class DISBGNode(AiNode):
         super().__init__(scene, inputs=[5,1], outputs=[5,5,5,1])
 
     def initInnerClasses(self):
+        from qtpy.QtCore import Qt
+        from qtpy.QtGui import QImage
         self.content = DISBGWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QImage(self.grNode.icon).scaled(64, 64, Qt.KeepAspectRatio)
         self.grNode.height = 200
         self.grNode.width = 280
         self.content.eval_signal.connect(self.evalImplementation)
         self.model = None
 
     def evalImplementation_thread(self, index=0):
+
         if self.model == None:
+            from ..ainodes_backend.dis_bg.dis_gb_removal import DISRemoval
             self.model = DISRemoval()
         self.busy = True
         pixmaps = self.getInputData(0)

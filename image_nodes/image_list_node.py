@@ -100,6 +100,7 @@ class ImageListNode(AiNode):
         self.grNode.height = 640
         self.grNode.width = 512
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.images = []
         self.index = 0

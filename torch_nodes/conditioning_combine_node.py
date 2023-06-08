@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from qtpy import QtCore
+from qtpy import QtCore, QtGui
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -61,6 +61,7 @@ class ConditioningCombineNode(AiNode):
         self.content = ConditioningCombineWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.height = 250
         self.grNode.width = 320
@@ -90,11 +91,14 @@ class ConditioningCombineNode(AiNode):
                     print("COND COMBINE NODE: Conditionings weighted.")
                 return [c]
             else:
-                ###c = cond1_list[0] + cond2_list[0]
-                ###if gs.logging:
-                ###    print("COND COMBINE NODE: Conditionings combined.")
-                conds = self.calculate_blended_conditionings(cond1_list[0], cond2_list[0], self.content.cond_list_length.value())
-                return conds
+                conds_list_length = self.content.cond_list_length.value()
+                if conds_list_length > 1:
+                    c = self.calculate_blended_conditionings(cond1_list[0], cond2_list[0],
+                                                             self.content.cond_list_length.value())
+                    return c
+                else:
+                    c = cond1_list[0] + cond2_list[0]
+                    return [c]
 
 
         except Exception as e:

@@ -62,6 +62,7 @@ class ImagePreviewNode(AiNode):
         self.content = ImagePreviewWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.height = 400
         self.grNode.width = 320

@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
-from PIL import Image, ImageEnhance
-from qtpy import QtWidgets, QtCore
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+from qtpy import QtWidgets, QtCore, QtGui
 
 from ..ainodes_backend.cnet_preprocessors import hed
 from ..ainodes_backend.cnet_preprocessors.mlsd import MLSDdetector
@@ -134,6 +134,7 @@ class ImageOpNode(AiNode):
         self.content = ImageOpsWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         #self.content.dropdown.currentIndexChanged.connect(self.evalImplementation)
         self.output_socket_name = ["EXEC", "DATA","IMAGE"]
@@ -313,6 +314,10 @@ class ImageOpNode(AiNode):
             #pose, _ = detector(image, True)
             #image = HWC3(pose)
             #image = Image.fromarray(np_image)
+
+        elif method == 'invert':
+            image = ImageOps.invert(image)
+            print(image.size)
         if image != None:
             # Convert the PIL Image object to a QPixmap object
             pixmap = pil_image_to_pixmap(image)

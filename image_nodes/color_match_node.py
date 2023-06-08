@@ -1,4 +1,4 @@
-from qtpy import QtCore
+from qtpy import QtCore, QtGui
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -30,6 +30,7 @@ class ColorMatch(AiNode):
         self.content = MatteWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.height = 140
         self.grNode.width = 256

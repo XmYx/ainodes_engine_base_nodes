@@ -5,7 +5,7 @@ import torch
 from qtpy.QtCore import Qt
 from qtpy.QtCore import QObject, Signal
 #from qtpy.QtGui import Qt
-from qtpy import QtWidgets, QtCore
+from qtpy import QtWidgets, QtCore, QtGui
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -116,6 +116,7 @@ class ConditioningNode(AiNode):
         self.content = ConditioningWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.height = 300
         self.grNode.width = 320
@@ -229,10 +230,6 @@ class ConditioningNode(AiNode):
             with torch.no_grad():
                 #clip = gs.models["clip"].clone()
                 c = gs.models["clip"].encode(prompt)
-
-                #print(c.shape)
-                #for value in c[0]:
-                #    print("value", value)
 
                 uc = {}
                 #del clip

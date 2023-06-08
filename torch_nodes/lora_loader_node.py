@@ -75,6 +75,7 @@ class LoraLoaderNode(AiNode):
         self.content = LoraLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.width = 340
         self.grNode.height = 300

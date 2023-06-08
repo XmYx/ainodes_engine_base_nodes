@@ -1,5 +1,5 @@
 import os
-from qtpy import QtCore
+from qtpy import QtCore, QtGui
 from qtpy import QtWidgets
 
 from ..ainodes_backend.model_loader import ModelLoader
@@ -78,6 +78,7 @@ class TorchLoaderNode(AiNode):
         self.content = TorchLoaderWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.width = 340
         self.grNode.height = 240

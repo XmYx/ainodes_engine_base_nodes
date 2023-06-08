@@ -65,6 +65,7 @@ class OpenAiNode(AiNode):
         self.content = OpenAiWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.height = 280
         self.grNode.width = 320

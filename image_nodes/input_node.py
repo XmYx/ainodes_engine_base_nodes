@@ -15,7 +15,7 @@ import cv2
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap
+from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image
 from ainodes_frontend import singleton as gs
 
 OP_NODE_IMG_INPUT = get_next_opcode()
@@ -24,6 +24,7 @@ class ImageInputWidget(QDMNodeContentWidget):
     fileName = None
     frame_string_signal = QtCore.Signal(str)
     parent_resize_signal = QtCore.Signal()
+    set_image_signal = QtCore.Signal(object)
     def initUI(self):
         self.create_widgets()
         self.create_main_layout()
@@ -45,18 +46,20 @@ class ImageInputWidget(QDMNodeContentWidget):
             self.video.load_video(file_name)
             self.advance_frame()
 
+    def set_image(self, pixmap: object):
+        self.image.setPixmap(pixmap)
+        self.parent_resize_signal.emit()
+
     def openFileDialog(self):
         print("OPENING")
         # Open the file dialog to select a PNG file
-        fileName, _ = QFileDialog.getOpenFileName(self.node.scene.getView().parent().window(), "Select Image", "",
+        fileName, _ = QFileDialog.getOpenFileName(self.window(), "Select Image", "",
                                                   "PNG Files (*.png);JPEG Files (*.jpeg *.jpg);All Files(*)")
         # If a file is selected, display the image in the label
         if fileName != None:
             image = Image.open(fileName)
-            qimage = ImageQt(image)
-            pixmap = QPixmap().fromImage(qimage)
-            self.image.setPixmap(pixmap)
-            self.parent_resize_signal.emit()
+            pixmap = pil_image_to_pixmap(image)
+            self.set_image_signal.emit(pixmap)
             self.fileName = fileName
 
 
@@ -70,22 +73,25 @@ class ImageInputNode(AiNode):
     category = "Image"
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC", "IMAGE"]
+    dim = (340, 280)
+    NodeContent_class = ImageInputWidget
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[5,1])
-        self.content.parent_resize_signal.connect(self.resize)
         self.images = []
 
+
     def initInnerClasses(self):
-        self.content = ImageInputWidget(self)
-        self.grNode = CalcGraphicsNode(self)
-        self.grNode.icon = self.icon
-        self.grNode.height = 220
+        super().initInnerClasses()
+        self.video = VideoPlayer()
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.open_graph_button.clicked.connect(self.tryOpenGraph)
-        self.video = VideoPlayer()
         self.content_type = None
         self.content.frame_string_signal.connect(self.set_frame_string)
+        self.content.set_image_signal.connect(self.content.set_image)
+        self.content.parent_resize_signal.connect(self.resize)
+
 
     def set_frame_string(self, string: str):
         self.content.current_frame.setText(str(string))
@@ -149,33 +155,11 @@ class ImageInputNode(AiNode):
         self.content_type = 'video'
         return pixmap
 
-        """cap = cv2.VideoCapture(file_path)
-        num_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        print(f"Number of frames: {num_frames}")
-
-        frames_dir = f"frames_{time.time():.0f}"
-        os.makedirs(frames_dir, exist_ok=True)
-
-        pixmaps = []
-        for i in range(num_frames):
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            image = Image.fromarray(frame)
-            pixmap = pil_image_to_pixmap(image)
-            pixmap.save(os.path.join(frames_dir, f"frame_{i:04}.png"))
-            pixmaps.append(pixmap)
-
-        cap.release()
-        return pixmaps"""
     def cv2_to_qimage(self, cv_img):
         height, width, channel = cv_img.shape
         bytes_per_line = channel * width
         return QtGui.QImage(cv_img.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888).rgbSwapped()
 
-    #@QtCore.Slot()
     def resize(self):
         self.content.setMinimumHeight(self.content.image.pixmap().size().height())
         self.content.setMinimumWidth(self.content.image.pixmap().size().width())

@@ -61,6 +61,7 @@ class CNApplyNode(AiNode):
         self.content = CNApplyWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
+        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.height = 600
         self.grNode.width = 256
