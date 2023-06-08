@@ -40,3 +40,4 @@ gdown
 git+https://github.com/xinntao/Real-ESRGAN.git
 neovim
 python-rtmidi
+lpips
