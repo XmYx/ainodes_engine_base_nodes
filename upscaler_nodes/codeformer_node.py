@@ -1,3 +1,4 @@
+import os, sys
 from types import SimpleNamespace
 
 from ainodes_frontend.base import register_node, get_next_opcode

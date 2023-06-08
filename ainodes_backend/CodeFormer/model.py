@@ -20,7 +20,9 @@ from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.u
 #from basicsr.utils.misc import gpu_is_available, get_device
 
 
-
+print("CODEFORMER", os.getcwd())
+import sys
+sys.path.append(os.path.join(os.getcwd(), "src", "CodeFormerBasicSR"))
 from c_basicsr.utils.registry import ARCH_REGISTRY
 
 pretrain_model_url = {
