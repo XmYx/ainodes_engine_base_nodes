@@ -22,6 +22,7 @@ from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.u
 
 print("CODEFORMER", os.getcwd())
 import sys
+
 sys.path.append(os.path.join(os.getcwd(), "src", "CodeFormerBasicSR"))
 from c_basicsr.utils.registry import ARCH_REGISTRY
 
