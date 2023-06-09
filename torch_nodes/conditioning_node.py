@@ -79,10 +79,13 @@ OP_NODE_CONDITIONING = get_next_opcode()
 class ConditioningWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
     def create_widgets(self):
 
-        self.prompt = self.create_text_edit("Prompt")
+        self.prompt = self.create_text_edit("Prompt", placeholder="Prompt or Negative Prompt (use 2x Conditioning Nodes for Stable Diffusion),\n"
+                                                                  "and connect them to a K Sampler.\n"
+                                                                  "If you want to control your resolution,\n"
+                                                                  "or use an init image, use an Empty Latent Node.")
         self.skip = self.create_spin_box("Clip Skip", min_val=-11, max_val=0, default_val=-1)
         self.embed_checkbox = self.create_check_box("Use embeds")
         self.button = QtWidgets.QPushButton("Get Conditioning")
@@ -120,9 +123,9 @@ class ConditioningNode(AiNode):
         self.grNode.icon = self.icon
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
-        self.grNode.height = 300
+        self.grNode.height = 400
         self.grNode.width = 320
-        self.content.setMinimumHeight(200)
+        self.content.setMinimumHeight(300)
         self.content.setMinimumWidth(320)
         self.content.button.clicked.connect(self.evalImplementation)
         self.content.set_embeds.clicked.connect(self.show_embeds)
