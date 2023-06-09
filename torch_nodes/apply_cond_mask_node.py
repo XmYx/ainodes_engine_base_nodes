@@ -53,13 +53,10 @@ class CondMaskNode(AiNode):
 
             if i.mode == 'RGBA':
                 mask = np.array(i.getchannel('A')).astype(np.float32) / 255.0
-                print("ALPHAMASK", mask.shape)
             elif i.mode == 'RGB' or i.mode == 'P':
                 # if the image is RGB or P, convert it to greyscale and use as alpha channel
                 i = i.convert('L')  # convert image to greyscale
                 mask = np.array(i).astype(np.float32) / 255.0  # normalize the image data to 0 - 1
-                print("GREYSCALE", mask.shape)
-
             else:
                 raise ValueError("Unsupported image mode")
             mask = 1. - torch.from_numpy(mask).to("cuda")

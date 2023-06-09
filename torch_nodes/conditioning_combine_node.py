@@ -100,7 +100,6 @@ class ConditioningCombineNode(AiNode):
 
 
                     c = cond1_list[0] + cond2_list[0]
-                    print("C", c)
                     return [c]
 
 

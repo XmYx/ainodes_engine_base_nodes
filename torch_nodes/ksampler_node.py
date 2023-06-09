@@ -147,9 +147,9 @@ class KSamplerNode(AiNode):
                 if data is not None:
                     #print("BEFORE", self.steps)
                     self.update_vars(data)
-                noise_mask = None
-                if hasattr(self, "noise_mask"):
-                    self.noise_mask = noise_mask
+                    if 'noise_mask' in data:
+                        noise_mask = data['noise_mask']
+
                 if cond_override:
                     self.denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
                     latent = latent_override

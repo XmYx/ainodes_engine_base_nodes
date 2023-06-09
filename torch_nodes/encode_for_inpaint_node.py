@@ -1,7 +1,9 @@
 import math
 
+import PIL
 import numpy as np
 import torch
+from PIL import ImageOps
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
@@ -13,6 +15,7 @@ from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil
 OP_NODE_ENCODE_INPAINT = get_next_opcode()
 class InpaintEncodeWidget(QDMNodeContentWidget):
     def initUI(self):
+        self.channel = self.create_combo_box(["R", "G", "B", "A"], "Color Channel")
         self.create_main_layout()
 
 @register_node(OP_NODE_ENCODE_INPAINT)
@@ -37,12 +40,15 @@ class InpaintEncodeNode(AiNode):
 
         image = pixmap_to_pil_image(images[0])
         mask = pixmap_to_pil_image(masks[0])
+        try:
+            latent, noise_mask = self.encode(image, mask)
 
-        latent, noise_mask = self.encode(image, mask)
+            data = {"noise_mask":noise_mask}
 
-        data = {"noise_mask":noise_mask}
-
-        return [[latent], data]
+            return [[latent], data]
+        except Exception as e:
+            done = handle_ainodes_exception()
+            return [None,None]
 
 
 
@@ -53,7 +59,19 @@ class InpaintEncodeNode(AiNode):
         x = (pixels.shape[1] // 8) * 8
         y = (pixels.shape[2] // 8) * 8
 
-        mask = torch.from_numpy(np.array(mask.convert("RGB")).astype(np.uint8)).to(dtype=torch.float32)
+        i = ImageOps.exif_transpose(mask)
+        if i.getbands() != ("R", "G", "B", "A"):
+            i = i.convert("RGBA")
+        mask = None
+        c = self.content.channel.currentText()
+        if c in i.getbands():
+            mask = np.array(i.getchannel(c)).astype(np.float32) / 255.0
+            mask = torch.from_numpy(mask)
+            if c == 'A':
+                mask = 1. - mask
+        else:
+            mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
+
 
         mask = torch.nn.functional.interpolate(mask.reshape((-1, 1, mask.shape[-2], mask.shape[-1])),
                                                size=(pixels.shape[1], pixels.shape[2]), mode="bilinear")
@@ -64,7 +82,6 @@ class InpaintEncodeNode(AiNode):
             y_offset = (pixels.shape[2] % 8) // 2
             pixels = pixels[:, x_offset:x + x_offset, y_offset:y + y_offset, :]
             mask = mask[:, :, x_offset:x + x_offset, y_offset:y + y_offset]
-
         # grow mask by a few pixels to keep things seamless in latent space
         if grow_mask_by == 0:
             mask_erosion = mask
@@ -73,16 +90,15 @@ class InpaintEncodeNode(AiNode):
             padding = math.ceil((grow_mask_by - 1) / 2)
 
             mask_erosion = torch.clamp(torch.nn.functional.conv2d(mask.round(), kernel_tensor, padding=padding), 0, 1)
-
         m = (1.0 - mask.round()).squeeze(1)
 
-        print(m[None].shape)
-        print(pixels.shape)
 
         for i in range(3):
             pixels[:, :, :, i] -= 0.5
-            pixels[:, :, :, i] *= m[-1]
+            pixels[:, :, :, i] *= m
             pixels[:, :, :, i] += 0.5
+
+        pixels = pixels / 255.0
         t = gs.models["vae"].encode(pixels)
 
         return t, (mask_erosion[:, :, :x, :y].round())

@@ -112,7 +112,7 @@ def inpaint(sampler, image, mask, prompt, seed, scale, ddim_steps, device, mask_
                 img_callback=callback,
             )
 
-            print(samples_cfg)
+            #print(samples_cfg)
             gs.models["sd"].model.cpu()
             #x_samples = encoded_to_torch_image(
             #    gs.models["sd"].model, samples_cfg)  # [1, 3, 512, 512]
@@ -120,7 +120,7 @@ def inpaint(sampler, image, mask, prompt, seed, scale, ddim_steps, device, mask_
             x_samples = gs.models["vae"].decode(samples_cfg.half())
             x_samples = 255. * x_samples[0].detach().numpy()
             result = [Image.fromarray(x_samples.astype(np.uint8))]
-            print("END", x_samples[0].shape, mask_for_reconstruction.shape, masked_image_for_blend.shape)
+            #print("END", x_samples[0].shape, mask_for_reconstruction.shape, masked_image_for_blend.shape)
     return result
 
 

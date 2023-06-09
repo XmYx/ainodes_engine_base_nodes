@@ -358,7 +358,11 @@ class KSamplerX0Inpaint(torch.nn.Module):
         self.inner_model = model
     def forward(self, x, sigma, uncond, cond, cond_scale, denoise_mask, cond_concat=None, model_options={}):
         if denoise_mask is not None:
+
             latent_mask = 1. - denoise_mask
+
+
+
             x = x * denoise_mask + (self.latent_image + self.noise * sigma.reshape([sigma.shape[0]] + [1] * (len(self.noise.shape) - 1))) * latent_mask
         out = self.inner_model(x, sigma, cond=cond, uncond=uncond, cond_scale=cond_scale, cond_concat=cond_concat, model_options=model_options)
         if denoise_mask is not None:
@@ -565,6 +569,7 @@ class KSampler:
             cond_concat = []
             for ck in self.model.model.concat_keys:
                 if denoise_mask is not None:
+
                     if ck == "mask":
                         cond_concat.append(denoise_mask[:,:1])
                     elif ck == "masked_image":

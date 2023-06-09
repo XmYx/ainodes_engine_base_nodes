@@ -61,7 +61,7 @@ class CodeFormerNode(AiNode):
                     suffix=None,
                     save_video_fps=None
                 )
-                print(args)
+                #print(args)
                 result = run_codeformer(args, [pil_img])
                 pixmap = pil_image_to_pixmap(result[0])
                 results.append(pixmap)

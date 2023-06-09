@@ -118,7 +118,7 @@ def get_tiled_scale_steps(width, height, tile_x, tile_y, overlap):
 
 @torch.inference_mode()
 def tiled_scale(samples, function, tile_x=64, tile_y=64, overlap = 8, upscale_amount = 4, out_channels = 3, pbar = None):
-    print(samples.shape)
+    #print(samples.shape)
 
     output = torch.empty((samples.shape[0], out_channels, round(samples.shape[2] * upscale_amount), round(samples.shape[3] * upscale_amount)), device="cpu")
     for b in range(samples.shape[0]):

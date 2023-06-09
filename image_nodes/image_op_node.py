@@ -317,7 +317,6 @@ class ImageOpNode(AiNode):
 
         elif method == 'invert':
             image = ImageOps.invert(image)
-            print(image.size)
         if image != None:
             # Convert the PIL Image object to a QPixmap object
             pixmap = pil_image_to_pixmap(image)

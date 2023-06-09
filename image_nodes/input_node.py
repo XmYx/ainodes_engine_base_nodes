@@ -48,7 +48,6 @@ class ImageInputWidget(QDMNodeContentWidget):
 
 
     def openFileDialog(self):
-        print("OPENING")
         # Open the file dialog to select a PNG file
         fileName, _ = QFileDialog.getOpenFileName(self.window(), "Select Image", "",
                                                   "PNG Files (*.png);JPEG Files (*.jpeg *.jpg);All Files(*)")

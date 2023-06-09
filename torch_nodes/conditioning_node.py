@@ -45,7 +45,7 @@ class EmbedDialog(QDialog):
             spin_box.setEnabled(True)
             item_layout.addWidget(spin_box)
             for item in prev_dict:
-                print(item)
+                #print(item)
                 if item['embed']['filename'] == file_name:
                     check_box.setChecked(True)
                     spin_box.setValue(item['embed']['value'])
