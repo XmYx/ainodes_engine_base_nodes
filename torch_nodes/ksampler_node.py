@@ -143,7 +143,7 @@ class KSamplerNode(AiNode):
                 self.start_step = self.content.start_step.value()
                 self.sampler_name = self.content.sampler.currentText()
                 self.scheduler = self.content.schedulers.currentText()
-
+                noise_mask = None
                 if data is not None:
                     #print("BEFORE", self.steps)
                     self.update_vars(data)
