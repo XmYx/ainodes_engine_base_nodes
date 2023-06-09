@@ -1,4 +1,5 @@
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtWidgets import QGraphicsView
 from qtpy import QtCore, QtGui
 from ainodes_frontend.base import register_node, get_next_opcode, handle_ainodes_exception
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -13,9 +14,13 @@ class SubgraphNodeWidget(QDMNodeContentWidget):
     def initUI(self):
         self.label = self.create_label(str(f"ID: {self.node.name}"))
         self.edit_label = self.create_line_edit("Name")
-        self.description = self.create_text_edit("Description")
+        self.description = self.create_text_edit("Description", placeholder="Double Click to open the subgraph\n"
+                                                                            "Use this field to provide a description.")
         self.image_label = self.create_label("")
-        self.create_main_layout(grid=1)
+        self.image_label.setMinimumHeight(384)
+        self.image_label.setMinimumWidth(384)
+
+        self.create_main_layout(grid=2)
 
 
 class SubgraphNodePathwayWidget(QDMNodeContentWidget):
@@ -44,6 +49,7 @@ class SubgraphNode(AiNode):
     init_done = None
     graph_json = None
     graph_window = None
+    minimap = None
 
     def __init__(self, scene, graph_json=None):
         super().__init__(scene, inputs=[2,3,5,6,1], outputs=[2,3,5,6,1])
@@ -51,6 +57,9 @@ class SubgraphNode(AiNode):
 
         if self.graph_json:
             self.scene.getView().parent().window().json_open_signal.emit(self)
+            if not self.minimap:
+                self.addMinimap()
+
 
     def initInnerClasses(self):
         self.name = f"{self.getID(0)}_Subgraph"
@@ -58,10 +67,10 @@ class SubgraphNode(AiNode):
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
-        self.grNode.height = 640
-        self.grNode.width = 400
-        self.content.setMinimumHeight(500)
-        self.content.setMinimumWidth(384)
+        self.grNode.height = 1000
+        self.grNode.width = 680
+        self.content.setMinimumHeight(800)
+        self.content.setMinimumWidth(650)
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.image_signal.connect(self.set_image)
         self.init_done = True
@@ -117,6 +126,13 @@ class SubgraphNode(AiNode):
             else:
                 self.scene.getView().parent().window().file_new_signal.emit(self)
                 self.graph_window.widget().json_name = f"{self.getID(0)}_Subgraph"
+        if not self.minimap:
+            self.addMinimap()
+
+    def addMinimap(self):
+        self.content.minimap = SubgraphMiniMap(self.graph_window.widget().scene.getView().grScene)
+        self.content.grid_layout.addWidget(self.content.minimap, 2, 0, 1, -1)
+        self.minimap = True
 
     def serialize(self):
         """
@@ -263,6 +279,49 @@ class SubGraphOutputNode(AiNode):
 
 
 
+class SubgraphMiniMap(QGraphicsView):
+    def __init__(self, scene):
+        super(SubgraphMiniMap, self).__init__(scene)
+        self.setRenderHint(QtGui.QPainter.Antialiasing)
+        self.setInteractive(True)
+        self._is_panning = False
+        self._mouse_button_pressed = None
+        self.last_scene_mouse_position = QPoint(0,0)
+        self.zoomInFactor = 1.05
+        self.zoomClamp = False
+        self.zoom = 10
+        self.zoomStep = 0.1
+        self.zoomRange = [7.5, 9]
+
+    def mousePressEvent(self, event):
+        event.ignore()
+        super().mousePressEvent()
+    def mouseMoveEvent(self, event):
+        event.ignore()
+
+    def mouseReleaseEvent(self, event):
+        event.ignore()
+    def wheelEvent(self, event):
+        """overridden Qt's ``wheelEvent``. This handles zooming"""
+        # calculate our zoom Factor
+        zoomOutFactor = 1 / self.zoomInFactor
+
+        # calculate zoom
+        if event.angleDelta().y() > 0:
+            zoomFactor = self.zoomInFactor
+            self.zoom += self.zoomStep
+        else:
+            zoomFactor = zoomOutFactor
+            self.zoom -= self.zoomStep
+
+
+        clamped = False
+        if self.zoom < self.zoomRange[0]: self.zoom, clamped = self.zoomRange[0], True
+        if self.zoom > self.zoomRange[1]: self.zoom, clamped = self.zoomRange[1], True
+
+        # set scene scale
+        if not clamped or self.zoomClamp is False:
+            self.scale(zoomFactor, zoomFactor)
 
 
 

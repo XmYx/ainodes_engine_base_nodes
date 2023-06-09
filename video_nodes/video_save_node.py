@@ -21,50 +21,57 @@ class VideoOutputWidget(QDMNodeContentWidget):
     def initUI(self):
         self.video = GifRecorder()
         self.current_frame = 0
-        self.type_select = QtWidgets.QComboBox()
-        self.type_select.addItems(["GIF", "mp4_ffmpeg", "mp4_fourcc"])
+        self.type_select = self.create_combo_box(items=["GIF", "mp4_ffmpeg", "mp4_fourcc"], label_text="Save Format")
+        # self.type_select.addItems(["GIF", "mp4_ffmpeg", "mp4_fourcc"])
         self.save_button = QPushButton("Save buffer to selected type", self)
         #self.new_button = QPushButton("New Video", self)
         #self.save_button.clicked.connect(self.loadVideo)
 
-        self.width_value = QtWidgets.QSpinBox()
-        self.width_value.setMinimum(64)
-        self.width_value.setSingleStep(64)
-        self.width_value.setMaximum(4096)
-        self.width_value.setValue(512)
+        self.width_value = self.create_spin_box("Width", min_val=64, max_val=4096, default_val=512, step_value=64)
+        self.height_value = self.create_spin_box("Height", min_val=64, max_val=4096, default_val=512, step_value=64)
+        self.fps = self.create_spin_box("FPS", min_val=1, max_val=4096, default_val=30, step_value=1)
+        # self.width_value = QtWidgets.QSpinBox()
+        # self.width_value.setMinimum(64)
+        # self.width_value.setSingleStep(64)
+        # self.width_value.setMaximum(4096)
+        # self.width_value.setValue(512)
 
-        self.height_value = QtWidgets.QSpinBox()
-        self.height_value.setMinimum(64)
-        self.height_value.setSingleStep(64)
-        self.height_value.setMaximum(4096)
-        self.height_value.setValue(512)
+        # self.height_value = QtWidgets.QSpinBox()
+        # self.height_value.setMinimum(64)
+        # self.height_value.setSingleStep(64)
+        # self.height_value.setMaximum(4096)
+        # self.height_value.setValue(512)
 
-        self.fps = QtWidgets.QSpinBox()
-        self.fps.setMinimum(1)
-        self.fps.setSingleStep(1)
-        self.fps.setMaximum(4096)
-        self.fps.setValue(24)
+        # self.fps = QtWidgets.QSpinBox()
+        # self.fps.setMinimum(1)
+        # self.fps.setSingleStep(1)
+        # self.fps.setMaximum(4096)
+        # self.fps.setValue(24)
 
         self.dump_at = self.create_spin_box("Dump at every:", 0, 20000, 0, 1)
 
-        self.checkbox = QtWidgets.QCheckBox("Keep Buffer")
+        self.audio_path = self.create_line_edit("Audio Path:")
 
-        palette = QtGui.QPalette()
-        palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
-        palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
-        self.checkbox.setPalette(palette)
+        self.checkbox = self.create_check_box("Keep Buffer")
+        # self.checkbox = QtWidgets.QCheckBox("Keep Buffer")
+        #
+        # palette = QtGui.QPalette()
+        # palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
+        # palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
+        # self.checkbox.setPalette(palette)
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.type_select)
-        layout.addWidget(self.save_button)
-        #layout.addWidget(self.width_value)
-        #layout.addWidget(self.height_value)
-        layout.addWidget(self.fps)
-        layout.addWidget(self.dump_at)
-        layout.addWidget(self.checkbox)
-
-        self.setLayout(layout)
-
+        # layout = QVBoxLayout()
+        # layout.addWidget(self.type_select)
+        # layout.addWidget(self.save_button)
+        # #layout.addWidget(self.width_value)
+        # #layout.addWidget(self.height_value)
+        # layout.addWidget(self.fps)
+        # layout.addWidget(self.dump_at)
+        # layout.addWidget(self.checkbox)
+        #
+        # self.setLayout(layout)
+        self.create_button_layout([self.save_button])
+        self.create_main_layout(grid=1)
 
 
 @register_node(OP_NODE_VIDEO_SAVE)
@@ -88,10 +95,10 @@ class VideoOutputNode(AiNode):
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.content.save_button.clicked.connect(self.start_new_video)
-        self.grNode.height = 300
-        self.grNode.width = 260
+        self.grNode.height = 330
+        self.grNode.width = 280
 
-        self.content.setGeometry(0, 0, 260, 230)
+        self.content.setGeometry(10, 20, 260, 230)
         self.markInvalid(True)
         self.content.eval_signal.connect(self.evalImplementation)
 
@@ -148,7 +155,8 @@ class VideoOutputNode(AiNode):
         type = self.content.type_select.currentText()
 
         dump = not self.content.checkbox.isChecked()
-
+        audio_path = self.content.audio_path.text()
+        audio_path = None if audio_path == "" else audio_path
         self.content.video.close(timestamp, fps, type, dump)
         if dump:
             print(f"VIDEO SAVE NODE: Done. The frame buffer is now empty.")
@@ -194,7 +202,7 @@ class GifRecorder:
 
 
 
-    def close(self, timestamp, fps, type='GIF', dump=False):
+    def close(self, timestamp, fps, type='GIF', dump=False, audio_path=None):
         if type == 'GIF':
             os.makedirs("output/gifs", exist_ok=True)
             filename = f"output/gifs/{timestamp}.gif"
@@ -213,6 +221,34 @@ class GifRecorder:
 
             else:
                 print("The buffer is empty, cannot save.")
+
+        elif type == 'mp4_ffmpeg':
+            os.makedirs("output/mp4s", exist_ok=True)
+            filename = f"output/mp4s/{timestamp}.mp4"
+            if len(self.frames) > 0:
+                width = self.frames[0].shape[1]
+                height = self.frames[0].shape[0]
+
+                cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
+                       'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-an',
+                       filename]
+                video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+                for frame in self.frames:
+                    video_writer.stdin.write(frame.tobytes())
+                video_writer.communicate()
+
+                # if audio path is provided, merge the audio and the video
+                if audio_path is not None:
+                    try:
+                        output_filename = f"output/mp4s/{timestamp}_with_audio.mp4"
+                        cmd = ['ffmpeg', '-y', '-i', filename, '-i', audio_path, '-c:v', 'copy', '-c:a', 'aac', '-strict', 'experimental', output_filename]
+                        subprocess.run(cmd)
+                    except Exception as e:
+                        print(f"Audio file merge failed from path {audio_path}\n{repr(e)}")
+                        pass
+            else:
+                print("The buffer is empty, cannot save.")
+
         elif type == 'mp4_ffmpeg':
             os.makedirs("output/mp4s", exist_ok=True)
             filename = f"output/mp4s/{timestamp}.mp4"
