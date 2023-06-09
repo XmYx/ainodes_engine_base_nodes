@@ -24,7 +24,7 @@ class InpaintEncodeNode(AiNode):
     op_code = OP_NODE_ENCODE_INPAINT
     op_title = "Encode for Inpaint"
     content_label_objname = "inpaint_encode_node"
-    category = "Experimental"
+    category = "Latent"
     NodeContent_class = InpaintEncodeWidget
     dim = (340, 180)
     output_data_ports = [0, 1]
