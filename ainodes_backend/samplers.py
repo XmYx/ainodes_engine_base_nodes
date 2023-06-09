@@ -521,6 +521,9 @@ class KSampler:
             self.sigmas = sigmas[-(steps + 1):]
 
 
+
+
+
     def sample(self, noise, positive, negative, cfg, latent_image=None, start_step=None, last_step=None, force_full_denoise=False, denoise_mask=None, callback=None, model_key="sd"):
         sigmas = self.sigmas
         sigma_min = self.sigma_min
@@ -590,25 +593,27 @@ class KSampler:
                 noise_mask = None
                 if denoise_mask is not None:
                     noise_mask = 1.0 - denoise_mask
-                sampler = DDIMSampler(self.model.model)
-                sampler.make_schedule_timesteps(ddim_timesteps=timesteps, verbose=True)
+
+                sampler = DDIMSampler(self.model.model, device=self.device)
+                sampler.make_schedule_timesteps(ddim_timesteps=timesteps, verbose=False)
                 z_enc = sampler.stochastic_encode(latent_image, torch.tensor([len(timesteps) - 1] * noise.shape[0]).to(self.device), noise=noise, max_denoise=max_denoise)
                 samples, _ = sampler.sample_custom(ddim_timesteps=timesteps,
                                                      conditioning=positive,
                                                      batch_size=noise.shape[0],
                                                      shape=noise.shape[1:],
-                                                     verbose=True,
+                                                     verbose=False,
                                                      unconditional_guidance_scale=cfg,
                                                      unconditional_conditioning=negative,
                                                      eta=0.0,
                                                      x_T=z_enc,
                                                      x0=latent_image,
+                                                     img_callback=callback,
                                                      denoise_function=sampling_function,
-                                                     cond_concat=cond_concat,
+                                                     extra_args=extra_args,
                                                      mask=noise_mask,
                                                      to_zero=sigmas[-1]==0,
-                                                     end_step=sigmas.shape[0] - 1)
-
+                                                     end_step=sigmas.shape[0] - 1,
+                                                     disable_pbar=True)
             else:
                 extra_args["denoise_mask"] = denoise_mask
                 self.model_k.latent_image = latent_image

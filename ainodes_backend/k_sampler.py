@@ -6,13 +6,13 @@ from . import samplers
 from .torch_gc import torch_gc
 
 
-def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, callback=None, model_key="sd"):
+def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, callback=None, model_key="sd", noise_mask=None):
     latent_image = latent
-    noise_mask = None
     if disable_noise:
         noise = torch.zeros(latent_image.size(), dtype=latent_image.dtype, layout=latent_image.layout, device="cpu")
     else:
         noise = torch.randn(latent_image.size(), dtype=latent_image.dtype, layout=latent_image.layout, generator=torch.manual_seed(seed), device="cpu")
+
 
     """if "noise_mask" in latent:
         noise_mask = latent['noise_mask']

@@ -3,7 +3,7 @@ import secrets
 from ..ainodes_backend.inpaint import run_inpaint
 from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
 
-from qtpy import QtWidgets
+from qtpy import QtWidgets, QtGui, QtCore
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget

@@ -157,7 +157,7 @@ class VideoOutputNode(AiNode):
         dump = not self.content.checkbox.isChecked()
         audio_path = self.content.audio_path.text()
         audio_path = None if audio_path == "" else audio_path
-        self.content.video.close(timestamp, fps, type, dump)
+        self.content.video.close(timestamp, fps, type, dump, audio_path)
         if dump:
             print(f"VIDEO SAVE NODE: Done. The frame buffer is now empty.")
         else:

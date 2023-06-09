@@ -478,6 +478,8 @@ class VAE:
         samples = samples.cpu()
         return samples
 
+    
+
 class CLIP:
     def __init__(self, config={}, embedding_directory=None, no_init=False):
         if no_init:

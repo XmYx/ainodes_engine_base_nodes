@@ -145,9 +145,11 @@ class KSamplerNode(AiNode):
                 self.scheduler = self.content.schedulers.currentText()
 
                 if data is not None:
-                    print("BEFORE", self.steps)
+                    #print("BEFORE", self.steps)
                     self.update_vars(data)
-
+                noise_mask = None
+                if hasattr(self, "noise_mask"):
+                    self.noise_mask = noise_mask
                 if cond_override:
                     self.denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
                     latent = latent_override
@@ -181,7 +183,8 @@ class KSamplerNode(AiNode):
                                          disable_noise=self.content.disable_noise.isChecked(),
                                          force_full_denoise=self.content.force_denoise.isChecked(),
                                          denoise=self.denoise,
-                                         callback=self.callback)
+                                         callback=self.callback,
+                                         noise_mask=noise_mask)
 
                 for c in cond:
                     if "control" in c[1]:
@@ -215,7 +218,8 @@ class KSamplerNode(AiNode):
         decoded_array = 255. * decoded[0].detach().numpy()
         return decoded_array
 
-    def callback(self, tensors):
+    def callback(self, tensors, *args, **kwargs):
+
         i = tensors["i"]
         self.content.progress_signal.emit(1)
         if self.content.tensor_preview.isChecked():
