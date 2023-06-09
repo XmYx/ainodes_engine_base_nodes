@@ -95,7 +95,7 @@ class ImagePreviewNode(AiNode):
     def show_image(self, image):
         self.content.image.setPixmap(image)
         self.resize()
-        self.resize()
+        #self.resize()
 
 
     def onWorkerFinished(self, result):
@@ -139,9 +139,6 @@ class ImagePreviewNode(AiNode):
             else:
                 image.save(filename)
 
-                #os.makedirs(os.path.join(gs.output, "metas"), exist_ok=True)
-                #filename = f"{gs.output}/metas/{timestamp}.json"
-                #self.scene.saveToFile(filename)
             if gs.logging:
                 print(f"IMAGE PREVIEW NODE: File saved at {filename}")
         except Exception as e:

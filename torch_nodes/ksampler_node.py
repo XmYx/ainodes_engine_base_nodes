@@ -145,7 +145,6 @@ class KSamplerNode(AiNode):
                 self.scheduler = self.content.schedulers.currentText()
                 noise_mask = None
                 if data is not None:
-                    #print("BEFORE", self.steps)
                     self.update_vars(data)
                     if 'noise_mask' in data:
                         noise_mask = data['noise_mask']
