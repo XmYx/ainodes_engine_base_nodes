@@ -90,12 +90,15 @@ class SubgraphNode(AiNode):
         for node in nodes:
             if isinstance(node, SubGraphOutputNode):
                 node.true_parent = self
-                continue
+                break
         for node in nodes:
             if isinstance(node, SubGraphInputNode):
 
                 node.data = self.getInputData(3)
                 node.images = self.getInputData(2)
+
+                print(node.images)
+
                 node.latents = self.getInputData(0)
                 node.conds = self.getInputData(1)
 
@@ -210,13 +213,14 @@ class SubGraphInputNode(AiNode):
         self.setOutput(1, self.conds)
         self.setOutput(2, self.images)
         self.setOutput(3, self.data)
+
+        print("INPUT NODE", self.images)
+
         return True
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
-        #print("REACHED SUBGRAPH INPUT NODE END")
-        #super().onWorkerFinished(None)
         self.executeChild(4)
 
 
@@ -267,8 +271,6 @@ class SubGraphOutputNode(AiNode):
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
-        #super().onWorkerFinished(None)
-
         self.setOutput(0, result[0])
         self.setOutput(1, result[1])
         self.setOutput(2, result[2])

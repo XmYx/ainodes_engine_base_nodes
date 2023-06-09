@@ -33,7 +33,7 @@ class HypernetworkLoaderWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_HYPERNETWORK)
 class HypernetworkLoaderNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/torch.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/hyper.png"
     op_code = OP_NODE_HYPERNETWORK
     op_title = "Hypernetwork Loader"
     content_label_objname = "hypernetwork_loader_node"

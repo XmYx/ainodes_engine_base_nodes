@@ -12,7 +12,7 @@ class ExecSplitterWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_EXEC_SPLITTER)
 class ExecSplitterNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/exec_split.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
     op_code = OP_NODE_EXEC_SPLITTER
     op_title = "Execute Splitter"
     content_label_objname = "exec_splitter_node"

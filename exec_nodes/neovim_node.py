@@ -20,7 +20,7 @@ class VimWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_VIM)
 class VimNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/exec.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
     op_code = OP_NODE_VIM
     op_title = "NeoVIM"
     content_label_objname = "exec_node"

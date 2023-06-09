@@ -20,7 +20,7 @@ class InpaintEncodeWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_ENCODE_INPAINT)
 class InpaintEncodeNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/torch.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/inpaint.png"
     op_code = OP_NODE_ENCODE_INPAINT
     op_title = "Encode for Inpaint"
     content_label_objname = "inpaint_encode_node"

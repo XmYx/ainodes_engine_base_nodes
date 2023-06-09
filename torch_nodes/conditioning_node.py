@@ -81,7 +81,9 @@ class ConditioningWidget(QDMNodeContentWidget):
         self.create_widgets()
         self.create_main_layout()
     def create_widgets(self):
+
         self.prompt = self.create_text_edit("Prompt")
+        self.skip = self.create_spin_box("Clip Skip", min_val=-11, max_val=0, default_val=-1)
         self.embed_checkbox = self.create_check_box("Use embeds")
         self.button = QtWidgets.QPushButton("Get Conditioning")
         self.set_embeds = QtWidgets.QPushButton("Embeddings")
@@ -229,6 +231,11 @@ class ConditioningNode(AiNode):
         with torch.autocast("cuda"):
             with torch.no_grad():
                 #clip = gs.models["clip"].clone()
+
+                clip_skip = self.content.skip.value()
+                gs.models["clip"].layer_idx = clip_skip
+                gs.models["clip"].clip_layer(clip_skip)
+
                 c = gs.models["clip"].encode(prompt)
 
                 uc = {}

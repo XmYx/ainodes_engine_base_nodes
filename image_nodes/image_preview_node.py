@@ -90,52 +90,30 @@ class ImagePreviewNode(AiNode):
         self.busy = True
         if len(self.getInputs(0)) > 0:
             input_images = self.getInputData(0)
-            if input_images is not None:
-                for image in input_images:
-                    self.content.preview_signal.emit(image)
-                    if len(input_images) > 1:
-                        time.sleep(0.1)
             return input_images
 
-        """elif len(self.getInputs(1)) > 0:
-            data_node, other_index = self.getInput(1)
-            data = data_node.getOutput(other_index)
-            for key, value in data.items():
-                if key[1] == 'list':
-                    if key[0] == 'images':
-                        for image in value:
-                            self.images.append(image)
-                            # Create a new QPixmap object with the same size as the original image
-                            #print(key[0], image)
-
-        return self.images"""
-    ##@QtCore.Slot(object)
     def show_image(self, image):
         self.content.image.setPixmap(image)
         self.resize()
         self.resize()
 
 
-    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
         self.busy = False
-
         self.images = result
-        #super().onWorkerFinished(None)
         if self.content.checkbox.isChecked() == True:
-            #for image in val:
             self.save_image(result[0])
+        if result is not None:
+            for image in result:
+                self.content.preview_signal.emit(image)
         self.setOutput(0, self.images)
-        #print("RESULT", result)
         self.markInvalid(False)
         self.markDirty(False)
         if gs.should_run:
             self.executeChild(2)
 
     def manual_save(self):
-
-        #print("SAVING")
 
         for image in self.images:
             self.save_image(image)

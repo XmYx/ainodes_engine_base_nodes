@@ -61,7 +61,7 @@ class InpaintWidget(QDMNodeContentWidget):
 
 
 
-@register_node(OP_NODE_INPAINT)
+#@register_node(OP_NODE_INPAINT)
 class InpaintNode(AiNode):
     icon = "ainodes_frontend/icons/in.png"
     op_code = OP_NODE_INPAINT

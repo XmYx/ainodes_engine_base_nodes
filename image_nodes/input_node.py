@@ -36,6 +36,7 @@ class ImageInputWidget(QDMNodeContentWidget):
         self.open_graph_button = QtWidgets.QPushButton("Open Graph")
         self.create_button_layout([self.open_button, self.open_graph_button])
         self.rewind_button = QtWidgets.QPushButton("Reset to Frame 0")
+        self.create_button_layout([self.rewind_button])
         self.current_frame = self.create_label("Frame:")
         self.firstRun_done = None
 
@@ -64,7 +65,7 @@ class ImageInputWidget(QDMNodeContentWidget):
 class ImageInputNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/v2/input_image.png"
     op_code = OP_NODE_IMG_INPUT
-    op_title = "Input Image"
+    op_title = "Input Image / Video"
     content_label_objname = "image_input_node"
     category = "Image"
     input_socket_name = ["EXEC"]
@@ -87,6 +88,7 @@ class ImageInputNode(AiNode):
         self.content.frame_string_signal.connect(self.set_frame_string)
         self.content.set_image_signal.connect(self.set_image)
         self.content.parent_resize_signal.connect(self.resize)
+        self.content.rewind_button.clicked.connect(self.video.reset)
 
     def set_image(self, pixmap: object):
         self.content.image.setPixmap(pixmap)

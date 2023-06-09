@@ -31,7 +31,7 @@ class CenterExpandingSizePolicy(QtWidgets.QSizePolicy):
 
 @register_node(OP_NODE_DATA_IF)
 class DataIfNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/torch.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
     op_code = OP_NODE_DATA_IF
     op_title = "Data IF Node"
     content_label_objname = "data_if_node"

@@ -38,7 +38,7 @@ class KSamplerWidget(QDMNodeContentWidget):
     def create_widgets(self):
         self.schedulers = self.create_combo_box(SCHEDULERS, "Scheduler:")
         self.sampler = self.create_combo_box(SAMPLERS, "Sampler:")
-        self.seed = self.create_line_edit("Seed:")
+        self.seed = self.create_line_edit("Seed:", placeholder="Leave empty for random seed")
         self.steps = self.create_spin_box("Steps:", 1, 10000, 10)
         self.start_step = self.create_spin_box("Start Step:", 0, 1000, 0)
         self.last_step = self.create_spin_box("Last Step:", 1, 1000, 5)
@@ -198,12 +198,12 @@ class KSamplerNode(AiNode):
                 image = Image.fromarray(x_sample.astype(np.uint8))
                 pm = pil_image_to_pixmap(image)
                 return_pixmaps.append(pm)
-
-                if len(self.getOutputs(2)) > 0:
-                    nodes = self.getOutputs(0)
-                    for node in nodes:
-                        if isinstance(node, ImagePreviewNode):
-                            node.content.preview_signal.emit(pm)
+                if self.content.tensor_preview.isChecked():
+                    if len(self.getOutputs(2)) > 0:
+                        nodes = self.getOutputs(0)
+                        for node in nodes:
+                            if isinstance(node, ImagePreviewNode):
+                                node.content.preview_signal.emit(pm)
 
 
                 x+=1

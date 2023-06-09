@@ -23,7 +23,7 @@ class MidiWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_MIDI)
 class MidiNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/exec.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
     op_code = OP_NODE_MIDI
     op_title = "Midi In"
     content_label_objname = "midi_node"

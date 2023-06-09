@@ -11,7 +11,7 @@ class DataMergeWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_DATA_MERGE)
 class DataMergeNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/torch.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
     op_code = OP_NODE_DATA_MERGE
     op_title = "DataMerger"
     content_label_objname = "datamerge_node"

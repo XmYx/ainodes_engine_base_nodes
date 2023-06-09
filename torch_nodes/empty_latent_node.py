@@ -106,7 +106,7 @@ class LatentNode(AiNode):
         if self.content.rescale_latent.isChecked() == True:
             rescaled_samples = []
             for sample in samples:
-                sample = sample.float()
+                sample = sample.detach().float()
                 return_sample = resizeright.resize(sample, scale_factors=None,
                                                 out_shape=[sample.shape[0], sample.shape[1], int(self.content.height.value() // 8),
                                                         int(self.content.width.value() // 8)],
@@ -136,9 +136,10 @@ class LatentNode(AiNode):
         self.value = None
     def encode_image(self, init_image=None):
         init_latent = gs.models["vae"].encode(init_image)
-        init_latent.to("cpu")# move to latent space
-        torch_gc()
-        return init_latent
+        latent = init_latent.detach().to("cpu")# move to latent space
+        del init_latent
+        #torch_gc()
+        return latent
 
     def generate_latent(self):
         width = self.content.width.value()
