@@ -132,6 +132,7 @@ class ConditioningNode(AiNode):
         self.apihandler = APIHandler()
         self.apihandler.response_received.connect(self.handle_response)
         self.string = ""
+        self.clip_skip = self.content.skip.value()
 
 
     def show_embeds(self):
@@ -230,16 +231,13 @@ class ConditioningNode(AiNode):
                     #print("Node found")"""
         with torch.autocast("cuda"):
             with torch.no_grad():
-                #clip = gs.models["clip"].clone()
-
                 clip_skip = self.content.skip.value()
-                gs.models["clip"].layer_idx = clip_skip
-                gs.models["clip"].clip_layer(clip_skip)
-
+                if self.clip_skip != clip_skip or gs.models["clip"].layer_idx != clip_skip:
+                    gs.models["clip"].layer_idx = clip_skip
+                    gs.models["clip"].clip_layer(clip_skip)
+                    self.clip_skip = clip_skip
                 c = gs.models["clip"].encode(prompt)
-
                 uc = {}
-                #del clip
                 return [[c, uc]]
 
     #@QtCore.Slot(object)

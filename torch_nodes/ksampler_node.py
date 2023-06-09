@@ -48,7 +48,7 @@ class KSamplerWidget(QDMNodeContentWidget):
         self.disable_noise = self.create_check_box("Disable noise generation")
         self.iterate_seed = self.create_check_box("Iterate seed")
         self.use_internal_latent = self.create_check_box("Use latent from loop")
-        self.denoise = self.create_double_spin_box("Denoise:", 0.00, 2.00, 0.01, 1.00)
+        self.denoise = self.create_double_spin_box("Denoise:", 0.00, 25.00, 0.01, 1.00)
         self.guidance_scale = self.create_double_spin_box("Guidance Scale:", 1.01, 100.00, 0.01, 7.50)
         self.button = QtWidgets.QPushButton("Run")
         self.fix_seed_button = QtWidgets.QPushButton("Fix Seed")
