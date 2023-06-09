@@ -289,13 +289,14 @@ class SubgraphMiniMap(QGraphicsView):
         self.last_scene_mouse_position = QPoint(0,0)
         self.zoomInFactor = 1.05
         self.zoomClamp = False
-        self.zoom = 10
+        self.zoom = 0.5
         self.zoomStep = 0.1
         self.zoomRange = [7.5, 9]
+        self.scale(0.2, 0.2)
 
     def mousePressEvent(self, event):
         event.ignore()
-        super().mousePressEvent()
+        #super().mousePressEvent()
     def mouseMoveEvent(self, event):
         event.ignore()
 
