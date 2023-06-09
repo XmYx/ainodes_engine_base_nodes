@@ -14,6 +14,8 @@ class BGNode(AiDummyNode):
     icon = "ainodes_frontend/icons/base_nodes/bg.png"
     op_code = OP_NODE_BG
     op_title = "Bg Node"
+    help_text = "Simple cosmetic background object\n" \
+                "that drags the nodes placed on it."
     content_label_objname = "bg_node"
     category = "Background"
 

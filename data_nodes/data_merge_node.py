@@ -12,6 +12,12 @@ class DataMergeWidget(QDMNodeContentWidget):
 @register_node(OP_NODE_DATA_MERGE)
 class DataMergeNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
+    help_text = "Data objects in aiNodes are simple dictionaries,\n" \
+                "that can hold any values under any name.\n" \
+                "In most cases, you'll find them drive parameters,\n" \
+                "or hold sequences of images. For an example, the\n" \
+                "OpenAI node emits it's prompt in a data line,\n" \
+                "but you'll find this info in all relevant places."
     op_code = OP_NODE_DATA_MERGE
     op_title = "DataMerger"
     content_label_objname = "datamerge_node"

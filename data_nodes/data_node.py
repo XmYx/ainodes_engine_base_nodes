@@ -114,7 +114,7 @@ class DataNode(AiNode):
     category = "Experimental"
     help_text = "Data Node\n" \
                 "Currently, it can be used to create\n" \
-                "Deforum Warp values, just connect the data\n" \
+                "prompts, warp values, just connect the data\n" \
                 "line, and press Eval on the node to set the value"
     def __init__(self, scene):
         super().__init__(scene, inputs=[6,1], outputs=[6,1])
