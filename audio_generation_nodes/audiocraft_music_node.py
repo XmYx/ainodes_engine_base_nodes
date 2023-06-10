@@ -48,6 +48,7 @@ class MusicPlayer(QWidget):
         layout.addWidget(self.pause_button)
         layout.addWidget(self.stop_button)
         layout.addWidget(self.timeline)
+        layout.setContentsMargins(0,0,0,25)
         self.setLayout(layout)
 
     def set_media(self, path):
@@ -76,10 +77,13 @@ class AudiocraftWidget(QDMNodeContentWidget):
     def initUI(self):
         self.player = MusicPlayer()
         self.prompt = self.create_line_edit("Prompt", placeholder="Prompt")
+        self.duration = self.create_spin_box("Duration (s)", min_val=1, max_val=30, default_val=30)
+        self.topk = self.create_spin_box("Top K", min_val=0, max_val=5000, default_val=250)
+        self.topp = self.create_spin_box("Top P", min_val=0, max_val=5000, default_val=0)
+        self.temperature = self.create_double_spin_box("Temperature", min_val=0.0, max_val=10.0, default_val=1.0, step=0.01)
+        self.cfg_scale = self.create_double_spin_box("CFG Scale", min_val=0.0, max_val=10.0, default_val=3.0, step=0.01)
         self.create_main_layout(grid=1)
         self.main_layout.addWidget(self.player)
-
-
 
 
 #NODE CLASS
@@ -92,12 +96,12 @@ class DiffusersKarloUnclipNode(AiNode):
     content_label_objname = "audiocraft_node"
     category = "Sampling"
     NodeContent_class = AudiocraftWidget
-    dim = (340, 260)
+    dim = (340, 500)
     output_data_ports = [0]
     exec_port = 0
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[1], outputs=[1])
+        super().__init__(scene, inputs=[6,1], outputs=[6,1])
         self.model = None
 
     #MAIN NODE FUNCTION
@@ -107,7 +111,13 @@ class DiffusersKarloUnclipNode(AiNode):
 
         prompt = self.content.prompt.text()
 
-        audio_path = self.predict(text=prompt, melody=None, duration=25, topk=250, topp=0, temperature=1.0, cfg_coef=3.0)
+        audio_path = self.predict(text=prompt,
+                                  melody=None,
+                                  duration=self.content.duration.value(),
+                                  topk=self.content.topk.value(),
+                                  topp=self.content.topp.value(),
+                                  temperature=self.content.temperature.value(),
+                                  cfg_coef=self.content.cfg_scale.value())
         print("DONE", audio_path)
         self.content.player.set_media(audio_path)
         return None
