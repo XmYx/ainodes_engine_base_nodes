@@ -27,7 +27,7 @@ class DiffusersKarloUnclipNode(AiNode):
     op_code = OP_NODE_DIFF_KARLO_UNCLIP
     op_title = "Diffusers - Karlo UnClip Node"
     content_label_objname = "diffusers_karlo_unclip_node"
-    category = "Sampling"
+    category = "Diffusers"
     NodeContent_class = DiffusersKarloUnclipWidget
     dim = (340, 260)
     output_data_ports = [0]

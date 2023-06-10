@@ -23,7 +23,7 @@ class QRWidget(QDMNodeContentWidget):
 #NODE CLASS
 @register_node(OP_NODE_QRCODE)
 class QRNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/qr_gen.png"
     help_text = "QR Code Generator Node."
     op_code = OP_NODE_QRCODE
     op_title = "QR Code Generator"

@@ -27,7 +27,7 @@ class QRReaderWidget(QDMNodeContentWidget):
 #NODE CLASS
 @register_node(OP_NODE_QRCODE_READER)
 class QRReaderNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/qr_val.png"
     help_text = "QR Code Generator Node."
     op_code = OP_NODE_QRCODE_READER
     op_title = "QR Code Validator"
