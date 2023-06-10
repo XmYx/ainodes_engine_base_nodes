@@ -263,7 +263,6 @@ class ControlNet(nn.Module):
         emb = self.time_embed(t_emb)
 
         guided_hint = self.input_hint_block(hint, emb, context)
-
         outs = []
 
         h = x.type(self.dtype)
@@ -278,6 +277,5 @@ class ControlNet(nn.Module):
 
         h = self.middle_block(h, emb, context)
         outs.append(self.middle_block_out(h, emb, context))
-
         return outs
 

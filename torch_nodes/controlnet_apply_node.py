@@ -28,8 +28,8 @@ class CNApplyWidget(QDMNodeContentWidget):
     def create_widgets(self):
         self.strength = self.create_double_spin_box("Strength", 0.00, 100.00, 0.01, 1.00)
         self.cfg_scale = self.create_double_spin_box("Guidance Scale", 0.01, 100.00, 0.01, 7.5)
-        self.start = self.create_double_spin_box("Start", 0.00, 1.00, 0.01, 1)
-        self.stop = self.create_double_spin_box("End", 0.00, 1.00, 0.01, 1)
+        self.start = self.create_spin_box("Start", 0, 100, 0)
+        self.stop = self.create_spin_box("End", 0, 100, 100)
         self.tresh_a = self.create_spin_box("Treshold a", 64, 1024, 512, 64)
         self.tresh_b = self.create_spin_box("Treshold b", 64, 1024, 512, 64)
         self.soft_injection = self.create_check_box("Soft Inject")
@@ -117,6 +117,10 @@ class CNApplyNode(AiNode):
         self.value = None
 
     def apply_ref_control(self, image, weight, cfg_scale, start=0, stop=100, soft_injection=True, cfg_injection=True):
+
+        gs.models["sd"].model.model.start_control = start
+        gs.models["sd"].model.model.stop_control = stop
+
         cleanup = self.content.cleanup_on_run.isChecked()
         if cleanup == True:
             if self.latest_network is not None:
@@ -194,14 +198,13 @@ class CNApplyNode(AiNode):
         return "Done"
 
     def add_control_image(self, conditioning, image, progress_callback=None):
+        start = self.content.start.value()
+        stop = self.content.stop.value()
+
+        gs.models["sd"].model.model.start_control = start
+        gs.models["sd"].model.model.stop_control = stop
+
         image = pixmap_to_pil_image(image)
-        #image = image.convert("RGB")
-        #print("DEBUG IMAGE", image)
-
-        #image.save("CNET.png", "PNG")
-
-        array = np.array(image)
-        #print("ARRAY", array)
 
         image = np.array(image).astype(np.float32) / 255.0
 
@@ -215,20 +218,13 @@ class CNApplyNode(AiNode):
             n[1]['control_strength'] = self.content.strength.value()
             c.append(n)
         return c
-    #@QtCore.Slot(object)
+
+
     def onWorkerFinished(self, result):
         self.busy = False
-        #super().onWorkerFinished(None)
-
-        # Update the node value and mark it as dirty
         self.markDirty(False)
         self.markInvalid(False)
-        #pass
         self.setOutput(0, result)
-        if gs.should_run:
+        if len(self.getOutputs(1)) > 0:
+            self.executeChild(1)
 
-            if len(self.getOutputs(1)) > 0:
-                self.executeChild(1)
-        return
-    def onInputChanged(self, socket=None):
-        pass

@@ -20,6 +20,7 @@ OP_NODE_IMAGE_OPS = get_next_opcode()
 image_ops_methods = [
     "resize",
     "canny",
+    "tile_preprocess",
     "fake_scribble",
     'hed',
     'depth',
@@ -199,6 +200,19 @@ class ImageOpNode(AiNode):
             image = cv2.Canny(image, self.content.canny_low.value(), self.content.canny_high.value(), L2gradient=True)
             image = HWC3(image)
             image = Image.fromarray(image)
+        elif method == 'tile_preprocess':
+
+            # def tile_resample(img, res=512, thr_a=1.0, **kwargs):
+            thr_a = 1.0
+            img = np.array(image)
+            img = HWC3(img)
+            if thr_a > 1.1:
+                H, W, C = img.shape
+                H = int(float(H) / float(thr_a))
+                W = int(float(W) / float(thr_a))
+                img = cv2.resize(img, (W, H), interpolation=cv2.INTER_AREA)
+            image = Image.fromarray(img)
+
 
         elif method == 'fake_scribble':
             image = np.array(image)
