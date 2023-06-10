@@ -43,3 +43,4 @@ python-rtmidi
 lpips
 qrcode
 pyzbar
+git+https://github.com/facebookresearch/audiocraft.git
