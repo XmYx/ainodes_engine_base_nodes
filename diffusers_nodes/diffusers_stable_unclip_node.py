@@ -3,13 +3,7 @@ from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc
 from diffusers import StableUnCLIPImg2ImgPipeline
-from diffusers.utils import load_image
 import torch
-
-
-#Function imports
-import qrcode
-from PIL import Image
 
 #MANDATORY
 OP_NODE_DIFF_UNCLIP = get_next_opcode()
@@ -17,6 +11,11 @@ OP_NODE_DIFF_UNCLIP = get_next_opcode()
 #NODE WIDGET
 class DiffusersUnclipWidget(QDMNodeContentWidget):
     def initUI(self):
+
+        self.prompt = self.create_text_edit("Prompt", placeholder="Optional prompt field")
+        self.eta = self.create_double_spin_box("ETA", min_val=0.0, max_val=1.0, default_val=0.0, step=0.01)
+        self.noise_level = self.create_spin_box("NOISE LEVEL", min_val=0, max_val=100, default_val=0)
+        self.steps = self.create_spin_box("STEPS", min_val=0, max_val=1000, default_val=25)
         self.create_main_layout(grid=1)
 
 #NODE CLASS
@@ -29,13 +28,15 @@ class DiffusersUnclipNode(AiNode):
     content_label_objname = "diffusers_stable_unclip_node"
     category = "Diffusers"
     NodeContent_class = DiffusersUnclipWidget
-    dim = (340, 260)
+    dim = (340, 500)
     output_data_ports = [0]
     exec_port = 1
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])
         self.pipe = None
+        self.grNode.height = 600
+        self.update_all_sockets()
 
     #MAIN NODE FUNCTION
     def evalImplementation_thread(self, index=0):
@@ -49,10 +50,29 @@ class DiffusersUnclipNode(AiNode):
                 )
                 self.pipe = self.pipe.to("cuda")
             generator = torch.Generator("cuda").manual_seed(420)
-            image = self.pipe(pil_image, num_inference_steps=40, generator=generator).images[0]
+
+            prompt = self.content.prompt.asPlainText()
+            height = pil_image.size[0]
+            width = pil_image.size[1]
+            eta = self.content.eta.value()
+            noise_level = self.content.noise_level.value()
+            steps = self.content.steps.value()
+
+            image = self.pipe(pil_image,
+                              prompt=prompt,
+                              height=height,
+                              width=width,
+                              num_inference_steps=steps,
+                              eta=eta,
+                              callback=self.callback,
+                              noise_level=noise_level,
+                              generator=generator
+                              ).images[0]
             return_pixmaps.append(pil_image_to_pixmap(image))
         return [return_pixmaps]
-
+    def callback(self, i, j, tensor):
+        print(i, j)
+        print(type(tensor))
     def remove(self):
         if self.pipe:
             self.pipe.to("cpu")
