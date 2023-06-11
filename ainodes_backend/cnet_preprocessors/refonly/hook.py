@@ -239,10 +239,19 @@ class UnetHook(nn.Module):
                 try:
                     query_size = int(x.shape[0])
                     pixel_hint = param.used_hint_cond
+                    print(pixel_hint.shape)
                     if pixel_hint.shape[1] > 3:
                         pixel_hint = pixel_hint[:, 0:3, :, :]
+
+
+
+
                     pixel_hint = pixel_hint * 2.0 - 1.0
                     pixel_hint = pixel_hint.type(torch.float32)
+
+                    pixel_hint = pixel_hint.permute(0,3,2,1)
+
+
                     with torch.autocast("cuda"):
                         gs.models["vae"].first_stage_model.cuda()
                         latent_hint = gs.models["vae"].encode(pixel_hint)
