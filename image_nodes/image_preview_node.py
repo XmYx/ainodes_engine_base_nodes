@@ -22,7 +22,7 @@ class ImagePreviewWidget(QDMNodeContentWidget):
     preview_signal = QtCore.Signal(object)
     def initUI(self):
         self.image = QLabel(self)
-        self.image.setAlignment(Qt.AlignRight)
+        self.image.setAlignment(Qt.AlignLeft)
         self.image.setObjectName(self.node.content_label_objname)
         self.checkbox = QtWidgets.QCheckBox("Autosave")
         self.meta_checkbox = QtWidgets.QCheckBox("Embed Node graph in PNG")
@@ -80,10 +80,11 @@ class ImagePreviewNode(AiNode):
         if length > 0:
             img = self.images[self.index]
             pixmap = pil_image_to_pixmap(img)
+            self.resize(pixmap)
+
             self.content.image.setPixmap(pixmap)
             self.setOutput(0, [pixmap])
             self.index += 1
-            self.resize()
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
@@ -93,8 +94,9 @@ class ImagePreviewNode(AiNode):
             return input_images
 
     def show_image(self, image):
+        self.resize(image)
+
         self.content.image.setPixmap(image)
-        self.resize()
         #self.resize()
 
 
@@ -144,14 +146,19 @@ class ImagePreviewNode(AiNode):
         except Exception as e:
             print(f"IMAGE PREVIEW NODE: Image could not be saved because: {e}")
 
-    def resize(self):
+    def resize(self, pixmap):
         self.grNode.setToolTip("")
-        self.grNode.height = self.content.image.pixmap().size().height() + 190
-        self.grNode.width = self.content.image.pixmap().size().width() + 32
-        self.content.image.setMinimumHeight(self.content.image.pixmap().size().height())
-        self.content.image.setMinimumWidth(self.content.image.pixmap().size().width())
-        self.content.setGeometry(0, 0, self.content.image.pixmap().size().width(),
-                                 self.content.image.pixmap().size().height())
-        for socket in self.outputs + self.inputs:
-            socket.setSocketPosition()
-        self.updateConnectedEdges()
+        self.grNode.height = pixmap.size().height() + 240
+        self.grNode.width = pixmap.size().width() + 32
+        self.content.image.setMinimumHeight(pixmap.size().height())
+        self.content.image.setMinimumWidth(pixmap.size().width())
+
+        self.content.setMaximumHeight(pixmap.size().height() + 150)
+        self.content.setMaximumWidth(pixmap.size().width())
+
+        self.update_all_sockets()
+        #self.content.setGeometry(0, 0, pixmap.size().width(),
+        #                         pixmap.size().height())
+        #for socket in self.outputs + self.inputs:
+        #    socket.setSocketPosition()
+        #self.updateConnectedEdges()
