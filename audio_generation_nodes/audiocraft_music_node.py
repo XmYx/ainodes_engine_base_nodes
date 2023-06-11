@@ -149,8 +149,9 @@ class AudioCraftNode(AiNode):
         self.content.progress_signal.connect(self.content.set_progress)
         self.grNode.height = 700
         self.update_all_sockets()
-    #MAIN NODE FUNCTION
+
     def evalImplementation_thread(self, index=0):
+        data = self.getInputData(0)
         audio_path = None
         prompt = self.content.prompt.text()
         self.content.player.stop_button.click()
@@ -164,7 +165,13 @@ class AudioCraftNode(AiNode):
             self.loaded_model = selected
             if hijack:
                 self.model._generate_tokens = self.generate_tokens
-
+        if data:
+            if "prompt" in data:
+                prompt = data["prompt"]
+            else:
+                data["prompt"] = prompt
+        else:
+            data = {"prompt":prompt}
         self.model.lm = self.model.lm.to("cuda")
         self.model.compression_model = self.model.compression_model.to("cuda")
         input_path = self.content.input_path.text()
@@ -180,11 +187,7 @@ class AudioCraftNode(AiNode):
         self.model.compression_model.to("cpu")
         torch_gc()
         self.content.player.set_media(audio_path)
-        return None
-
-    def onWorkerFinished(self, result):
-        self.busy = False
-        pass
+        return [data]
 
     def remove(self):
         del self.model
@@ -268,8 +271,6 @@ class AudioCraftNode(AiNode):
         with torch.no_grad():
             gen_audio = self.model.compression_model.decode(gen_tokens, None)
         return gen_audio
-
-
 
 def audio_to_numpy(path):
     # Load the audio file
