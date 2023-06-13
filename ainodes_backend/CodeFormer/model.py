@@ -79,7 +79,10 @@ def run_codeformer(args, input_img_list):
         face_helper.clean_all()
 
         #print(f'[{i + 1}/{test_img_num}] Processing: {img_name}')
+        img_path = img_path.convert("RGB")
         img = np.array(img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
         if args.has_aligned:
             # the input faces are already cropped and aligned
             img = cv2.resize(img, (512, 512), interpolation=cv2.INTER_LINEAR)
@@ -98,8 +101,10 @@ def run_codeformer(args, input_img_list):
 
         # face restoration for each cropped face
         for idx, cropped_face in enumerate(face_helper.cropped_faces):
+            cropped_face = cv2.cvtColor(cropped_face, cv2.COLOR_RGB2BGR)
+
             # prepare data
-            cropped_face_t = img2tensor(cropped_face / 255., bgr2rgb=True, float32=True)
+            cropped_face_t = img2tensor(cropped_face / 255., bgr2rgb=False, float32=True)
             normalize(cropped_face_t, (0.5, 0.5, 0.5), (0.5, 0.5, 0.5), inplace=True)
             cropped_face_t = cropped_face_t.unsqueeze(0).to(device)
             w = args.fidelity_weight
@@ -155,7 +160,7 @@ def run_codeformer(args, input_img_list):
         #     os.makedirs("final_results")
         #     save_restore_path = os.path.join('final_results', f'{basename}.png')
         #     imwrite(restored_img, save_restore_path)
-
+        restored_img = cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(restored_img)
         result_images.append(image)
 

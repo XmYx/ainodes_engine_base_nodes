@@ -46,3 +46,5 @@ pyzbar
 git+https://github.com/facebookresearch/audiocraft.git
 git+https://github.com/XmYx/CodeFormerBasicSR.git
 transformers>=4.29.2
+PyQt6-QScintilla
+pyflakes
