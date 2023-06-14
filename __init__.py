@@ -2,7 +2,7 @@ from ainodes_frontend import singleton as gs
 import torch, platform
 
 def get_torch_device():
-    if "darwin" in platform.platform():
+    if "macOS" in platform.platform():
         if torch.backends.mps.is_available():
             return torch.device("mps")
         else:
