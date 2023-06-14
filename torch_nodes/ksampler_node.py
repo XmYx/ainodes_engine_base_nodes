@@ -4,7 +4,7 @@ import secrets
 import numpy as np
 from einops import rearrange
 
-from ..ainodes_backend import common_ksampler, pil_image_to_pixmap
+from ..ainodes_backend import common_ksampler, pil_image_to_pixmap, get_torch_device
 
 import torch
 from PIL import Image
@@ -82,8 +82,14 @@ class KSamplerNode(AiNode):
         self.progress_value = 0
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.button.clicked.connect(self.content.eval_signal)
-
-
+        self.device = get_torch_device()
+        self.latent_rgb_factors = torch.tensor([
+            #   R        G        B
+            [0.298, 0.207, 0.208],  # L1
+            [0.187, 0.286, 0.173],  # L2
+            [-0.158, 0.189, 0.264],  # L3
+            [-0.184, -0.271, -0.473],  # L4
+        ], dtype=torch.float, device=self.device)
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
@@ -168,7 +174,7 @@ class KSamplerNode(AiNode):
                         self.denoise = self.content.denoise.value()
                     else:
                         self.denoise = 1.0
-                sample = common_ksampler(device="cuda",
+                sample = common_ksampler(device=self.device,
                                          seed=self.seed,
                                          steps=self.steps,
                                          start_step=self.start_step,
@@ -223,13 +229,6 @@ class KSamplerNode(AiNode):
         self.content.progress_signal.emit(1)
         if self.content.tensor_preview.isChecked():
             if i < self.last_step - 2:
-                self.latent_rgb_factors = torch.tensor([
-                    #   R        G        B
-                    [0.298, 0.207, 0.208],  # L1
-                    [0.187, 0.286, 0.173],  # L2
-                    [-0.158, 0.189, 0.264],  # L3
-                    [-0.184, -0.271, -0.473],  # L4
-                ], dtype=torch.float, device='cuda')
 
                 latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
                 latent = (((latent + 1) / 2)
@@ -285,17 +284,29 @@ class KSamplerNode(AiNode):
         pass
     def apply_control_net(self, conditioning, progress_callback=None):
         cnet_string = 'controlnet'
+
+
         c = []
         for t in conditioning:
             n = [t[0], t[1].copy()]
-            c_net = gs.models[cnet_string]
+
+            print("FOUND", n[1]["control_model_name"])
+
+
+
+            c_net_name = n[1]["control_model_name"]
+            c_net = gs.models[c_net_name].copy()
+            c_net.control_model.control_start = n[1]["control_start"]
+            c_net.control_model.control_stop = n[1]["control_stop"]
+            c_net.control_model.control_model_name = n[1]["control_model_name"]
             c_net.set_cond_hint(t[1]['control_hint'], t[1]['control_strength'])
             if 'control' in t[1]:
+                print("AND SETTING UP MULTICONTROL")
                 c_net.set_previous_controlnet(t[1]['control'])
             n[1]['control'] = c_net
             n[1]['control'].control_model.cpu()
-            #del c_net
             c.append(n)
+        print(len(c))
         return c
 
 def get_fixed_seed(seed):

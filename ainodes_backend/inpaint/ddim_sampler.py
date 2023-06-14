@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 from ldm.modules.diffusionmodules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like, extract_into_tensor
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.inpaint.inpaint_sampling_utils import norm_thresholding
+from ainodes_frontend import singleton as gs
 
 
 class DDIMSampler(object):
@@ -18,8 +19,8 @@ class DDIMSampler(object):
 
     def register_buffer(self, name, attr):
         if type(attr) == torch.Tensor:
-            if attr.device != torch.device("cuda"):
-                attr = attr.to(torch.device("cuda"))
+            if attr.device != gs.device:
+                attr = attr.to(torch.device(gs.device))
         setattr(self, name, attr)
 
     def make_schedule(self, ddim_num_steps, ddim_discretize="uniform", ddim_eta=0., verbose=True):
@@ -27,7 +28,7 @@ class DDIMSampler(object):
                                                   num_ddpm_timesteps=self.ddpm_num_timesteps,verbose=verbose)
         alphas_cumprod = self.model.alphas_cumprod
         assert alphas_cumprod.shape[0] == self.ddpm_num_timesteps, 'alphas have to be defined for each timestep'
-        to_torch = lambda x: x.clone().detach().to(torch.float32).to("cuda")
+        to_torch = lambda x: x.clone().detach().to(torch.float32).to(gs.device)
 
         self.register_buffer('betas', to_torch(self.model.betas))
         self.register_buffer('alphas_cumprod', to_torch(alphas_cumprod))

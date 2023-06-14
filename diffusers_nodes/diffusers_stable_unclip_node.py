@@ -4,6 +4,7 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc
 from diffusers import StableUnCLIPImg2ImgPipeline
 import torch
+from ainodes_frontend import singleton as gs
 
 #MANDATORY
 OP_NODE_DIFF_UNCLIP = get_next_opcode()
@@ -48,8 +49,8 @@ class DiffusersUnclipNode(AiNode):
                 self.pipe = StableUnCLIPImg2ImgPipeline.from_pretrained(
                     "stabilityai/stable-diffusion-2-1-unclip", torch_dtype=torch.float16, variation="fp16"
                 )
-                self.pipe = self.pipe.to("cuda")
-            generator = torch.Generator("cuda").manual_seed(420)
+                self.pipe = self.pipe.to(gs.device)
+            generator = torch.Generator(gs.device).manual_seed(420)
 
             prompt = self.content.prompt.asPlainText()
             height = pil_image.size[0]

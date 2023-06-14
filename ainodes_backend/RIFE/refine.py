@@ -6,7 +6,9 @@ import itertools
 from .warplayer import warp
 import torch.nn.functional as F
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from ainodes_frontend import singleton as gs
+device = gs.device
 
 def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
     return nn.Sequential(

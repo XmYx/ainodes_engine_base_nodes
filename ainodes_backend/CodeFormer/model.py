@@ -31,9 +31,9 @@ pretrain_model_url = {
 }
 
 def run_codeformer(args, input_img_list):
+    from ainodes_frontend import singleton as gs
 
-
-    device = "cuda"
+    device = gs.device
     bg_upsampler = set_realesrgan(args)
     # ------------------ set up face upsampler ------------------
     if args.face_upsample:

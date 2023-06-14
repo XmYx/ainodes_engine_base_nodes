@@ -12,8 +12,9 @@ import torch.nn.functional as F
 from .loss import *
 from .laplacian import *
 from .refine import *
+from ainodes_frontend import singleton as gs
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = gs.device
     
 class Model:
     def __init__(self, local_rank=-1, arbitrary=False):

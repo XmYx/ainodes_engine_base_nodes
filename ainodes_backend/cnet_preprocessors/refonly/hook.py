@@ -252,7 +252,7 @@ class UnetHook(nn.Module):
                     pixel_hint = pixel_hint.permute(0,3,2,1)
 
 
-                    with torch.autocast("cuda"):
+                    with torch.autocast(gs.device):
                         gs.models["vae"].first_stage_model.cuda()
                         latent_hint = gs.models["vae"].encode(pixel_hint)
                         latent_hint = gs.models["sd"].model.get_first_stage_encoding(latent_hint)
@@ -280,7 +280,7 @@ class UnetHook(nn.Module):
                 if param.control_model_type not in [ControlModelType.T2I_StyleAdapter]:
                     continue
                 if param.control_model is not None:
-                    param.control_model.to("cuda")
+                    param.control_model.to(gs.device)
                     query_size = int(x.shape[0])
                     control = param.control_model(x=x, hint=param.used_hint_cond, timesteps=timesteps, context=context)
                     uc_mask = param.generate_uc_mask(query_size, dtype=x.dtype, device=x.device)[:, None, None]
@@ -361,7 +361,7 @@ class UnetHook(nn.Module):
                     continue
 
                 query_size = int(x.shape[0])
-                uc_mask = param.generate_uc_mask(query_size, dtype=x.dtype, device="cuda")[:, None, None, None]
+                uc_mask = param.generate_uc_mask(query_size, dtype=x.dtype, device=gs.device)[:, None, None, None]
 
 
                 #l = param.used_hint_cond_latent
@@ -371,7 +371,7 @@ class UnetHook(nn.Module):
                 #print("Device of param.used_hint_cond_latent:", l.device)
                 #print("Device of timesteps:", timesteps.device)
 
-                param.used_hint_cond_latent = param.used_hint_cond_latent.to("cuda")
+                param.used_hint_cond_latent = param.used_hint_cond_latent.to(gs.device)
 
                 ref_cond_xt = outer.sd_ldm.q_sample(param.used_hint_cond_latent, torch.round(timesteps.float()).long())
 

@@ -3,7 +3,9 @@ import torch.nn.functional as F
 from math import exp
 import numpy as np
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from ainodes_frontend import singleton as gs
+device = gs.device
 
 def gaussian(window_size, sigma):
     gauss = torch.Tensor([exp(-(x - window_size//2)**2/float(2*sigma**2)) for x in range(window_size)])

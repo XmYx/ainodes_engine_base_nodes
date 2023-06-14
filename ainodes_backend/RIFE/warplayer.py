@@ -1,7 +1,10 @@
 import torch
 import torch.nn as nn
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from ainodes_frontend import singleton as gs
+device = gs.device
+
 backwarp_tenGrid = {}
 
 

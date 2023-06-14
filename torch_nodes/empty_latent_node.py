@@ -86,7 +86,6 @@ class LatentNode(AiNode):
                     image = torch.from_numpy(image)
                     image = image.detach().cpu()
                     torch_gc()
-
                     latent = gs.models["vae"].encode(image)
                     latent = latent.to("cpu")
                     image = image.detach().to("cpu")

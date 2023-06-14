@@ -164,7 +164,7 @@ def load_controlnet_old(ckpt_path, model=None):
     #return control
 
 class ControlNet:
-    def __init__(self, control_model, device="cuda"):
+    def __init__(self, control_model, device=gs.device):
         self.control_model = control_model
         self.cond_hint_original = None
         self.cond_hint = None

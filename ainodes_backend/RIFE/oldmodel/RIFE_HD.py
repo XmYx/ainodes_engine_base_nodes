@@ -10,7 +10,9 @@ from model.oldmodel.IFNet_HD import *
 import torch.nn.functional as F
 from model.loss import *
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from ainodes_frontend import singleton as gs
+device = gs.device
 
 
 def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):

@@ -443,7 +443,7 @@ def train_hypernetwork(hypernetwork_name='Name',                       # Network
     # dataset loading may take a while, so input validations and early returns should be done before this
     gs.state.textinfo = f"Preparing dataset from {html.escape(data_root)}..."
 
-    with torch.autocast("cuda"):
+    with torch.autocast(gs.device):
         ds = dataset.PersonalizedBase(data_root=data_root,
                                       width=training_width,
                                       height=training_height,
@@ -498,7 +498,7 @@ def train_hypernetwork(hypernetwork_name='Name',                       # Network
         if gs.state.interrupted:
             break
         devices.device = 'cuda' # hack for now
-        with torch.autocast("cuda"):
+        with torch.autocast(gs.device):
             c = stack_conds([entry.cond for entry in entries]).to(devices.device)
             # c = torch.vstack([entry.cond for entry in entries]).to(devices.device)
             x = torch.stack([entry.latent for entry in entries]).to(devices.device)

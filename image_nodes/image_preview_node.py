@@ -147,7 +147,7 @@ class ImagePreviewNode(AiNode):
             print(f"IMAGE PREVIEW NODE: Image could not be saved because: {e}")
 
     def resize(self, pixmap):
-        self.grNode.setToolTip("")
+        #self.grNode.setToolTip("")
         self.grNode.height = pixmap.size().height() + 240
         self.grNode.width = pixmap.size().width() + 32
         self.content.image.setMinimumHeight(pixmap.size().height())

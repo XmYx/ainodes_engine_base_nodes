@@ -11,7 +11,7 @@ def run_inpaint(init_image, mask_img, prompt, seed, scale, steps, blend_mask, ma
     #print(gs.models)
     torch_gc()
     sampler = DDIMSampler(gs.models["sd"].model)
-    image_guide = image_to_torch(init_image, "cuda")[0]
+    image_guide = image_to_torch(init_image, gs.device)[0]
     mask = mask_img
     # Convert the image to grayscale
     grayscale_image = mask.convert("L")
@@ -20,7 +20,7 @@ def run_inpaint(init_image, mask_img, prompt, seed, scale, steps, blend_mask, ma
     mask = grayscale_image.convert("RGB")
     mask = ImageOps.invert(mask)
 
-    [mask_for_reconstruction, latent_mask_for_blend] = get_mask_for_latent_blending(device="cuda", mask_image=mask,
+    [mask_for_reconstruction, latent_mask_for_blend] = get_mask_for_latent_blending(device=gs.device, mask_image=mask,
                                                                                     blur=mask_blur,
                                                                                     recons_blur=recons_blur)
     masked_image_for_blend = (1 - mask_for_reconstruction) * image_guide[0]
@@ -43,7 +43,7 @@ def run_inpaint(init_image, mask_img, prompt, seed, scale, steps, blend_mask, ma
         ddim_steps=steps,
         num_samples=1,
         h=h, w=w,
-        device="cuda",
+        device=gs.device,
         mask_for_reconstruction=mask_for_reconstruction,
         masked_image_for_blend=masked_image_for_blend,
         callback=None)
@@ -61,12 +61,12 @@ def inpaint(sampler, image, mask, prompt, seed, scale, ddim_steps, device, mask_
     start_code = prng.randn(num_samples, 4, h // 8, w // 8)
     start_code = torch.from_numpy(start_code).to(device=device, dtype=torch.float16)
     with torch.no_grad():
-        with torch.autocast("cuda"):
+        with torch.autocast(gs.device):
             batch = make_batch_sd(image, mask, txt=prompt, device=device, num_samples=num_samples)
 
             c = gs.models["clip"].encode(prompt)
 
-            c = c.to("cuda")
+            c = c.to(gs.device)
 
             c_cat = list()
             for ck in gs.models["sd"].model.concat_keys:
@@ -78,7 +78,7 @@ def inpaint(sampler, image, mask, prompt, seed, scale, ddim_steps, device, mask_
                     gs.models["vae"].first_stage_model.cuda()
                     cc = gs.models["sd"].model.get_first_stage_encoding(gs.models["vae"].encode(cc))
                     gs.models["vae"].first_stage_model.cpu()
-                cc = cc.to("cuda")
+                cc = cc.to(gs.device)
 
                 c_cat.append(cc)
             c_cat = torch.cat(c_cat, dim=1)
@@ -89,15 +89,18 @@ def inpaint(sampler, image, mask, prompt, seed, scale, ddim_steps, device, mask_
             # uncond cond
             uc_cross = gs.models["sd"].model.get_unconditional_conditioning(num_samples, "")
 
-            uc_cross = uc_cross.to("cuda")
-            c_cat = c_cat.to("cuda")
+            uc_cross = uc_cross.to(gs.device)
+            c_cat = c_cat.to(gs.device)
 
             uc_full = {"c_concat": [c_cat], "c_crossattn": [uc_cross]}
 
             shape = [gs.models["sd"].model.channels, h // 8, w // 8]
 
+            if torch.cuda.is_available():
+                gs.models["sd"].model.cuda()
+            else:
+                gs.models["sd"].model.to(gs.device)
 
-            gs.models["sd"].model.cuda()
 
             samples_cfg, intermediates = sampler.sample(
                 ddim_steps,

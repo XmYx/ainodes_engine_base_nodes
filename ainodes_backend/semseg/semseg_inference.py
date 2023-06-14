@@ -22,6 +22,7 @@ from .datasets import *
 from .utils.utils import timer
 from .utils.visualize import draw_text
 from PIL import Image
+from ainodes_frontend import singleton as gs
 
 
 class SemSegModel():
@@ -29,7 +30,7 @@ class SemSegModel():
 
     def __init__(self) -> None:
         # inference device cuda or cpu
-        self.device = torch.device("cuda")
+        self.device = gs.device
 
         # get dataset classes' colors and labels
         self.palette = eval('ADE20K').PALETTE

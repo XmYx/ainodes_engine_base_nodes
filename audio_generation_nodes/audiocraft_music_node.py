@@ -22,6 +22,7 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 import torch
 from audiocraft.data.audio import audio_write
 import typing as tp
+from ainodes_frontend import singleton as gs
 
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
 
@@ -172,8 +173,8 @@ class AudioCraftNode(AiNode):
                 data["prompt"] = prompt
         else:
             data = {"prompt":prompt}
-        self.model.lm = self.model.lm.to("cuda")
-        self.model.compression_model = self.model.compression_model.to("cuda")
+        self.model.lm = self.model.lm.to(gs.device)
+        self.model.compression_model = self.model.compression_model.to(gs.device)
         input_path = self.content.input_path.text()
         input_path = None if input_path == "" else audio_to_numpy(input_path)
         audio_path, samples = self.predict(text=prompt,

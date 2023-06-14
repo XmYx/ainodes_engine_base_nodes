@@ -346,7 +346,11 @@ def load_model_from_config( config, ckpt, verbose=False):
         #model.half()
 
         #model.embedding_manager.load(opt.embedding_path)
-        gs.models["sd"] = model.half().to("cuda")
+
+        if torch.cuda.is_available():
+            model = model.half()
+
+        gs.models["sd"] = model.to(gs.device)
 
         for m in gs.models["sd"].modules():
             if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):

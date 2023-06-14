@@ -260,7 +260,7 @@ class ImageOpNode(AiNode):
 
             a = self.content.midas_a.value()
             bg_threshold = self.content.midas_bg.value()
-            device = "cuda"
+            device = gs.device
             args = {
                     "translation_x" : 0,
                     "translation_y" : 0,
