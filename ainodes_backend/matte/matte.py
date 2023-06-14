@@ -6,7 +6,6 @@ import torch
 
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.matte import MattingNetwork
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.poormans_wget import poorman_wget
-from ainodes_frontend import singleton as gs
 
 """try:
     # Try to run wget with the --version option
@@ -44,11 +43,11 @@ class MatteInference:
         downsample_ratio = 1.0  # Adjust based on your video.
         np_input = copy.deepcopy(frame)
         img = (np_input.astype(np.float32) / 255).transpose(2, 0, 1)[None, ...]
-        img = torch.from_numpy(img).to(gs.device)
+        img = torch.from_numpy(img).to("cuda")
         with torch.no_grad():
             # for src in DataLoader(frame):
             # print(img.shape)
-            fgr, pha, *rec = self.model(img.to(gs.device), *rec, downsample_ratio)
+            fgr, pha, *rec = self.model(img.to("cuda"), *rec, downsample_ratio)
 
             #Full image is torch.Tensor: img
             fgr = fgr * pha.gt(0)

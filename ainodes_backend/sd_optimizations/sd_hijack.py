@@ -45,7 +45,7 @@ ldm.modules.attention.print = lambda *args: None
 ldm.modules.diffusionmodules.model.print = lambda *args: None
 orig_linear = ldm.modules.diffusionmodules.model.nonlinearity
 
-valid_optimizations = ["sdp", "sdp_quick", "sdp-no-mem", "doggetx", "torch2"]
+valid_optimizations = ["sdp", "sdp_quick", "sdp-no-mem", "doggetx"]
 
 def apply_optimizations(style=""):
     undo_optimizations()
@@ -77,10 +77,7 @@ def apply_optimizations(style=""):
         ldm.modules.attention.CrossAttention.forward = sd_hijack_optimizations.split_cross_attention_forward
         ldm.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.cross_attention_attnblock_forward
         optimization_method = 'Doggettx'
-    #elif hijack_style == 'torch2':
-    torch.backends.cuda.enable_math_sdp(True)
-    torch.backends.cuda.enable_flash_sdp(True)
-    torch.backends.cuda.enable_mem_efficient_sdp(True)
+
     #print('hijack util')
     #ldm.modules.diffusionmodules.util.make_ddim_timesteps = hijack_util.make_ddim_timesteps
     #print(hijack_util.make_ddim_timesteps)

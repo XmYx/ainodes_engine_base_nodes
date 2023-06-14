@@ -1,4 +1,3 @@
-import contextlib
 import os
 
 import requests
@@ -18,7 +17,6 @@ from ainodes_frontend import singleton as gs
 from qtpy.QtWidgets import QDialog, QListWidget, QCheckBox, QDoubleSpinBox, QVBoxLayout, QDialogButtonBox, \
     QListWidgetItem, QHBoxLayout, QWidget
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import get_torch_device
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.hash import sha256
 
 
@@ -138,11 +136,6 @@ class ConditioningNode(AiNode):
         self.apihandler.response_received.connect(self.handle_response)
         self.string = ""
         self.clip_skip = self.content.skip.value()
-        self.device = gs.device
-        if self.device in [torch.device('mps'), torch.device('cpu')]:
-            self.context = contextlib.nullcontext()
-        else:
-            self.context = torch.autocast(gs.device.type)
 
 
     def show_embeds(self):
@@ -239,10 +232,7 @@ class ConditioningNode(AiNode):
                 if isinstance(node, TorchLoaderNode):
                     node.evalImplementation()
                     #print("Node found")"""
-
-
-
-        with self.context:
+        with torch.autocast("cuda"):
             with torch.no_grad():
                 clip_skip = self.content.skip.value()
                 if self.clip_skip != clip_skip or gs.models["clip"].layer_idx != clip_skip:

@@ -3,10 +3,8 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
-from ainodes_frontend import singleton as gs
-device = gs.device
 
-#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class EPE(nn.Module):

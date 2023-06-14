@@ -194,7 +194,7 @@ class Text2VideoNode(AiNode):
                     latents = self.last_latent
                 else:
                     latents = None
-                generator = torch.Generator(device=gs.device).manual_seed(seed)
+                generator = torch.Generator(device="cuda").manual_seed(seed)
                 return_samples, latent = gs.models["t2v"](prompt, n_prompt, steps, frames, scale, width=width, height=height, eta=eta, cpu_vae=cpu_vae, latents=latents, strength=strength, generator=generator)
                 self.last_latent = latent
                 return_pixmaps = []

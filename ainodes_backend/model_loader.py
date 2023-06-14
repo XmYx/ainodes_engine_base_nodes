@@ -21,7 +21,7 @@ from .chainner_models import model_loading
 from .lora_loader import ModelPatcher
 from .sd_optimizations.sd_hijack import apply_optimizations
 from .torch_gc import torch_gc
-from ldm.util import instantiate_from_config, get_free_memory
+from ldm.util import instantiate_from_config, get_free_memory, get_torch_device
 from ainodes_frontend import singleton as gs
 
 from .ESRGAN import model as upscaler
@@ -39,7 +39,7 @@ class UpscalerLoader(torch.nn.Module):
 
     def __init__(self, parent=None):
         super().__init__()
-        self.device = gs.device
+        self.device = "cuda"
         self.loaded_model = None
 
     def load_model(self, file="", name=""):
@@ -57,7 +57,7 @@ class UpscalerLoader(torch.nn.Module):
 
         if load:
             state_dict = load_torch_file(file)
-            gs.models[name] = model_loading.load_state_dict(state_dict).eval().to(gs.device)
+            gs.models[name] = model_loading.load_state_dict(state_dict).eval().to("cuda")
             self.loaded_model = name
 
         return self.loaded_model
@@ -69,7 +69,7 @@ class ModelLoader(torch.nn.Module):
     """
     def __init__(self, parent=None):
         super().__init__()
-        self.device = gs.device
+        self.device = "cuda"
 
 
 
@@ -107,13 +107,11 @@ class ModelLoader(torch.nn.Module):
 
         # enabling benchmark option seems to enable a range of cards to do fp16 when they otherwise can't
         # see https://github.com/AUTOMATIC1111/stable-diffusion-webui/pull/4407
+        if any([torch.cuda.get_device_capability(devid) == (7, 5) for devid in range(0, torch.cuda.device_count())]):
+            torch.backends.cudnn.benchmark = True
 
-        if torch.cuda.is_available():
-            if any([torch.cuda.get_device_capability(devid) == (7, 5) for devid in range(0, torch.cuda.device_count())]):
-                torch.backends.cudnn.benchmark = True
-
-            torch.backends.cuda.matmul.allow_tf32 = True
-            torch.backends.cudnn.allow_tf32 = True
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
 
         gs.models["sd"] = ModelPatcher(model)
         gs.models["clip"] = clip
@@ -410,7 +408,7 @@ class VAE:
 
         self.scale_factor = scale_factor
         if device is None:
-            device = gs.device
+            device = get_torch_device()
         self.device = device
 
     def decode_tiled_(self, samples, tile_x=64, tile_y=64, overlap = 16):

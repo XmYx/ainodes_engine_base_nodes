@@ -83,11 +83,11 @@ class UpscalerNode(AiNode):
                     img = np.array(img).astype(np.float32) / 255.0
                     img = torch.from_numpy(img)[None,]
 
-                    in_img = img.movedim(-1, -3).to(gs.device)
+                    in_img = img.movedim(-1, -3).to("cuda")
 
                     tile = 128 + 64
                     overlap = 8
-                    gs.models[model_name].to(gs.device)
+                    gs.models[model_name].to("cuda")
                     s = tiled_scale(in_img, lambda a: gs.models[model_name](a), tile_x=tile, tile_y=tile,
                                                 overlap=overlap, upscale_amount=gs.models[model_name].scale, pbar=None)
                     gs.models[model_name].cpu()

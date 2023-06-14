@@ -2,7 +2,6 @@ import sys, os, shlex
 import contextlib
 import torch
 #from backend.hypernetworks.modules import errors
-from ainodes_frontend import singleton as gs
 
 # has_mps is only available in nightly pytorch (for now), `getattr` for compatibility
 has_mps = getattr(torch, 'has_mps', False)
@@ -83,7 +82,7 @@ def autocast(disable=False):
     if dtype == torch.float32:
         return contextlib.nullcontext()
 
-    return torch.autocast(gs.device)
+    return torch.autocast("cuda")
 
 # MPS workaround for https://github.com/pytorch/pytorch/issues/79383
 def mps_contiguous(input_tensor, device): return input_tensor.contiguous() if device.type == 'mps' else input_tensor

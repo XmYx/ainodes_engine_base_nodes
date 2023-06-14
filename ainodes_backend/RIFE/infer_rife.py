@@ -7,13 +7,12 @@ import warnings
 from .train_log.RIFE_HDv3 import Model
 
 warnings.filterwarnings("ignore")
-from ainodes_frontend import singleton as gs
 
 
 class RIFEModel():
     def __init__(self):
         super().__init__()
-        self.device = gs.device
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         self.torch_options_applied = None
         self.apply_torch_options()

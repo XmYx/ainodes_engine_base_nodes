@@ -5,6 +5,7 @@ from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
 
+import rtmidi
 
 OP_NODE_MIDI = get_next_opcode()
 
@@ -58,7 +59,6 @@ class MidiNode(AiNode):
 
 
     def evalImplementation_thread(self, index=0, *args, **kwargs):
-        import rtmidi
 
         # Initialize MIDI input
         self.midi_in = rtmidi.MidiIn()

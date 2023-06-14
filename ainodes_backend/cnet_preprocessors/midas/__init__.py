@@ -14,7 +14,6 @@ from .midas.dpt_depth import DPTDepthModel
 from .midas.transforms import Resize, PrepareForNet, NormalizeImage
 import requests
 from tqdm import tqdm
-from ainodes_frontend import singleton as gs
 
 
 class MidasDetector:
@@ -33,7 +32,7 @@ class MidasDetector:
             normalization,
             PrepareForNet()
         ])
-        self.device = gs.device
+        self.device = "cuda"
 
 
     def __call__(self, input_image, a=np.pi * 2.0, bg_th=0.1):

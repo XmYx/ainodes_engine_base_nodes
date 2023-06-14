@@ -59,7 +59,7 @@ def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive,
                 for item_name, items in value.items():
                     for _, models in items.items():
                         for m in models:
-                            m.to(device)
+                            m.to("cuda")
 
         sampler = samplers.KSampler(steps=steps, device=device, sampler=sampler_name, scheduler=scheduler, denoise=denoise, model=model, model_options=model.model_options)
 

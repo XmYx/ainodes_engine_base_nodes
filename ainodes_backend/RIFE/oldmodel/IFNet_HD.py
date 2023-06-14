@@ -5,8 +5,7 @@ import torch.nn.functional as F
 from model.warplayer import warp
 
 
-from ainodes_frontend import singleton as gs
-device = gs.device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def conv_wo_act(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1):
     return nn.Sequential(

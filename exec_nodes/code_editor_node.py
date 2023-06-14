@@ -51,7 +51,6 @@ class VimWidget(QDMNodeContentWidget):
         self.create_widgets()
         self.create_main_layout(grid=1)
         self.grid_layout.addWidget(self.editor)
-        self.editor.setText(default_fn)
     def create_widgets(self):
         self.editor = PythonCodeEditor(parent=self)
         self.run_button = QtWidgets.QPushButton("Run")
@@ -109,12 +108,7 @@ class VimNode(AiNode):
         self.origFunction = globals_['customFunction']  # new_function is assumed to be the name of your function
 
         # Call the new function
-        try:
-            result = self.origFunction(self, *args, **kwargs)
-        except:
-            result = [None, None, None, None]
-
-        return result
+        return self.origFunction(self, *args, **kwargs)
 
     def origFunction(self):
         return True

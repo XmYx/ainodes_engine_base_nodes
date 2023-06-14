@@ -86,6 +86,7 @@ class LatentNode(AiNode):
                     image = torch.from_numpy(image)
                     image = image.detach().cpu()
                     torch_gc()
+
                     latent = gs.models["vae"].encode(image)
                     latent = latent.to("cpu")
                     image = image.detach().to("cpu")
@@ -105,13 +106,13 @@ class LatentNode(AiNode):
         if self.content.rescale_latent.isChecked() == True:
             rescaled_samples = []
             for sample in samples:
-                sample = sample.detach().float()
+                #sample = sample.detach().float()
                 return_sample = resizeright.resize(sample, scale_factors=None,
                                                 out_shape=[sample.shape[0], sample.shape[1], int(self.content.height.value() // 8),
                                                         int(self.content.width.value() // 8)],
                                                 interp_method=interp_methods.lanczos3, support_sz=None,
                                                 antialiasing=True, by_convs=True, scale_tolerance=None,
-                                                max_numerator=10, pad_mode='reflect').half()
+                                                max_numerator=10, pad_mode='reflect')#.half()
 
                 rescaled_samples.append(return_sample)
             samples = rescaled_samples

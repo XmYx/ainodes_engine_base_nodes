@@ -69,7 +69,7 @@ class HypernetworkLoaderNode(AiNode):
                 patch = self.load_hypernetwork_patch(path, self.content.strength.value())
                 print(patch)
                 if patch is not None:
-                    patch.to(gs.device)
+                    patch.to("cuda")
                     gs.models["sd"].set_model_attn1_patch(patch)
                     gs.models["sd"].set_model_attn2_patch(patch)
                     gs.loaded_hypernetworks.append(hypernetwork)

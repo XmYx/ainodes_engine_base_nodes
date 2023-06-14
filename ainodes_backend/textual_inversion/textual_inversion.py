@@ -427,7 +427,7 @@ def train_embedding(embedding_name, learn_rate, batch_size, data_root, log_direc
 
     # dataset loading may take a while, so input validations and early returns should be done before this
     shared.state.textinfo = f"Preparing dataset from {html.escape(data_root)}..."
-    with torch.autocast(gs.device):
+    with torch.autocast("cuda"):
         ds = backend.hypernetworks.modules.textual_inversion.dataset.PersonalizedBase(data_root=data_root, width=training_width, height=training_height, repeats=shared.opts.training_image_repeats_per_epoch, placeholder_token=embedding_name, model=gs.models["sd"], device=devices.device, template_file=template_file, batch_size=batch_size)
 
     embedding.vec.requires_grad = True
@@ -451,9 +451,9 @@ def train_embedding(embedding_name, learn_rate, batch_size, data_root, log_direc
         if shared.state.interrupted:
             break
 
-        with torch.autocast(gs.device):
+        with torch.autocast("cuda"):
             c = cond_model([entry.cond_text for entry in entries])
-            x = torch.stack([entry.latent for entry in entries]).to(gs.device)
+            x = torch.stack([entry.latent for entry in entries]).to(devices.device)
             loss = gs.models["sd"](x, c)[0]
             del x
 

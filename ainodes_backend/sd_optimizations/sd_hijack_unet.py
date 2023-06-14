@@ -3,7 +3,6 @@ from packaging import version
 import importlib
 #from modules import devices
 #from modules.sd_hijack_utils import CondFunc
-from ainodes_frontend import singleton as gs
 
 
 class TorchHijackForUnet:
@@ -42,7 +41,7 @@ def apply_model(orig_func, self, x_noisy, t, cond, **kwargs):
         for y in cond.keys():
             cond[y] = [x.to(dtype_unet) if isinstance(x, torch.Tensor) else x for x in cond[y]]
 
-    with torch.autocast(gs.device):
+    with torch.autocast("cuda"):
         return orig_func(self, x_noisy.to(dtype_unet), t.to(dtype_unet), cond, **kwargs).float()
 
 

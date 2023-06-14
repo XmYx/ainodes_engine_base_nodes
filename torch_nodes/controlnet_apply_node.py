@@ -147,7 +147,7 @@ class CNApplyNode(AiNode):
 
         image = torch.from_numpy(image)[None,]
         # c = []
-        control_hint = image.movedim(-1, 1).to(gs.device)
+        control_hint = image.movedim(-1, 1).to("cuda")
 
         # input_image = HWC3(np.asarray(input_image))
 
