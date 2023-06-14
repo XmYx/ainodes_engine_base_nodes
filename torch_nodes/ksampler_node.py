@@ -89,7 +89,7 @@ class KSamplerNode(AiNode):
             [0.187, 0.286, 0.173],  # L2
             [-0.158, 0.189, 0.264],  # L3
             [-0.184, -0.271, -0.473],  # L4
-        ], dtype=torch.float, device=self.device)
+        ], dtype=torch.float, device='cpu')
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):

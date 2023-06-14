@@ -1,3 +1,4 @@
+import contextlib
 import os
 
 import requests
@@ -137,7 +138,11 @@ class ConditioningNode(AiNode):
         self.apihandler.response_received.connect(self.handle_response)
         self.string = ""
         self.clip_skip = self.content.skip.value()
-        self.device = get_torch_device()
+        self.device = gs.device
+        if self.device in [torch.device('mps'), torch.device('cpu')]:
+            self.context = contextlib.nullcontext()
+        else:
+            self.context = torch.autocast(gs.device.type)
 
 
     def show_embeds(self):
@@ -234,7 +239,10 @@ class ConditioningNode(AiNode):
                 if isinstance(node, TorchLoaderNode):
                     node.evalImplementation()
                     #print("Node found")"""
-        with torch.autocast(self.device):
+
+
+
+        with self.context:
             with torch.no_grad():
                 clip_skip = self.content.skip.value()
                 if self.clip_skip != clip_skip or gs.models["clip"].layer_idx != clip_skip:
