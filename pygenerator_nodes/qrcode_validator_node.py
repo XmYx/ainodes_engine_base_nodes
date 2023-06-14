@@ -2,7 +2,6 @@
 
 
 from PIL import Image
-from pyzbar.pyzbar import decode
 from qtpy import QtCore
 
 from ainodes_frontend.base import register_node, get_next_opcode
@@ -62,6 +61,7 @@ class QRReaderNode(AiNode):
 
 
 def read_qr(pil_image):
+    from pyzbar.pyzbar import decode
 
     pil_image = pil_image.convert("L")
     result = decode(pil_image)
