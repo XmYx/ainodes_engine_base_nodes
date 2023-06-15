@@ -20,10 +20,6 @@ OP_NODE_DIFF_VAR_PIPELINE = get_next_opcode()
 class DiffusersVarPipeLineWidget(QDMNodeContentWidget):
     def initUI(self):
 
-        self.prompt = self.create_text_edit("Prompt")
-        self.n_prompt = self.create_text_edit("Negative Prompt")
-        self.height_val = self.create_spin_box("Height", min_val=64, max_val=4096, default_val=512, step_value=64)
-        self.width_val = self.create_spin_box("Width", min_val=64, max_val=4096, default_val=512, step_value=64)
         self.steps = self.create_spin_box("Steps", min_val=1, max_val=4096, default_val=25, step_value=1)
         self.scale = self.create_double_spin_box("Scale", min_val=0.01, max_val=25.00, default_val=7.5, step=0.01)
         self.eta = self.create_double_spin_box("Eta", min_val=0.00, max_val=1.00, default_val=1.0, step=0.01)
@@ -33,22 +29,22 @@ class DiffusersVarPipeLineWidget(QDMNodeContentWidget):
 #NODE CLASS
 @register_node(OP_NODE_DIFF_VAR_PIPELINE)
 class DiffusersVarPipeLineNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/variations.png"
     help_text = "Diffusers - Variations"
     op_code = OP_NODE_DIFF_VAR_PIPELINE
     op_title = "Diffusers - Variations"
     content_label_objname = "diffusers_variations_node"
     category = "Diffusers"
     NodeContent_class = DiffusersVarPipeLineWidget
-    dim = (340, 700)
+    dim = (340, 300)
     output_data_ports = [0]
     exec_port = 1
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])
-        self.content.setMinimumHeight(600)
+        #self.content.setMinimumHeight(600)
 
-        self.content.setMaximumHeight(600)
+        #self.content.setMaximumHeight(600)
         self.pipe = None
 
     #MAIN NODE FUNCTION

@@ -27,7 +27,7 @@ class MidiNode(AiNode):
     op_code = OP_NODE_MIDI
     op_title = "Midi In"
     content_label_objname = "midi_node"
-    category = "Experimental"
+    category = "WIP Experimental"
     help_text = "Execution Node\n\n" \
                 "Execution chain is essential\n" \
                 "in aiNodes. You control the flow\n" \

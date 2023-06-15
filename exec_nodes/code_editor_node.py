@@ -6,6 +6,8 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 from ainodes_frontend import singleton as gs
 from PyQt6.Qsci import QsciScintilla, QsciLexerPython
 
+
+
 from pyflakes.reporter import Reporter
 import ast
 from textwrap import dedent
@@ -53,6 +55,9 @@ class VimWidget(QDMNodeContentWidget):
         self.grid_layout.addWidget(self.editor)
     def create_widgets(self):
         self.editor = PythonCodeEditor(parent=self)
+        if self.editor.text() == "":
+            self.editor.setText(default_fn)
+
         self.run_button = QtWidgets.QPushButton("Run")
         self.stop_button = QtWidgets.QPushButton("Stop")
         self.create_button_layout([self.run_button, self.stop_button])
@@ -65,7 +70,7 @@ class VimWidget(QDMNodeContentWidget):
     def deserialize(self, data, hashmap={}, restore_id:bool=True) -> bool:
         if "code" in data:
             self.editor.setText(data["code"])
-        else:
+        if self.editor.text() == "":
             self.editor.setText(default_fn)
         super().deserialize(data, hashmap, restore_id)
         return True
@@ -73,11 +78,11 @@ class VimWidget(QDMNodeContentWidget):
 
 @register_node(OP_NODE_VIM)
 class VimNode(AiNode):
-    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
+    icon = "ainodes_frontend/icons/base_nodes/v2/code.png"
     op_code = OP_NODE_VIM
     op_title = "CodeEditor Node"
     content_label_objname = "code_editor_node"
-    category = "Experimental"
+    category = "Functional"
     help_text = "Code Editor Node\n\n" \
 
     def __init__(self, scene):
@@ -97,18 +102,62 @@ class VimNode(AiNode):
         self.content.run_button.clicked.connect(self.start)
         self.content.stop_button.clicked.connect(self.stop)
 
+    def onDoubleClicked(self, event):
+        #print(self.content.isVisible())
+
+        self.content.editor.setVisible(not self.content.editor.isVisible())
+
+        if self.content.editor.isVisible():
+            self.grNode.height = 600
+            self.grNode.width = 1024
+            self.content.setMinimumWidth(1024)
+            self.content.setMinimumHeight(450)
+            self.content.setMaximumWidth(1024)
+            self.content.setMaximumHeight(450)
+
+            self.update_all_sockets()
+        else:
+            self.grNode.height = 240
+            self.grNode.width = 400
+            self.content.setMinimumWidth(400)
+            self.content.setMinimumHeight(180)
+            self.content.setMaximumWidth(400)
+            self.content.setMaximumHeight(100)
+            self.update_all_sockets()
 
     def evalImplementation_thread(self, index=0, *args, **kwargs):
+        self.gs = gs
+        result = [None, None, None, None]
+
         function_string = dedent(self.content.editor.text())  # Get function string from the editor
 
         # Parse the function string into a Python function object
         function_definition = ast.parse(function_string, mode='exec')
-        globals_ = {}
-        exec(compile(function_definition, filename="<ast>", mode="exec"), globals_)
-        self.origFunction = globals_['customFunction']  # new_function is assumed to be the name of your function
+        exec(compile(function_definition, filename="<ast>", mode="exec"), self.__dict__)
+        if hasattr(self, "customFunction"):
+            try:
+                result = self.customFunction(self)
+            except Exception as e:
+                print(repr(e))
+        else:
+            print("Ran Python node, but it did not contain a customFunction")
+        #self.origFunction = self.customFunction  # new_function is assumed to be the name of your function
 
         # Call the new function
-        return self.origFunction(self, *args, **kwargs)
+        #return self.origFunction(self, *args, **kwargs)
+
+        return result
+
+        # function_string = dedent(self.content.editor.text())  # Get function string from the editor
+        #
+        # # Parse the function string into a Python function object
+        # function_definition = ast.parse(function_string, mode='exec')
+        # globals_ = {}
+        # exec(compile(function_definition, filename="<ast>", mode="exec"), globals_)
+        # self.origFunction = globals_['customFunction']  # new_function is assumed to be the name of your function
+        #
+        # # Call the new function
+        # return self.origFunction(self, *args, **kwargs)
 
     def origFunction(self):
         return True

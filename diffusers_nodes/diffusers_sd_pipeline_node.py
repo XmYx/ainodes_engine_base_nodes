@@ -7,9 +7,11 @@ from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc, \
     get_torch_device
-from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler
+from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler, \
+    StableDiffusionPipeline
 
-from custom_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward
+from custom_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
+    diffusers_indexed
 
 #MANDATORY
 OP_NODE_DIFF_PIPELINE = get_next_opcode()
@@ -17,6 +19,7 @@ OP_NODE_DIFF_PIPELINE = get_next_opcode()
 #NODE WIDGET
 class DiffusersPipeLineWidget(QDMNodeContentWidget):
     def initUI(self):
+        self.models = self.create_combo_box([item["name"] for item in diffusers_models], "Model")
 
         self.prompt = self.create_text_edit("Prompt")
         self.n_prompt = self.create_text_edit("Negative Prompt")
@@ -74,18 +77,31 @@ class DiffusersPipeLineNode(AiNode):
                     control_images.append(control["image"])
                     cnet_scales.append(control["scale"])
         reload = None
-        controlnets = None if len(controlnets) == 0 else controlnets
-        control_images = None if len(control_images) == 0 else control_images
+        #controlnets = None if len(controlnets) == 0 else controlnets
+        #control_images = None if len(control_images) == 0 else control_images
 
         guess_mode = False if control_images else True
         device = get_torch_device()
+        model_key = self.content.models.currentIndex()
+        model_name = diffusers_indexed[model_key]
 
-        self.pipe = StableDiffusionControlNetPipeline.from_pretrained(
-            "runwayml/stable-diffusion-v1-5", controlnet=controlnets, torch_dtype=torch.float16
+
+        do_hijack = None
+        if len(controlnets) > 0:
+            diffusion_class = StableDiffusionControlNetPipeline
+            do_hijack = True
+        else:
+            diffusion_class = StableDiffusionPipeline
+
+        self.pipe = diffusion_class.from_pretrained(
+            model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None
         ).to(device)
-        self.pipe.controlnet.forward = replace_forward_with(self.pipe.controlnet, multiForward)
+
+        if do_hijack:
+            self.pipe.controlnet.forward = replace_forward_with(self.pipe.controlnet, multiForward)
 
         self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config)
+
         prompt = self.content.prompt.toPlainText()
         height = self.content.height_val.value()
         width = self.content.width_val.value()
@@ -98,19 +114,29 @@ class DiffusersPipeLineNode(AiNode):
 
         generator = torch.Generator(device).manual_seed(seed)
         latents = None
-
-        image = self.pipe(prompt = prompt,
-                    image = control_images,
-                    height = height,
-                    width = width,
-                    num_inference_steps = num_inference_steps,
-                    guidance_scale = guidance_scale,
-                    negative_prompt = negative_prompt,
-                    eta = eta,
-                    generator = generator,
-                    latents = latents,
-                    controlnet_conditioning_scale = cnet_scales,
-                    guess_mode = guess_mode).images[0]
+        if isinstance(self.pipe, StableDiffusionControlNetPipeline):
+            image = self.pipe(prompt = prompt,
+                        image = control_images,
+                        height = height,
+                        width = width,
+                        num_inference_steps = num_inference_steps,
+                        guidance_scale = guidance_scale,
+                        negative_prompt = negative_prompt,
+                        eta = eta,
+                        generator = generator,
+                        latents = latents,
+                        controlnet_conditioning_scale = cnet_scales,
+                        guess_mode = guess_mode).images[0]
+        else:
+            image = self.pipe(prompt = prompt,
+                        height = height,
+                        width = width,
+                        num_inference_steps = num_inference_steps,
+                        guidance_scale = guidance_scale,
+                        negative_prompt = negative_prompt,
+                        eta = eta,
+                        generator = generator,
+                        latents = latents).images[0]
 
         torch_gc()
         return [[pil_image_to_pixmap(image)]]

@@ -21,7 +21,7 @@ class DataMergeNode(AiNode):
     op_code = OP_NODE_DATA_MERGE
     op_title = "DataMerger"
     content_label_objname = "datamerge_node"
-    category = "Experimental"
+    category = "WIP Experimental"
     NodeContent_class = DataMergeWidget
     dim = (340, 180)
     output_data_ports = [0]

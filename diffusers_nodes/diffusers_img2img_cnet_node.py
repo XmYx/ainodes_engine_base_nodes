@@ -14,7 +14,8 @@ from ainodes_frontend import singleton as gs
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler
 from diffusers import StableDiffusionControlNetImg2ImgPipeline
 
-from custom_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward
+from custom_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
+    diffusers_indexed
 
 #MANDATORY
 OP_NODE_DIFF_IMG2IMG_PIPELINE = get_next_opcode()
@@ -22,6 +23,7 @@ OP_NODE_DIFF_IMG2IMG_PIPELINE = get_next_opcode()
 #NODE WIDGET
 class DiffusersImg2ImgPipeLineWidget(QDMNodeContentWidget):
     def initUI(self):
+        self.models = self.create_combo_box([item["name"] for item in diffusers_models], "Model")
 
         self.prompt = self.create_text_edit("Prompt")
         self.n_prompt = self.create_text_edit("Negative Prompt")
@@ -91,15 +93,17 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
         reload = None
 
         guess_mode = False
-
+        model_key = self.content.models.currentIndex()
+        model_name = diffusers_indexed[model_key]
         #if reload or not self.pipe:
         self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-            "runwayml/stable-diffusion-v1-5", controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None,
+            model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None,
         ).to(gs.device)
         if hasattr(self.pipe, "controlnet"):
             self.pipe.controlnet.forward = replace_forward_with(self.pipe.controlnet, multiForward)
 
         self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config)
+
         prompt = self.content.prompt.toPlainText()
         height = self.content.height_val.value()
         width = self.content.width_val.value()
@@ -112,6 +116,7 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
 
         generator = torch.Generator(gs.device).manual_seed(seed)
         latents = None
+
         image = self.pipe(prompt = prompt,
                     image = image,
                     control_image = control_images,
