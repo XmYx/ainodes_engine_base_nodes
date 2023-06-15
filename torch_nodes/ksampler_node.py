@@ -197,12 +197,11 @@ class KSamplerNode(AiNode):
                 image = Image.fromarray(x_sample.astype(np.uint8))
                 pm = pil_image_to_pixmap(image)
                 return_pixmaps.append(pm)
-                if self.content.tensor_preview.isChecked():
-                    if len(self.getOutputs(2)) > 0:
-                        nodes = self.getOutputs(0)
-                        for node in nodes:
-                            if isinstance(node, ImagePreviewNode):
-                                node.content.preview_signal.emit(pm)
+                if len(self.getOutputs(2)) > 0:
+                    nodes = self.getOutputs(0)
+                    for node in nodes:
+                        if isinstance(node, ImagePreviewNode):
+                            node.content.preview_signal.emit(pm)
 
 
                 x+=1
@@ -262,11 +261,8 @@ class KSamplerNode(AiNode):
         self.markInvalid(False)
         self.setOutput(0, result[0])
         self.setOutput(1, result[1])
-
-
         self.content.progress_signal.emit(100)
         if gs.should_run:
-
             if len(self.getOutputs(2)) > 0:
                 self.executeChild(output_index=2)
 
