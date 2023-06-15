@@ -10,7 +10,8 @@ from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler, \
     StableDiffusionImageVariationPipeline
 
-from custom_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward
+from custom_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, \
+    scheduler_type_values, SchedulerType, get_scheduler
 from ainodes_frontend import singleton as gs
 
 #MANDATORY
@@ -19,6 +20,7 @@ OP_NODE_DIFF_VAR_PIPELINE = get_next_opcode()
 #NODE WIDGET
 class DiffusersVarPipeLineWidget(QDMNodeContentWidget):
     def initUI(self):
+        self.scheduler_name = self.create_combo_box(scheduler_type_values, "Scheduler")
 
         self.steps = self.create_spin_box("Steps", min_val=1, max_val=4096, default_val=25, step_value=1)
         self.scale = self.create_double_spin_box("Scale", min_val=0.01, max_val=25.00, default_val=7.5, step=0.01)
@@ -42,16 +44,10 @@ class DiffusersVarPipeLineNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])
-        #self.content.setMinimumHeight(600)
-
-        #self.content.setMaximumHeight(600)
         self.pipe = None
 
-    #MAIN NODE FUNCTION
     def evalImplementation_thread(self, index=0):
-
         images = self.getInputData(0)
-
         image = pixmap_to_pil_image(images[0])
         if not self.pipe:
             self.pipe = StableDiffusionImageVariationPipeline.from_pretrained(
@@ -61,14 +57,17 @@ class DiffusersVarPipeLineNode(AiNode):
               ).to(gs.device)
         else:
             self.pipe.to(gs.device)
-        self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config)
+
+        scheduler_name = self.content.scheduler_name.currentText()
+        scheduler_enum = SchedulerType(scheduler_name)
+        self.pipe = get_scheduler(self.pipe, scheduler_enum)
+
+        #self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config)
         guidance_scale = self.content.scale.value()
         steps = self.content.steps.value()
         eta = self.content.eta.value()
 
-
         seed = secrets.randbelow(9999999999) if self.content.seed.text() == "" else int(self.content.seed.text())
-
         generator = torch.Generator(gs.device).manual_seed(seed)
         latents = None
 
@@ -82,7 +81,6 @@ class DiffusersVarPipeLineNode(AiNode):
 
         torch_gc()
         return [[pil_image_to_pixmap(image)]]
-
 
 
     def remove(self):

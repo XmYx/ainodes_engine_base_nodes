@@ -9,9 +9,9 @@ from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_
     get_torch_device
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler, \
     StableDiffusionPipeline
-
+from diffusers.models.attention_processor import AttnProcessor2_0
 from custom_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
-    diffusers_indexed
+    diffusers_indexed, scheduler_type_values, get_scheduler, SchedulerType
 
 #MANDATORY
 OP_NODE_DIFF_PIPELINE = get_next_opcode()
@@ -20,7 +20,8 @@ OP_NODE_DIFF_PIPELINE = get_next_opcode()
 class DiffusersPipeLineWidget(QDMNodeContentWidget):
     def initUI(self):
         self.models = self.create_combo_box([item["name"] for item in diffusers_models], "Model")
-
+        self.reload = self.create_check_box("Reload")
+        self.scheduler_name = self.create_combo_box(scheduler_type_values, "Scheduler")
         self.prompt = self.create_text_edit("Prompt")
         self.n_prompt = self.create_text_edit("Negative Prompt")
         self.height_val = self.create_spin_box("Height", min_val=64, max_val=4096, default_val=512, step_value=64)
@@ -52,6 +53,7 @@ class DiffusersPipeLineNode(AiNode):
         self.content.setMaximumHeight(600)
         self.pipe = None
 
+
     #MAIN NODE FUNCTION
     def evalImplementation_thread(self, index=0):
 
@@ -76,9 +78,6 @@ class DiffusersPipeLineNode(AiNode):
                     controlnets.append(cnet)
                     control_images.append(control["image"])
                     cnet_scales.append(control["scale"])
-        reload = None
-        #controlnets = None if len(controlnets) == 0 else controlnets
-        #control_images = None if len(control_images) == 0 else control_images
 
         guess_mode = False if control_images else True
         device = get_torch_device()
@@ -93,14 +92,25 @@ class DiffusersPipeLineNode(AiNode):
         else:
             diffusion_class = StableDiffusionPipeline
 
-        self.pipe = diffusion_class.from_pretrained(
-            model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None
-        ).to(device)
+        if self.content.reload.isChecked() or not self.pipe:
+            self.pipe = diffusion_class.from_pretrained(
+                model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None
+            ).to(device)
+            self.pipe.unet.set_attn_processor(AttnProcessor2_0())
+            print(self.pipe.unet.conv_out.state_dict()["weight"].stride())  # (2880, 9, 3, 1)
+            self.pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
+            print(
+                self.pipe.unet.conv_out.state_dict()["weight"].stride()
+            )  # (2880, 1, 960, 320) having a stride of 1 for the 2nd dimension proves that it works
+            if do_hijack:
+                self.pipe.controlnet.forward = replace_forward_with(self.pipe.controlnet, multiForward)
 
-        if do_hijack:
-            self.pipe.controlnet.forward = replace_forward_with(self.pipe.controlnet, multiForward)
 
-        self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config)
+        scheduler_name = self.content.scheduler_name.currentText()
+        scheduler_enum = SchedulerType(scheduler_name)
+        self.pipe = get_scheduler(self.pipe, scheduler_enum)
+
+        #self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config)
 
         prompt = self.content.prompt.toPlainText()
         height = self.content.height_val.value()

@@ -1,6 +1,10 @@
+from enum import Enum
 from typing import Union, Optional, Dict, Any, Tuple, List
 
 import torch
+from diffusers import DDIMScheduler, HeunDiscreteScheduler, KDPM2DiscreteScheduler, KDPM2AncestralDiscreteScheduler, \
+    LMSDiscreteScheduler, PNDMScheduler, EulerDiscreteScheduler, EulerAncestralDiscreteScheduler, \
+    DPMSolverSinglestepScheduler, DPMSolverMultistepScheduler
 
 from diffusers.models.controlnet import ControlNetOutput
 
@@ -125,3 +129,41 @@ def multiForward(
                     mid_block_res_sample = mid_sample
 
     return down_block_res_samples, mid_block_res_sample
+
+
+
+class SchedulerType(Enum):
+    DDIM = "ddim"
+    HEUN = "heun"
+    DPM_DISCRETE = "dpm_discrete"
+    DPM_ANCESTRAL = "dpm_ancestral"
+    LMS = "lms"
+    PNDM = "pndm"
+    EULER = "euler"
+    EULER_A = "euler_a"
+    DPMPP_SDE_ANCESTRAL = "dpmpp_sde_ancestral"
+    DPMPP_2M = "dpmpp_2m"
+
+scheduler_type_values = [item.value for item in SchedulerType]
+
+def get_scheduler(pipe, scheduler: SchedulerType):
+    scheduler_mapping = {
+        SchedulerType.DDIM: DDIMScheduler.from_config,
+        SchedulerType.HEUN: HeunDiscreteScheduler.from_config,
+        SchedulerType.DPM_DISCRETE: KDPM2DiscreteScheduler.from_config,
+        SchedulerType.DPM_ANCESTRAL: KDPM2AncestralDiscreteScheduler.from_config,
+        SchedulerType.LMS: LMSDiscreteScheduler.from_config,
+        SchedulerType.PNDM: PNDMScheduler.from_config,
+        SchedulerType.EULER: EulerDiscreteScheduler.from_config,
+        SchedulerType.EULER_A: EulerAncestralDiscreteScheduler.from_config,
+        SchedulerType.DPMPP_SDE_ANCESTRAL: DPMSolverSinglestepScheduler.from_config,
+        SchedulerType.DPMPP_2M: DPMSolverMultistepScheduler.from_config
+    }
+
+    new_scheduler = scheduler_mapping[scheduler](pipe.scheduler.config)
+    pipe.scheduler = new_scheduler
+
+    return pipe
+
+
+
