@@ -133,8 +133,8 @@ class ImagePreviewNode(AiNode):
     def evalImplementation_thread(self, index=0):
         self.busy = True
         if len(self.getInputs(0)) > 0:
-            self.images = self.getInputData(0)
-            return self.images
+            images = self.getInputData(0)
+            return images
 
     def show_image(self, image):
         self.content.image.setPixmap(image)
@@ -143,19 +143,17 @@ class ImagePreviewNode(AiNode):
 
     def onWorkerFinished(self, result):
         self.busy = False
-        self.busy = False
         self.images = result
         if self.content.checkbox.isChecked() == True:
             self.save_image(result[0])
-        #if result is not None:
-            #for image in result:
-                #self.content.preview_signal.emit(image)
+        if result is not None:
+            for image in result:
+                self.content.preview_signal.emit(image)
                 #time.sleep(0.1)
 
         if result is not None:
             self.resize(result[0])
-
-            self.timer.start()
+            #self.timer.start()
         self.setOutput(0, self.images)
         self.markInvalid(False)
         self.markDirty(False)

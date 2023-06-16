@@ -161,7 +161,7 @@ class LatentNode(AiNode):
             seed = int(seed)
         except:
             seed = ""
-        seed = seed if seed != "" else secrets.randbelow(9999999)
+        seed = seed if seed != "" else secrets.randbelow(9999999999)
         target_shape = (4, height // 8, width // 8)
         subheight = self.content.subnoise_height.value()
         subwidth = self.content.subnoise_width.value()
@@ -173,7 +173,7 @@ class LatentNode(AiNode):
                 subseed = int(subseed)
             except:
                 subseed = ""
-            subseed = subseed if subseed != "" else secrets.randbelow(9999999)
+            subseed = subseed if subseed != "" else secrets.randbelow(9999999999)
 
             torch.manual_seed(subseed)
             subnoise = torch.randn(noise_shape, device=gs.device.type)

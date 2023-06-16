@@ -47,11 +47,11 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
     help_text = "Diffusers - "
     op_code = OP_NODE_DIFF_IMG2IMG_PIPELINE
     op_title = "Diffusers - StableDiffusionImg2ImgControlNet"
-    content_label_objname = "diffusers_pipeline_node"
+    content_label_objname = "diffusers_img2imgcnet_node"
     category = "Diffusers"
     NodeContent_class = DiffusersImg2ImgPipeLineWidget
     dim = (340, 700)
-    output_data_ports = [0,1]
+    output_data_ports = [0]
     exec_port = 2
 
     def __init__(self, scene):
@@ -140,11 +140,16 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
                     controlnet_conditioning_scale = cnet_scales,
                     guess_mode = guess_mode).images[0]
 
+        pixmap = pil_image_to_pixmap(image)
+        print(pixmap)
+        return [pixmap]
 
-        torch_gc()
-        return [[pil_image_to_pixmap(image)]]
+    def onWorkerFinished(self, result):
+        self.busy = False
+        print(result)
 
-
+        self.setOutput(0, result)
+        self.executeChild(2)
 
     def remove(self):
         print("REMOVING", self)
