@@ -1,3 +1,5 @@
+import secrets
+
 import numpy as np
 import torch
 from PIL import Image
@@ -24,6 +26,15 @@ class LatentWidget(QDMNodeContentWidget):
         self.width = self.create_spin_box("Width", 64, 4096, 512, 64)
         self.height = self.create_spin_box("Height", 64, 4096, 512, 64)
         self.rescale_latent = self.create_check_box("Latent Rescale")
+
+        self.noise_seed = self.create_line_edit("Noise Seed")
+        self.noise_subseed = self.create_line_edit("Noise Subseed")
+        self.use_subnoise = self.create_check_box("Use Subnoise")
+        self.subnoise_width = self.create_spin_box("Subnoise Width", 64, 4096, 512, 64)
+        self.subnoise_height = self.create_spin_box("Subnoise Height", 64, 4096, 512, 64)
+        self.subnoise_strength = self.create_double_spin_box("Subnoise strength", min_val=0.0, max_val=10.0, default_val=1.0)
+
+
 @register_node(OP_NODE_LATENT)
 class LatentNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/v2/empty_latent.png"
@@ -45,7 +56,7 @@ class LatentNode(AiNode):
 
         self.input_socket_name = ["EXEC", "IMAGE", "LATENT"]
         self.output_socket_name = ["EXEC", "LATENT"]
-        self.grNode.height = 210
+        self.grNode.height = 400
         self.grNode.width = 200
         self.content.eval_signal.connect(self.evalImplementation)
 
@@ -144,9 +155,52 @@ class LatentNode(AiNode):
     def generate_latent(self):
         width = self.content.width.value()
         height = self.content.height.value()
-        batch_size = 1
-        latent = torch.zeros([batch_size, 4, height // 8, width // 8])
-        return latent
+        seed = self.content.noise_seed.text()
+        subseed = self.content.noise_subseed.text()
+        try:
+            seed = int(seed)
+        except:
+            seed = ""
+        seed = seed if seed != "" else secrets.randbelow(9999999)
+        target_shape = (4, height // 8, width // 8)
+        subheight = self.content.subnoise_height.value()
+        subwidth = self.content.subnoise_width.value()
+        noise_shape = target_shape if not self.content.use_subnoise.isChecked() else (target_shape[0], subheight // 8, subwidth // 8)
+        subnoise = None
+
+        if self.content.use_subnoise.isChecked():
+            try:
+                subseed = int(subseed)
+            except:
+                subseed = ""
+            subseed = subseed if subseed != "" else secrets.randbelow(9999999)
+
+            torch.manual_seed(subseed)
+            subnoise = torch.randn(noise_shape, device=gs.device.type)
+        torch.manual_seed(seed)
+        noise = torch.randn(noise_shape, device=gs.device.type)
+
+
+        if subnoise is not None:
+            subnoise_strength = self.content.subnoise_strength.value()
+            noise = slerp(subnoise_strength, noise, subnoise)
+
+        if noise_shape != target_shape:
+            torch.manual_seed(seed)
+            x = torch.randn(target_shape, device=gs.device.type)
+            dx = (target_shape[2] - noise_shape[2]) // 2
+            dy = (target_shape[1] - noise_shape[1]) // 2
+            w = noise_shape[2] if dx >= 0 else noise_shape[2] + 2 * dx
+            h = noise_shape[1] if dy >= 0 else noise_shape[1] + 2 * dy
+            tx = 0 if dx < 0 else dx
+            ty = 0 if dy < 0 else dy
+            dx = max(-dx, 0)
+            dy = max(-dy, 0)
+
+            x[:, ty:ty+h, tx:tx+w] = noise[:, dy:dy+h, dx:dx+w]
+            noise = x
+
+        return noise[None]
 
 class LatentCompositeWidget(QDMNodeContentWidget):
     def initUI(self):
@@ -292,3 +346,17 @@ def load_img(image, shape=None, use_alpha_as_mask=False):
     image = 2. * image - 1.
 
     return image, mask_image
+
+# from https://discuss.pytorch.org/t/help-regarding-slerp-function-for-generative-model-sampling/32475/3
+def slerp(val, low, high):
+    low_norm = low/torch.norm(low, dim=1, keepdim=True)
+    high_norm = high/torch.norm(high, dim=1, keepdim=True)
+    dot = (low_norm*high_norm).sum(1)
+
+    if dot.mean() > 0.9995:
+        return low * val + high * (1 - val)
+
+    omega = torch.acos(dot)
+    so = torch.sin(omega)
+    res = (torch.sin((1.0-val)*omega)/so).unsqueeze(1)*low + (torch.sin(val*omega)/so).unsqueeze(1) * high
+    return res

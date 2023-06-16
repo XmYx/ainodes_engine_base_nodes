@@ -1,12 +1,13 @@
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor, QFont, QFontMetrics
+from PyQt6.QtWidgets import QVBoxLayout, QDialog
 from qtpy import QtCore, QtGui
 from qtpy import QtWidgets
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
-from PyQt6.Qsci import QsciScintilla, QsciLexerPython
-
-
+from PyQt6.Qsci import QsciScintilla, QsciLexerPython, QsciAPIs
 
 from pyflakes.reporter import Reporter
 import ast
@@ -29,38 +30,125 @@ default_fn = """def customFunction(self):
     print("This is a susccesful test")
     return [None, None, None, None]"""
 
+class PythonLexer(QsciLexerPython):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setDefaultColor(QColor('white'))
+        self.setPaper(QColor("#d3d3d3"))
 class PythonCodeEditor(QsciScintilla):
     def __init__(self, parent=None):
         super().__init__(parent)
+        # self.setAutoCompletionSource(QsciScintilla.AutoCompletionSource.AcsAll)
+        # self.setAutoCompletionThreshold(1)
+        #self.setAutoFillBackground(True)
+
         self.setUtf8(True)
         self.setIndentationsUseTabs(False)
         self.setIndentationWidth(4)
         self.setTabWidth(4)
         self.setIndentationGuides(True)
-        self.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)
+        self.setBraceMatching(QsciScintilla.BraceMatch.NoBraceMatch)
         self.setAutoIndent(True)
         # Setup syntax highlighter
+
         lexer = QsciLexerPython(self)
+        lexer.setDefaultColor(QColor('white'))
+        self.setCaretForegroundColor(QColor('white'))
+        #self.current_editor.setLexer(lexer)
+        lexer.setPaper(QColor("#1e1f22"))
+        lexer.setColor(QColor('#808080'), lexer.Comment)
+        lexer.setColor(QColor('#FFA500'), lexer.Keyword)
+        lexer.setColor(QColor('#ffffff'), lexer.ClassName)
+        lexer.setFont(QFont('Consolas'))
+
         self.setLexer(lexer)
-        self.setMarginType(0,QsciScintilla.MarginType.NumberMargin)
-        self.setMarginWidth(0, "0000")
+
+        self.setPaper(QColor("#1e1f22"))
+
+        lexer.setPaper(QColor("#1e1f22"))
+        lexer.setColor(QColor('#808080'), lexer.Comment)
+        lexer.setColor(QColor('#FFA500'), lexer.Keyword)
+        lexer.setColor(QColor('#00000'), lexer.ClassName)
+        lexer.setColor(QColor("#FFFFFF"), lexer.Default)
+        lexer.setFont(QFont('Consolas'))
+
+        self.setTabWidth(4)
+        self.setMarginLineNumbers(1, True)
+        self.setMarginWidth(1, "#0000")
+        left_margin_index = 0
+        left_margin_width = 7
+        self.setMarginsForegroundColor(QColor("#FFFFFF"))
+        self.setMarginsBackgroundColor(QColor("#1e1f22"))
+        font_metrics = QFontMetrics(self.font())
+        left_margin_width_pixels = font_metrics.horizontalAdvance(' ') * left_margin_width
+        self.SendScintilla(self.SCI_SETMARGINLEFT, left_margin_index, left_margin_width_pixels)
         self.setFolding(QsciScintilla.FoldStyle.BoxedTreeFoldStyle)
+        self.setMarginSensitivity(2, True)
+        #self.setFoldMarginColors(QColor("#1e1f22"), QColor("#1e1f22"))
+        # Customizing brace matching
+        self.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)
+
+        # Set the background color for matched braces
+        self.SendScintilla(QsciScintilla.SCI_STYLESETBACK, QsciScintilla.STYLE_BRACELIGHT, QColor("#808080"))
+
+        # Optionally, set the foreground color for matched braces
+        self.SendScintilla(QsciScintilla.SCI_STYLESETFORE, QsciScintilla.STYLE_BRACELIGHT, QColor("#000000"))
+        #self.setCaretLineVisible(True)
+        #self.setCaretLineBackgroundColor(QColor("#80d3d3d3"))
+        self.setWrapMode(QsciScintilla.WrapMode.WrapWord)
+        # self.setAutoCompletionThreshold(1)
+        self.setBackspaceUnindents(True)
+        self.setIndentationGuides(True)
+
+        # Setup the QsciAPIs object
+        api = QsciAPIs(lexer)
+
+        # Add custom autocompletion
+        for module_name in ["math", "os", "torch", "diffusers", "PIL", "numpy"]:  # Add as many modules as you like
+            try:
+                module = __import__(module_name)
+                for attr_name in dir(module):
+                    if not attr_name.startswith("_"):  # Ignore private attributes
+                        api.add(module_name + "." + attr_name)
+            except ImportError:
+                pass  # Module not found, skip
+
+        # Prepare the APIs and assign them to the lexer
+        api.prepare()
+        lexer.setAPIs(api)
 
 OP_NODE_VIM = get_next_opcode()
+class Dialog(QDialog):
+    def __init__(self, child):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+        self.child = child
+        self.layout().addWidget(self.child)
 
 class VimWidget(QDMNodeContentWidget):
     def initUI(self):
+
         self.create_widgets()
         self.create_main_layout(grid=1)
-        self.grid_layout.addWidget(self.editor)
+
+        #self.grid_layout.addWidget(self.editor)
+        self.grid_layout.addWidget(self.dialog)
     def create_widgets(self):
-        self.editor = PythonCodeEditor(parent=self)
+
+
+
+        self.editor = PythonCodeEditor(parent=self.node.grNode)
+        self.dialog = Dialog(self.editor)
+        #self.dialog.show()
         if self.editor.text() == "":
             self.editor.setText(default_fn)
 
         self.run_button = QtWidgets.QPushButton("Run")
         self.stop_button = QtWidgets.QPushButton("Stop")
-        self.create_button_layout([self.run_button, self.stop_button])
+        self.show_button = QtWidgets.QPushButton("Show Editor")
+        self.create_button_layout([self.run_button, self.stop_button, self.show_button])
 
     def serialize(self) -> dict:
         res = super().serialize()
@@ -101,6 +189,7 @@ class VimNode(AiNode):
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.run_button.clicked.connect(self.start)
         self.content.stop_button.clicked.connect(self.stop)
+        self.content.show_button.clicked.connect(self.content.dialog.show)
 
     def onDoubleClicked(self, event):
         #print(self.content.isVisible())
