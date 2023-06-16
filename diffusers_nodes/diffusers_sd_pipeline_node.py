@@ -52,6 +52,7 @@ class DiffusersPipeLineNode(AiNode):
 
         self.content.setMaximumHeight(600)
         self.pipe = None
+        self.control_params = []
 
 
     #MAIN NODE FUNCTION
@@ -68,21 +69,39 @@ class DiffusersPipeLineNode(AiNode):
 
             return forward_with_self
 
+        reload = True if self.content.reload.isChecked() or self.pipe == None else None
 
-        if data:
-            if "control_diff" in data:
-                for control in data["control_diff"]:
-                    cnet = ControlNetModel.from_pretrained(control["name"], torch_dtype=torch.float16).to(get_torch_device())
-                    cnet.start_control = control["start"]
-                    cnet.stop_control = control["stop"]
-                    controlnets.append(cnet)
-                    control_images.append(control["image"])
-                    cnet_scales.append(control["scale"])
 
         guess_mode = False if control_images else True
         device = get_torch_device()
         model_key = self.content.models.currentIndex()
         model_name = diffusers_indexed[model_key]
+
+        if data:
+            if "control_diff" in data:
+                control_params = []
+                x = 0
+                for control in data["control_diff"]:
+                    control_params.append(control["name"])
+                    if len(self.control_params) != 0:
+                        if len(control_params) >= x:
+                            if not reload and control_params[x] != self.control_params[x]:
+                                reload = True
+                        else:
+                            reload = True
+                    if reload:
+                        cnet = ControlNetModel.from_pretrained(control["name"], torch_dtype=torch.float16).to(get_torch_device())
+                    else:
+                        cnet = self.pipe.controlnet.nets[x]
+                    cnet.start_control = control["start"]
+                    cnet.stop_control = control["stop"]
+                    control_images.append(control["image"])
+                    cnet_scales.append(control["scale"])
+                    if reload:
+                        controlnets.append(cnet)
+
+                    x += 1
+                self.control_params = control_params
 
 
         do_hijack = None
@@ -92,7 +111,7 @@ class DiffusersPipeLineNode(AiNode):
         else:
             diffusion_class = StableDiffusionPipeline
 
-        if self.content.reload.isChecked() or not self.pipe:
+        if self.content.reload.isChecked() or self.pipe == None:
             self.pipe = diffusion_class.from_pretrained(
                 model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None
             ).to(device)
@@ -104,14 +123,9 @@ class DiffusersPipeLineNode(AiNode):
             )  # (2880, 1, 960, 320) having a stride of 1 for the 2nd dimension proves that it works
             if do_hijack:
                 self.pipe.controlnet.forward = replace_forward_with(self.pipe.controlnet, multiForward)
-
-
         scheduler_name = self.content.scheduler_name.currentText()
         scheduler_enum = SchedulerType(scheduler_name)
         self.pipe = get_scheduler(self.pipe, scheduler_enum)
-
-        #self.pipe.scheduler = UniPCMultistepScheduler.from_config(self.pipe.scheduler.config)
-
         prompt = self.content.prompt.toPlainText()
         height = self.content.height_val.value()
         width = self.content.width_val.value()
@@ -119,9 +133,7 @@ class DiffusersPipeLineNode(AiNode):
         guidance_scale = self.content.scale.value()
         negative_prompt = self.content.n_prompt.toPlainText()
         eta = self.content.eta.value()
-
         seed = secrets.randbelow(9999999999) if self.content.seed.text() == "" else int(self.content.seed.text())
-
         generator = torch.Generator(device).manual_seed(seed)
         latents = None
         if isinstance(self.pipe, StableDiffusionControlNetPipeline):

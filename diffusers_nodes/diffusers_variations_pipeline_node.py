@@ -39,17 +39,26 @@ class DiffusersVarPipeLineNode(AiNode):
     category = "Diffusers"
     NodeContent_class = DiffusersVarPipeLineWidget
     dim = (340, 300)
-    output_data_ports = [0]
-    exec_port = 1
+    output_data_ports = [0,1]
+    exec_port = 2
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[5,1], outputs=[5,1])
+        super().__init__(scene, inputs=[5,4,1], outputs=[5,4,1])
         self.pipe = None
 
     def evalImplementation_thread(self, index=0):
         images = self.getInputData(0)
         image = pixmap_to_pil_image(images[0])
-        if not self.pipe:
+
+        pipe = self.getInputData(1)
+
+        print("PIPE", pipe)
+        print("IMG", images)
+
+        if pipe:
+            self.pipe = pipe
+
+        if self.pipe == None:
             self.pipe = StableDiffusionImageVariationPipeline.from_pretrained(
               "lambdalabs/sd-image-variations-diffusers",
               revision="v2.0",
@@ -80,7 +89,7 @@ class DiffusersVarPipeLineNode(AiNode):
                           eta=eta).images[0]
 
         torch_gc()
-        return [[pil_image_to_pixmap(image)]]
+        return [[pil_image_to_pixmap(image)], self.pipe]
 
 
     def remove(self):
