@@ -82,8 +82,8 @@ class ConditioningCombineNode(AiNode):
     def combine_conditioning(self, progress_callback=None):
         try:
 
-            cond1_list = self.getInputData(1)
-            cond2_list = self.getInputData(0)
+            cond1_list = self.getInputData(0)
+            cond2_list = self.getInputData(1)
             strength = self.content.strength.value()
             if strength > 0:
                 c = self.addWeighted(cond1_list[0], cond2_list[0], strength)
@@ -93,9 +93,16 @@ class ConditioningCombineNode(AiNode):
             else:
                 conds_list_length = self.content.cond_list_length.value()
                 if conds_list_length > 1:
-                    c = self.calculate_blended_conditionings(cond1_list[0], cond2_list[0],
+                    c = self.calculate_blended_conditionings(cond1_list[len(cond1_list) - 1], cond2_list[len(cond2_list) - 1],
                                                              self.content.cond_list_length.value())
-                    return c
+
+
+                    print(len(cond1_list))
+                    print(len(cond2_list))
+                    if len(cond2_list) > 1:
+                        return cond2_list[:-1] + c
+                    else:
+                        return c
                 else:
 
 
