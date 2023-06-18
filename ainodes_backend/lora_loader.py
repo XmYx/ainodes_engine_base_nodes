@@ -452,30 +452,32 @@ class ModelPatcher:
 
 
 
-def load_lora_for_models(lora_path, strength_model, strength_clip):
-    key_map = model_lora_keys(gs.models["sd"].model)
-    key_map = model_lora_keys(gs.models["clip"].cond_stage_model, key_map)
+def load_lora_for_models(lora_path, strength_model, strength_clip, unet, clip):
+    key_map = model_lora_keys(unet.model)
+    key_map = model_lora_keys(clip.cond_stage_model, key_map)
     loaded = load_lora(lora_path, key_map)
-    new_modelpatcher = gs.models["sd"].clone()
+    new_modelpatcher = unet.clone()
     k = new_modelpatcher.add_patches(loaded, strength_model)
-    new_clip = gs.models["clip"].clone()
+    new_clip = clip.clone()
     k1 = new_clip.add_patches(loaded, strength_clip)
     k = set(k)
     k1 = set(k1)
     for x in loaded:
         if (x not in k) and (x not in k1):
             print("NOT LOADED", x)
-
-    gs.models["sd"].model.to("cpu")
-    gs.models["clip"].cond_stage_model.to("cpu")
-    del gs.models["sd"].model
-    del gs.models["clip"].cond_stage_model
-    del gs.models["sd"]
-    del gs.models["clip"]
+    del unet
+    del clip
+    return new_modelpatcher, new_clip
+    # gs.models["sd"].model.to("cpu")
+    # gs.models["clip"].cond_stage_model.to("cpu")
+    # del gs.models["sd"].model
+    # del gs.models["clip"].cond_stage_model
+    # del gs.models["sd"]
+    # del gs.models["clip"]
     torch_gc()
 
-    gs.models["sd"] = new_modelpatcher
-    gs.models["clip"] = new_clip
-    print("done")
+    # gs.models["sd"] = new_modelpatcher
+    # gs.models["clip"] = new_clip
+    # print("done")
     return
 

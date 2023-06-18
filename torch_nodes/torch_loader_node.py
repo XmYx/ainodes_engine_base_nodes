@@ -69,9 +69,10 @@ class TorchLoaderNode(AiNode):
     content_label_objname = "torch_loader_node"
     category = "Model Loading"
     input_socket_name = ["EXEC"]
-    output_socket_name = ["EXEC"]
+    # output_socket_name = ["EXEC"]
+    custom_output_socket_name = ["VAE", "CLIP", "UNET", "EXEC"]
     def __init__(self, scene):
-        super().__init__(scene, inputs=[1], outputs=[1])
+        super().__init__(scene, inputs=[1], outputs=[4,4,4,1])
         self.loader = ModelLoader()
 
     def initInnerClasses(self):
@@ -81,28 +82,54 @@ class TorchLoaderNode(AiNode):
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         self.grNode.width = 340
-        self.grNode.height = 240
+        self.grNode.height = 300
         self.content.setMinimumHeight(140)
         self.content.setMinimumWidth(340)
         self.content.eval_signal.connect(self.evalImplementation)
+
+        self.model = None
+        self.clip = None
+        self.vae = None
+
+        self.loaded_sd = ""
+    def remove(self):
+        self.clean_sd()
+        super().remove()
     def clean_sd(self):
-        gs.loaded_loras = []
-        if "sd" in gs.models:
-            try:
-                gs.models["sd"].cpu()
-            except:
-                pass
-            del gs.models["sd"]
-            gs.models["sd"] = None
-            torch_gc()
-        if "inpaint" in gs.models:
-            try:
-                gs.models["inpaint"].cpu()
-            except:
-                pass
-            del gs.models["inpaint"]
-            gs.models["inpaint"] = None
-            torch_gc()
+
+        try:
+            self.model.model.cpu()
+            self.clip.cpu()
+            self.vae.cpu()
+        except:
+            pass
+        del self.model
+        del self.clip
+        del self.vae
+
+        self.model = None
+        self.clip = None
+        self.vae = None
+
+        torch_gc()
+
+        # gs.loaded_loras = []
+        # if "sd" in gs.models:
+        #     try:
+        #         gs.models["sd"].cpu()
+        #     except:
+        #         pass
+        #     del gs.models["sd"]
+        #     gs.models["sd"] = None
+        #     torch_gc()
+        # if "inpaint" in gs.models:
+        #     try:
+        #         gs.models["inpaint"].cpu()
+        #     except:
+        #         pass
+        #     del gs.models["inpaint"]
+        #     gs.models["inpaint"] = None
+        #     torch_gc()
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
@@ -114,33 +141,35 @@ class TorchLoaderNode(AiNode):
 
         inpaint = True if "inpaint" in model_name else False
         m = "sd_model" if not inpaint else "inpaint"
-        if gs.loaded_sd != model_name or self.content.force_reload.isChecked() == True:
+        if self.loaded_sd != model_name or self.content.force_reload.isChecked() == True:
             self.clean_sd()
-            gs.loaded_hypernetworks.clear()
-            self.loader.load_model(model_name, config_name, inpaint, style=self.content.optimization.currentText())
-            gs.loaded_sd = model_name
-            self.setOutput(0, model_name)
+            #gs.loaded_hypernetworks.clear()
+            self.model, self.clip, self.vae = self.loader.load_model(model_name, config_name, inpaint, style=self.content.optimization.currentText())
+            self.loaded_sd = model_name
         if self.content.vae_dropdown.currentText() != 'default':
             model = self.content.vae_dropdown.currentText()
-            self.loader.load_vae(model)
-            gs.loaded_vae = model
+            self.vae = self.loader.load_vae(model)
+            self.loaded_vae = model
         else:
-            gs.loaded_vae = 'default'
-        if gs.loaded_vae != self.content.vae_dropdown.currentText():
+            self.loaded_vae = 'default'
+        if self.loaded_vae != self.content.vae_dropdown.currentText():
             model = self.content.vae_dropdown.currentText()
-            self.loader.load_vae(model)
-            gs.loaded_vae = model
-        return self.value
+            self.vae = self.loader.load_vae(model)
+            self.loaded_vae = model
+        return True
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
+
+        self.setOutput(0, self.vae)
+        self.setOutput(1, self.clip)
+        self.setOutput(2, self.model)
+
         self.markDirty(False)
         self.markInvalid(False)
-        self.grNode.setToolTip("")
 
-        #super().onWorkerFinished(None)
-        self.executeChild(0)
+        self.executeChild(3)
 
     def onInputChanged(self, socket=None):
         pass

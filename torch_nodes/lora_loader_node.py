@@ -65,10 +65,12 @@ class LoraLoaderNode(AiNode):
     op_title = "Lora Loader"
     content_label_objname = "lora_loader_node"
     category = "Model Loading"
-    input_socket_name = ["EXEC"]
+    custom_input_socket_name = ["CLIP", "UNET", "EXEC"]
+    custom_output_socket_name = ["CLIP", "UNET", "EXEC"]
+
     output_socket_name = ["EXEC"]
     def __init__(self, scene):
-        super().__init__(scene, inputs=[1], outputs=[1])
+        super().__init__(scene, inputs=[4,4,1], outputs=[4,4,1])
         #self.loader = ModelLoader()
 
     def initInnerClasses(self):
@@ -85,6 +87,12 @@ class LoraLoaderNode(AiNode):
         self.apihandler = APIHandler()
 
     def evalImplementation_thread(self, index=0):
+
+        clip = self.getInputData(0)
+        unet = self.getInputData(1)
+        assert clip is not None, "CLIP model not found, please make sure to load a torch model and connect it's outputs."
+        assert unet is not None, "UNET model not found, please make sure to load a torch model and connect it's outputs."
+
         file = self.content.dropdown.currentText()
 
         sha = sha256(os.path.join(gs.loras, file))
@@ -106,9 +114,9 @@ class LoraLoaderNode(AiNode):
         if self.values != data or self.current_lora != file:
             print("LOADING LORA")
             if not force:
-                gs.models["sd"].unpatch_model()
-                gs.models["clip"].patcher.unpatch_model()
-            self.load_lora_to_ckpt(file)
+                unet.unpatch_model()
+                clip.patcher.unpatch_model()
+            new_unet, new_clip = self.load_lora_to_ckpt(file, unet, clip)
             self.current_lora = file
             self.values = data
 
@@ -121,7 +129,7 @@ class LoraLoaderNode(AiNode):
                 if file not in gs.loaded_loras:
                     gs.loaded_loras.append(file)
                 self.current_lora = file"""
-        return self.value
+        return [new_clip, new_unet]
     #@QtCore.Slot(object)
     def handle_response(self, data):
         # Process the received data
@@ -130,20 +138,18 @@ class LoraLoaderNode(AiNode):
             words = "\n".join(data["trainedWords"])
             self.content.help_prompt.setText(f"Trained Words:\n{words}")
 
-    #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
-        #super().onWorkerFinished(None)
-
-
-        if len(self.getOutputs(0)) > 0:
-            self.executeChild(output_index=0)
+        self.setOutput(0, result[0])
+        self.setOutput(1, result[1])
+        self.executeChild(2)
 
     def onInputChanged(self, socket=None):
         pass
 
-    def load_lora_to_ckpt(self, lora_name):
+    def load_lora_to_ckpt(self, lora_name, unet, clip):
         lora_path = os.path.join(gs.loras, lora_name)
         strength_model = self.content.model_weight.value()
         strength_clip = self.content.clip_weight.value()
-        load_lora_for_models(lora_path, strength_model, strength_clip)
+        unet, clip = load_lora_for_models(lora_path, strength_model, strength_clip, unet, clip)
+        return unet, clip

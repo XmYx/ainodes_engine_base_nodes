@@ -38,10 +38,10 @@ class HypernetworkLoaderNode(AiNode):
     op_title = "Hypernetwork Loader"
     content_label_objname = "hypernetwork_loader_node"
     category = "Model Loading"
-    input_socket_name = ["EXEC"]
-    output_socket_name = ["EXEC"]
+    custom_input_socket_name = ["UNET", "EXEC"]
+    custom_output_socket_name = ["UNET","EXEC"]
     def __init__(self, scene):
-        super().__init__(scene, inputs=[1], outputs=[1])
+        super().__init__(scene, inputs=[4,1], outputs=[4,1])
 
     def initInnerClasses(self):
         self.content = HypernetworkLoaderWidget(self)
@@ -56,24 +56,38 @@ class HypernetworkLoaderNode(AiNode):
         self.content.button.clicked.connect(self.unpatch_model)
         from .load_hypernetwork import load_hypernetwork_patch
         self.load_hypernetwork_patch = load_hypernetwork_patch
+        self.loaded_hypernetworks = []
 
     def evalImplementation_thread(self, index=0):
-        hypernetwork = self.content.hypernetwork.currentText()
-        if hypernetwork in gs.loaded_hypernetworks:
-            gs.models["sd"].unpatch_model()
-            gs.loaded_hypernetworks.clear()
-        if hypernetwork not in gs.loaded_hypernetworks:
-            path = os.path.join(gs.hypernetworks, hypernetwork)
-            if os.path.isfile(path):
 
-                patch = self.load_hypernetwork_patch(path, self.content.strength.value())
-                print(patch)
-                if patch is not None:
-                    patch.to("cuda")
-                    gs.models["sd"].set_model_attn1_patch(patch)
-                    gs.models["sd"].set_model_attn2_patch(patch)
-                    gs.loaded_hypernetworks.append(hypernetwork)
-        return True
+        unet = self.getInputData(0)
+        assert unet is not None, "Unet Not connected or loaded, plase make sure to input a valid Stable Diffusion unet."
+
+        hypernetwork = self.content.hypernetwork.currentText()
+        path = os.path.join(gs.hypernetworks, hypernetwork)
+        if hypernetwork not in self.loaded_hypernetworks:
+            patch = self.load_hypernetwork_patch(path, self.content.strength.value())
+            if patch is not None:
+                unet.set_model_attn1_patch(patch)
+                unet.set_model_attn2_patch(patch)
+                self.loaded_hypernetworks.append(hypernetwork)
+        return unet
+        # hypernetwork = self.content.hypernetwork.currentText()
+        # if hypernetwork in gs.loaded_hypernetworks:
+        #     gs.models["sd"].unpatch_model()
+        #     gs.loaded_hypernetworks.clear()
+        # if hypernetwork not in gs.loaded_hypernetworks:
+        #     path = os.path.join(gs.hypernetworks, hypernetwork)
+        #     if os.path.isfile(path):
+        #
+        #         patch = self.load_hypernetwork_patch(path, self.content.strength.value())
+        #         print(patch)
+        #         if patch is not None:
+        #             patch.to("cuda")
+        #             gs.models["sd"].set_model_attn1_patch(patch)
+        #             gs.models["sd"].set_model_attn2_patch(patch)
+        #             gs.loaded_hypernetworks.append(hypernetwork)
+        # return True
 
     def unpatch_model(self):
         m = gs.models["sd"].clone()
@@ -81,10 +95,12 @@ class HypernetworkLoaderNode(AiNode):
         gs.models["sd"] = m
 
     def onWorkerFinished(self, result):
+        self.setOutput(0, result)
         self.busy = False
         self.executeChild(0)
 
     def onInputChanged(self, socket=None):
+        self.loaded_hypernetworks = []
         pass
 
 

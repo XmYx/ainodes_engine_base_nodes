@@ -4,6 +4,7 @@ import os
 import time
 
 from PIL.PngImagePlugin import PngInfo
+from PyQt6.QtGui import QGuiApplication, QImage
 from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
 from qtpy import QtWidgets, QtGui, QtCore
@@ -24,8 +25,10 @@ class ImagePreviewWidget(QDMNodeContentWidget):
 
         self.image = self.create_label("")
         self.fps = self.create_spin_box(min_val=1, max_val=250, default_val=24, step_value=1, label_text="FPS")
-        self.checkbox = self.create_check_box("Autosave")
-        self.meta_checkbox = self.create_check_box("Embed Node graph in PNG")
+        self.checkbox = QtWidgets.QCheckBox("Autosave")
+        self.meta_checkbox = QtWidgets.QCheckBox("Embed Node graph in PNG")
+        self.clipboard = QtWidgets.QCheckBox("Copy to Clipboard")
+        self.create_button_layout([self.checkbox, self.meta_checkbox, self.clipboard])
         self.button = QtWidgets.QPushButton("Save Image")
         self.next_button = QtWidgets.QPushButton("Show Next")
         self.create_button_layout([self.button, self.next_button])
@@ -77,8 +80,8 @@ class ImagePreviewNode(AiNode):
         self.grNode.icon = self.icon
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
-        self.grNode.height = 400
-        self.grNode.width = 320
+        self.grNode.height = 350
+        self.grNode.width = 400
         self.images = []
         self.index = 0
         self.content.preview_signal.connect(self.show_image)
@@ -173,6 +176,9 @@ class ImagePreviewNode(AiNode):
             filename = f"{gs.output}/stills/{timestamp}.png"
 
             meta_save = self.content.meta_checkbox.isChecked()
+
+            clipboard = self.content.clipboard.isChecked()
+
             if meta_save:
 
                 metadata = PngInfo()
@@ -181,10 +187,15 @@ class ImagePreviewNode(AiNode):
 
                 metadata.add_text("graph", json.dumps(json_data))
 
-
                 image.save(filename, pnginfo=metadata, compress_level=4)
+
+
             else:
                 image.save(filename)
+            if clipboard:
+                print("Copied to clipboard")
+                clipboard = QGuiApplication.clipboard()
+                clipboard.setImage(QImage(filename))
 
             if gs.logging:
                 print(f"IMAGE PREVIEW NODE: File saved at {filename}")
@@ -193,14 +204,15 @@ class ImagePreviewNode(AiNode):
 
     def resize(self, pixmap):
         self.grNode.setToolTip("")
-        self.grNode.height = pixmap.size().height() + 300
-        self.grNode.width = pixmap.size().width() + 32
-        self.content.image.setMinimumHeight(pixmap.size().height())
-        self.content.image.setMinimumWidth(pixmap.size().width())
+        self.grNode.height = pixmap.size().height() + 255
+        self.grNode.width = pixmap.size().width() + 30
 
-        self.content.setMaximumHeight(pixmap.size().height() + 200)
-        self.content.setMaximumWidth(pixmap.size().width())
+        self.content.setGeometry(0, 25, pixmap.size().width(), pixmap.size().height() + 150)
 
+        # self.content.setMinimumHeight(pixmap.size().height())
+        # self.content.setMinimumWidth(pixmap.size().width())
+        # self.content.setMaximumHeight(pixmap.size().height() + 500)
+        # self.content.setMaximumWidth(pixmap.size().width())
         self.update_all_sockets()
         #self.content.setGeometry(0, 0, pixmap.size().width(),
         #                         pixmap.size().height())

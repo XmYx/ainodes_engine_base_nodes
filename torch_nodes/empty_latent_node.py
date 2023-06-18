@@ -42,10 +42,10 @@ class LatentNode(AiNode):
     op_title = "Empty Latent Image"
     content_label_objname = "empty_latent_node"
     category = "Latent"
-
+    custom_input_socket_name = ["VAE", "LATENT", "IMAGE", "EXEC"]
     def __init__(self, scene):
 
-        super().__init__(scene, inputs=[2,5,1], outputs=[2,1])
+        super().__init__(scene, inputs=[4,2,5,1], outputs=[2,1])
         #self.eval()
 
     def initInnerClasses(self):
@@ -62,10 +62,15 @@ class LatentNode(AiNode):
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
+
+        vae = self.getInputData(0)
+
+
+
         samples = []
-        if self.getInput(0) != None:
+        if self.getInput(1) != None:
             try:
-                latent_node, index = self.getInput(0)
+                latent_node, index = self.getInput(1)
                 samples = latent_node.getOutput(index)
                 print(f"EMPTY LATENT NODE: Using Latent input with parameters: {samples}")
             except:
@@ -73,12 +78,13 @@ class LatentNode(AiNode):
                 samples = [self.generate_latent()]
             self.markDirty(False)
             self.markInvalid(False)
-        elif self.getInput(1) != None:
+        elif self.getInput(2) != None:
             try:
-                node, index = self.getInput(1)
+                node, index = self.getInput(2)
                 pixmap_list = node.getOutput(index)
                 samples = []
-                gs.models["vae"].first_stage_model.cuda()
+                assert vae is not None, "No VAE found for encoding your image, please make sure to load and connect one."
+                vae.first_stage_model.cuda()
                 for pixmap in pixmap_list:
                     image = pixmap_to_pil_image(pixmap)
 
@@ -98,7 +104,7 @@ class LatentNode(AiNode):
                     image = image.detach().cpu()
                     torch_gc()
 
-                    latent = gs.models["vae"].encode(image)
+                    latent = vae.encode(image)
                     latent = latent.to("cpu")
                     image = image.detach().to("cpu")
                     del image
@@ -106,7 +112,7 @@ class LatentNode(AiNode):
                     shape = latent.shape
                     del latent
                     torch_gc()
-                gs.models["vae"].first_stage_model.cpu()
+                vae.first_stage_model.cpu()
                 torch_gc()
                 if gs.logging:
                     print(f"EMPTY LATENT NODE: Using Image input, encoding to Latent with parameters: {shape}")

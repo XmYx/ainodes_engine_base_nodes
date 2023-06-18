@@ -118,8 +118,8 @@ class CNApplyNode(AiNode):
 
     def apply_ref_control(self, image, weight, cfg_scale, start=0, stop=100, soft_injection=True, cfg_injection=True):
 
-        gs.models["sd"].model.model.start_control = start
-        gs.models["sd"].model.model.stop_control = stop
+        # gs.models["sd"].model.model.start_control = start
+        # gs.models["sd"].model.model.stop_control = stop
 
         cleanup = self.content.cleanup_on_run.isChecked()
         if cleanup == True:
@@ -131,7 +131,7 @@ class CNApplyNode(AiNode):
 
         #unet = gs.models["sd"].model.model.diffusion_model
 
-        gs.models["sd"].model.cuda()
+        # gs.models["sd"].model.cuda()
 
         model_net = None
 
@@ -201,8 +201,8 @@ class CNApplyNode(AiNode):
         start = self.content.start.value()
         stop = self.content.stop.value()
 
-        gs.models["sd"].model.model.start_control = start
-        gs.models["sd"].model.model.stop_control = stop
+        # gs.models["sd"].model.model.start_control = start
+        # gs.models["sd"].model.model.stop_control = stop
 
         image = pixmap_to_pil_image(image)
 

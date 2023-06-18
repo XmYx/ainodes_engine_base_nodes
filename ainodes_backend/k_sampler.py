@@ -6,7 +6,7 @@ from . import samplers
 from .torch_gc import torch_gc
 
 
-def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, callback=None, model_key="sd", noise_mask=None):
+def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, callback=None, model=None, control_model=None, noise_mask=None):
     latent_image = latent
     if disable_noise:
         noise = torch.zeros(latent_image.size(), dtype=latent_image.dtype, layout=latent_image.layout, device="cpu")
@@ -39,27 +39,34 @@ def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive,
         if t.shape[0] < noise.shape[0]:
             t = torch.cat([t] * noise.shape[0])
         t = t.to(device)
-        if 'control' in p[1]:
-            control_nets += [p[1]['control']]
+        if 'control' in n[1]:
+            control_nets += [n[1]['control']]
         negative_copy += [[t] + n[1:]]
     control_net_models = []
     for x in control_nets:
         control_net_models += x.get_control_models()
+
+        print("CONTROLMODELS", len(control_net_models))
+
         for i in control_net_models:
+            print(i.__class__)
             i.cuda()
-    if "controlnet" in gs.models:
-        gs.models["controlnet"].control_model.cuda()
+    # if control_model is not None:
+    #     control_model.cuda()
+    # if "controlnet" in gs.models:
+    #     gs.models["controlnet"].control_model.cuda()
     #gs.models["sd"].model.cuda()
+    model.model.cuda()
+
     if sampler_name in samplers.KSampler.SAMPLERS:
-        model = gs.models["sd"].clone()
-        model.model.cuda()
+        #model = gs.models["sd"].clone()
         if 'transformer_options' in model.model_options:
             for key, value in model.model_options.items():
                 #print(key, value)
                 for item_name, items in value.items():
                     for _, models in items.items():
                         for m in models:
-                            m.to("cuda")
+                            m.to(device)
 
         sampler = samplers.KSampler(steps=steps, device=device, sampler=sampler_name, scheduler=scheduler, denoise=denoise, model=model, model_options=model.model_options)
 
@@ -67,7 +74,7 @@ def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive,
         #other samplers
         pass
 
-    samples = sampler.sample(noise, positive_copy, negative_copy, cfg=cfg, latent_image=latent_image, start_step=start_step, last_step=last_step, force_full_denoise=force_full_denoise, denoise_mask=noise_mask, callback=callback, model_key=model_key)
+    samples = sampler.sample(noise, positive_copy, negative_copy, cfg=cfg, latent_image=latent_image, start_step=start_step, last_step=last_step, force_full_denoise=force_full_denoise, denoise_mask=noise_mask, callback=callback)
     if sampler_name in samplers.KSampler.SAMPLERS:
         if 'transformer_options' in model.model_options:
             for key, value in model.model_options.items():
@@ -83,6 +90,7 @@ def common_ksampler(device, seed, steps, cfg, sampler_name, scheduler, positive,
     #del sampler.model
     #gs.models["sd"].model.cpu()
     #samples = samples.cpu()
+    model.model.cpu()
     for c in control_nets:
         c.cleanup()
         c = None

@@ -4,7 +4,7 @@ import secrets
 import numpy as np
 from einops import rearrange
 
-from ..ainodes_backend import common_ksampler, pil_image_to_pixmap
+from ..ainodes_backend import common_ksampler, pil_image_to_pixmap, get_torch_device
 
 import torch
 from PIL import Image
@@ -62,8 +62,11 @@ class KSamplerNode(AiNode):
     op_title = "K Sampler"
     content_label_objname = "K_sampling_node"
     category = "Sampling"
+
+    custom_input_socket_name = ["CONTROLNET", "VAE", "UNET", "DATA", "LATENT", "NEG COND", "POS COND", "EXEC"]
+
     def __init__(self, scene, inputs=[], outputs=[]):
-        super().__init__(scene, inputs=[6,2,3,3,1], outputs=[5,2,1])
+        super().__init__(scene, inputs=[4,4,4,6,2,3,3,1], outputs=[5,2,1])
 
         # Create a worker object
     def initInnerClasses(self):
@@ -71,7 +74,7 @@ class KSamplerNode(AiNode):
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
-        self.grNode.height = 700
+        self.grNode.height = 750
         self.grNode.width = 256
         self.content.setMinimumWidth(250)
         self.content.setMinimumHeight(500)
@@ -82,18 +85,32 @@ class KSamplerNode(AiNode):
         self.progress_value = 0
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.button.clicked.connect(self.content.eval_signal)
-
-
+        self.device = get_torch_device()
+        self.latent_rgb_factors = torch.tensor([
+            #   R        G        B
+            [0.298, 0.207, 0.208],  # L1
+            [0.187, 0.286, 0.173],  # L2
+            [-0.158, 0.189, 0.264],  # L3
+            [-0.184, -0.271, -0.473],  # L4
+        ], dtype=torch.float, device=gs.device)
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
         #pass
         # Add a task to the task queue
-        cond_list = self.getInputData(3)
-        n_cond_list = self.getInputData(2)
+        cond_list = self.getInputData(6)
+        n_cond_list = self.getInputData(5)
         self.steps = self.content.steps.value()
-        latent_list = self.getInputData(1)
-        data = self.getInputData(0)
+        latent_list = self.getInputData(4)
+        data = self.getInputData(3)
+        unet = self.getInputData(2)
+        vae = self.getInputData(1)
+        control_model = self.getInputData(0)
+
+        assert unet is not None, "UNET NOT FOUND, MAKE SURE TO LOAD A MODEL AND CONNECT IT'S OUTPUTS"
+        assert vae is not None, "VAE NOT FOUND"
+        assert cond_list is not None, "POSITIVE CONDITIONING NOT FOUND, MAKE SURE TO ADD A CONDITIONING NODE"
+        assert n_cond_list is not None, "POSITIVE CONDITIONING NOT FOUND, MAKE SURE TO ADD A CONDITIONING NODE"
 
         if latent_list == None:
             latent_list = [torch.zeros([1, 4, 512 // 8, 512 // 8])]
@@ -135,7 +152,7 @@ class KSamplerNode(AiNode):
                     n_cond = n_cond_list[0]
                 for i in cond:
                     if 'control_hint' in i[1]:
-                        cond = self.apply_control_net(cond)
+                        cond = self.apply_control_net(cond, control_model)
 
                 self.denoise = self.content.denoise.value()
                 self.steps = self.content.steps.value()
@@ -168,7 +185,7 @@ class KSamplerNode(AiNode):
                         self.denoise = self.content.denoise.value()
                     else:
                         self.denoise = 1.0
-                sample = common_ksampler(device="cuda",
+                sample = common_ksampler(device=self.device,
                                          seed=self.seed,
                                          steps=self.steps,
                                          start_step=self.start_step,
@@ -183,25 +200,28 @@ class KSamplerNode(AiNode):
                                          force_full_denoise=self.content.force_denoise.isChecked(),
                                          denoise=self.denoise,
                                          callback=self.callback,
-                                         noise_mask=noise_mask)
+                                         noise_mask=noise_mask,
+                                         model=unet,
+                                         control_model=control_model)
 
                 for c in cond:
                     if "control" in c[1]:
                         del c[1]["control"]
 
                 cpu_s = sample.cpu()
-                x_sample = self.decode_sample(sample)
+                x_sample = self.decode_sample(sample, vae)
 
                 return_samples.append(cpu_s)
 
                 image = Image.fromarray(x_sample.astype(np.uint8))
                 pm = pil_image_to_pixmap(image)
                 return_pixmaps.append(pm)
-                if len(self.getOutputs(2)) > 0:
-                    nodes = self.getOutputs(0)
-                    for node in nodes:
-                        if isinstance(node, ImagePreviewNode):
-                            node.content.preview_signal.emit(pm)
+                if self.content.tensor_preview.isChecked():
+                    if len(self.getOutputs(2)) > 0:
+                        nodes = self.getOutputs(0)
+                        for node in nodes:
+                            if isinstance(node, ImagePreviewNode):
+                                node.content.preview_signal.emit(pm)
 
 
                 x+=1
@@ -211,8 +231,8 @@ class KSamplerNode(AiNode):
             return_pixmaps, return_samples = None, None
             print(e)
         return [return_pixmaps, return_samples]
-    def decode_sample(self, sample):
-        decoded = gs.models["vae"].decode_tiled(sample)
+    def decode_sample(self, sample, vae):
+        decoded = vae.decode_tiled(sample)
         decoded_array = 255. * decoded[0].detach().numpy()
         return decoded_array
 
@@ -222,13 +242,6 @@ class KSamplerNode(AiNode):
         self.content.progress_signal.emit(1)
         if self.content.tensor_preview.isChecked():
             if i < self.last_step - 2:
-                self.latent_rgb_factors = torch.tensor([
-                    #   R        G        B
-                    [0.298, 0.207, 0.208],  # L1
-                    [0.187, 0.286, 0.173],  # L2
-                    [-0.158, 0.189, 0.264],  # L3
-                    [-0.184, -0.271, -0.473],  # L4
-                ], dtype=torch.float, device='cuda')
 
                 latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
                 latent = (((latent + 1) / 2)
@@ -261,8 +274,11 @@ class KSamplerNode(AiNode):
         self.markInvalid(False)
         self.setOutput(0, result[0])
         self.setOutput(1, result[1])
+
+
         self.content.progress_signal.emit(100)
         if gs.should_run:
+
             if len(self.getOutputs(2)) > 0:
                 self.executeChild(output_index=2)
 
@@ -279,19 +295,28 @@ class KSamplerNode(AiNode):
             self.content.progress_bar.setValue(100)
     def onInputChanged(self, socket=None):
         pass
-    def apply_control_net(self, conditioning, progress_callback=None):
+    def apply_control_net(self, conditioning, c_net, progress_callback=None):
         cnet_string = 'controlnet'
+
+
         c = []
         for t in conditioning:
             n = [t[0], t[1].copy()]
-            c_net = gs.models[cnet_string]
+
+
+
+
+            #c_net.control_model.control_start = n[1]["control_start"]
+            #c_net.control_model.control_stop = n[1]["control_stop"]
+            #c_net.control_model.control_model_name = n[1]["control_model_name"]
             c_net.set_cond_hint(t[1]['control_hint'], t[1]['control_strength'])
             if 'control' in t[1]:
+                #print("AND SETTING UP MULTICONTROL")
                 c_net.set_previous_controlnet(t[1]['control'])
             n[1]['control'] = c_net
             n[1]['control'].control_model.cpu()
-            #del c_net
             c.append(n)
+        print(len(c))
         return c
 
 def get_fixed_seed(seed):
