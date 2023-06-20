@@ -7,14 +7,14 @@ from diffusers.models.controlnet import ControlNetOutput
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc, \
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc, \
     get_torch_device
 from ainodes_frontend import singleton as gs
 
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler
 from diffusers import StableDiffusionControlNetImg2ImgPipeline
 
-from custom_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
+from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
     diffusers_indexed, scheduler_type_values, get_scheduler, SchedulerType
 
 #MANDATORY
@@ -103,6 +103,8 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
             self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
                 model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None,
             ).to(gs.device)
+
+
 
         if hasattr(self.pipe, "controlnet"):
             self.pipe.controlnet.forward = replace_forward_with(self.pipe.controlnet, multiForward)

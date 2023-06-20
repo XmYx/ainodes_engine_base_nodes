@@ -150,14 +150,16 @@ class ImagePreviewNode(AiNode):
         if self.content.checkbox.isChecked() == True:
             self.save_image(result[0])
         if result is not None:
-            for image in result:
-                self.content.preview_signal.emit(image)
+            self.content.preview_signal.emit(result[0])
+            # for image in result:
+            #     self.content.preview_signal.emit(image)
                 #time.sleep(0.1)
 
         if result is not None:
             self.resize(result[0])
             #self.timer.start()
         self.setOutput(0, self.images)
+        print(len(self.images))
         self.markInvalid(False)
         self.markDirty(False)
         if gs.should_run:

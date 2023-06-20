@@ -65,8 +65,8 @@ class LoraLoaderNode(AiNode):
     op_title = "Lora Loader"
     content_label_objname = "lora_loader_node"
     category = "Model Loading"
-    custom_input_socket_name = ["CLIP", "UNET", "EXEC"]
-    custom_output_socket_name = ["CLIP", "UNET", "EXEC"]
+    custom_input_socket_name = ["CLIP", "MODEL", "EXEC"]
+    custom_output_socket_name = ["CLIP", "MODEL", "EXEC"]
 
     output_socket_name = ["EXEC"]
     def __init__(self, scene):

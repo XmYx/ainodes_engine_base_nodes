@@ -96,7 +96,7 @@ def multiForward(
         else:
             stop = 100
 
-        if start < percentage < stop:
+        if start <= percentage <= stop:
             print("DOING CNET", percentage)
             down_samples, mid_sample = controlnet(
                 sample,

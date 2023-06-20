@@ -6,7 +6,7 @@ import numpy as np
 from tqdm import tqdm
 
 from ldm.modules.diffusionmodules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like, extract_into_tensor
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.inpaint.inpaint_sampling_utils import norm_thresholding
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.inpaint.inpaint_sampling_utils import norm_thresholding
 
 
 class DDIMSampler(object):

@@ -38,8 +38,8 @@ class HypernetworkLoaderNode(AiNode):
     op_title = "Hypernetwork Loader"
     content_label_objname = "hypernetwork_loader_node"
     category = "Model Loading"
-    custom_input_socket_name = ["UNET", "EXEC"]
-    custom_output_socket_name = ["UNET","EXEC"]
+    custom_input_socket_name = ["MODEL", "EXEC"]
+    custom_output_socket_name = ["MODEL","EXEC"]
     def __init__(self, scene):
         super().__init__(scene, inputs=[4,1], outputs=[4,1])
 

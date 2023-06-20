@@ -18,8 +18,8 @@ from ainodes_frontend import singleton as gs
 from qtpy.QtWidgets import QDialog, QListWidget, QCheckBox, QDoubleSpinBox, QVBoxLayout, QDialogButtonBox, \
     QListWidgetItem, QHBoxLayout, QWidget
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import get_torch_device
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.hash import sha256
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import get_torch_device
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.hash import sha256
 
 
 class EmbedDialog(QDialog):

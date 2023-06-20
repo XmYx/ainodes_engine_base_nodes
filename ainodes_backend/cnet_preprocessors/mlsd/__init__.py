@@ -3,8 +3,8 @@ import numpy as np
 import torch
 import os
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.cnet_preprocessors.mlsd.models.mbv2_mlsd_large import MobileV2_MLSD_Large
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.cnet_preprocessors.mlsd.utils import pred_lines
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.cnet_preprocessors.mlsd.models.mbv2_mlsd_large import MobileV2_MLSD_Large
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.cnet_preprocessors.mlsd.utils import pred_lines
 
 annotator_ckpts_path = "models/annotators"
 

@@ -23,7 +23,7 @@ import torch
 from audiocraft.data.audio import audio_write
 import typing as tp
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
 
 #MANDATORY
 OP_NODE_AUDIOCRAFT = get_next_opcode()

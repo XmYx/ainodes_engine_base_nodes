@@ -15,7 +15,7 @@ import cv2
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image
 from ainodes_frontend import singleton as gs
 
 OP_NODE_IMG_INPUT = get_next_opcode()
@@ -125,10 +125,10 @@ class ImageInputNode(AiNode):
                     self.content_type = "image"
                 elif file_ext in ['.mp4', '.avi', '.mov', '.gif']:
                     pixmap = self.process_video_file(url.toLocalFile())
-                    #for pixmap in pixmaps:
                     self.content.image.setPixmap(pixmap)
                     self.resize()
                     self.content_type = "video"
+                self.setOutput(0, [pixmap])
             else:
                 temp_path = 'temp'
                 os.makedirs(temp_path, exist_ok=True)
@@ -204,9 +204,9 @@ class ImageInputNode(AiNode):
                             break
                         count += 1
 
-                    with open(temp_filename, 'w') as file:
-                        json.dump(deserialized_data, file)
-                    meta = temp_filename
+                    # with open(temp_filename, 'w') as file:
+                    #     json.dump(deserialized_data, file)
+                    # meta = temp_filename
 
                     # Extract the filename from the URL
                     #filename = os.path.basename(self.url)
@@ -223,9 +223,6 @@ class ImageInputNode(AiNode):
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
-        self.markDirty(False)
-        self.markInvalid(False)
-        self.grNode.setToolTip("")
         if len(self.images) > 0:
             for pixmap in self.images:
                 self.content.image.setPixmap(pixmap)
@@ -244,8 +241,13 @@ class ImageInputNode(AiNode):
 
     def onWorkerFinished(self, pixmap):
         self.busy = False
+
+        self.markDirty(False)
+        self.markInvalid(False)
+
         if pixmap is not None:
             self.setOutput(0, [pixmap])
+
             if len(self.getOutputs(1)) > 0:
                 self.executeChild(output_index=1)
         else:

@@ -10,7 +10,7 @@ from ainodes_frontend.base import AiNode
 from ainodes_frontend.base.settings import handle_ainodes_exception
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image
 
 OP_NODE_ENCODE_INPAINT = get_next_opcode()
 class InpaintEncodeWidget(QDMNodeContentWidget):

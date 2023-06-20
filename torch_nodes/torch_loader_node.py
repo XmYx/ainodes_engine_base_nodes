@@ -70,7 +70,7 @@ class TorchLoaderNode(AiNode):
     category = "Model Loading"
     input_socket_name = ["EXEC"]
     # output_socket_name = ["EXEC"]
-    custom_output_socket_name = ["VAE", "CLIP", "UNET", "EXEC"]
+    custom_output_socket_name = ["VAE", "CLIP", "MODEL", "EXEC"]
     def __init__(self, scene):
         super().__init__(scene, inputs=[1], outputs=[4,4,4,1])
         self.loader = ModelLoader()

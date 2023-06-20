@@ -4,10 +4,10 @@ import os
 import torch
 from torchvision.transforms.functional import normalize
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.detection import init_detection_model
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.parsing import init_parsing_model
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.utils import img2tensor
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.utils.misc import imwrite, is_gray, \
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.detection import init_detection_model
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.parsing import init_parsing_model
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.utils import img2tensor
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.utils.misc import imwrite, is_gray, \
     bgr2gray, adain_npy
 
 

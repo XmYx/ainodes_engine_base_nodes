@@ -3,8 +3,8 @@ import torch
 from PIL import Image, ImageFilter, ImageOps
 from einops import repeat, rearrange
 from ainodes_frontend import singleton as gs
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.torch_gc import torch_gc
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.inpaint.ddim_sampler import DDIMSampler
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.torch_gc import torch_gc
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.inpaint.ddim_sampler import DDIMSampler
 
 
 def run_inpaint(init_image, mask_img, prompt, seed, scale, steps, blend_mask, mask_blur, recons_blur):

@@ -1,16 +1,20 @@
 import secrets
+from typing import Union, List, Optional, Dict, Any, Tuple
 
+import qrcode
 import torch
+from PIL import Image
+from diffusers.models.controlnet import ControlNetOutput
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc, \
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc, \
     get_torch_device
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler, \
-    StableDiffusionPipeline
+    StableDiffusionPipeline, StableDiffusionControlNetImg2ImgPipeline
 from diffusers.models.attention_processor import AttnProcessor2_0
-from custom_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
+from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
     diffusers_indexed, scheduler_type_values, get_scheduler, SchedulerType
 
 #MANDATORY
@@ -81,14 +85,17 @@ class DiffusersPipeLineNode(AiNode):
             if "control_diff" in data:
                 control_params = []
                 x = 0
+
+                if len(data["control_diff"]) != self.control_params:
+                    reload = True
+
                 for control in data["control_diff"]:
                     control_params.append(control["name"])
-                    if len(self.control_params) != 0:
-                        if len(control_params) >= x:
-                            if not reload and control_params[x] != self.control_params[x]:
-                                reload = True
-                        else:
-                            reload = True
+                    # if len(control_params) >= x:
+                    #     if not reload and control_params[x] != self.control_params[x]:
+                    #         reload = True
+                    # else:
+                    #     reload = True
                     if reload:
                         cnet = ControlNetModel.from_pretrained(control["name"], torch_dtype=torch.float16).to(get_torch_device())
                     else:
@@ -111,17 +118,18 @@ class DiffusersPipeLineNode(AiNode):
         else:
             diffusion_class = StableDiffusionPipeline
 
-        if self.content.reload.isChecked() or self.pipe == None:
+        if self.content.reload.isChecked() or self.pipe == None or reload:
             self.pipe = diffusion_class.from_pretrained(
                 model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None
             ).to(device)
-            self.pipe.unet.set_attn_processor(AttnProcessor2_0())
-            print(self.pipe.unet.conv_out.state_dict()["weight"].stride())  # (2880, 9, 3, 1)
-            self.pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
-            print(
-                self.pipe.unet.conv_out.state_dict()["weight"].stride()
-            )  # (2880, 1, 960, 320) having a stride of 1 for the 2nd dimension proves that it works
-            if do_hijack:
+            # self.pipe.unet.set_attn_processor(AttnProcessor2_0())
+            # print(self.pipe.unet.conv_out.state_dict()["weight"].stride())  # (2880, 9, 3, 1)
+            # self.pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
+            # print(
+            #     self.pipe.unet.conv_out.state_dict()["weight"].stride()
+            # )  # (2880, 1, 960, 320) having a stride of 1 for the 2nd dimension proves that it works
+        if do_hijack:
+            if hasattr(self.pipe, "controlnet"):
                 self.pipe.controlnet.forward = replace_forward_with(self.pipe.controlnet, multiForward)
         scheduler_name = self.content.scheduler_name.currentText()
         scheduler_enum = SchedulerType(scheduler_name)
@@ -174,3 +182,173 @@ class DiffusersPipeLineNode(AiNode):
 
         super().remove()
 
+
+
+
+class SegmindQrGenerator():
+    
+    def __init__(self):
+        super().__init__()
+        
+        cnet_1 = ControlNetModel.from_pretrained("lllyasviel/control_v11f1p_sd15_depth", torch_dtype=torch.float16).to("cuda")
+        cnet_2 = ControlNetModel.from_pretrained("lllyasviel/control_v11f1e_sd15_tile", torch_dtype=torch.float16).to("cuda")
+
+        cnet_1.start_control = 0
+        cnet_1.stop_control = 100
+        cnet_1.conditioning_scale = 1.0
+
+        cnet_2.start_control = 23
+        cnet_2.stop_control = 100
+        cnet_2.conditioning_scale = 1.0
+
+        
+        controlnets = [cnet_1, cnet_2]
+
+        self.txt2img_pipe = StableDiffusionPipeline.from_pretrained(
+            "dreamlike-photoreal-2.0", torch_dtype=torch.float16, safety_checker=None
+        ).to("cuda")
+        
+        self.img2img_pipe = StableDiffusionControlNetImg2ImgPipeline(vae = self.txt2img_pipe.vae,
+                                                    text_encoder = self.txt2img_pipe.text_encoder,
+                                                    tokenizer = self.txt2img_pipe.tokenizer,
+                                                    unet = self.txt2img_pipe.unet,
+                                                    scheduler = self.txt2img_pipe.scheduler,
+                                                    controlnet = controlnets,
+                                                    safety_checker= None,
+                                                    feature_extractor= None,
+                                                    requires_safety_checker=False)
+
+        self.img2img_pipe.controlnet.forward = replace_forward_with(self.img2img_pipe.controlnet, multiForward)
+
+    def __call__(self,
+                 prompt="",
+                 qr_string="",
+                 qrq=1.0,
+                 steps=25):
+
+
+        qr_image = create_qr_code(qr_string)
+
+        image = self.txt2img_pipe(prompt=prompt, num_inference_steps=steps, width=768, height=768).images[0]
+
+
+        strength = 1.0 * qrq
+        guidance_scale = 6.5 / qrq
+
+        self.img2img_pipe.controlnet.cnets[1].start_control = 20 - (-qrq * 5)
+        self.img2img_pipe.controlnet.cnets[1].conditioning_scale = 1.0 - (-qrq)
+
+
+
+        control_images = [image, qr_image]
+
+        image = self.img2img_pipe(prompt, image, control_images, height=768, width=768, strength=strength, num_inference_steps=steps, guidance_scale=guidance_scale)
+
+        return image
+
+
+def replace_forward_with(control_net_model, new_forward):
+    def forward_with_self(*args, **kwargs):
+        return new_forward(control_net_model, *args, **kwargs)
+    return forward_with_self
+
+def create_qr_code(data, version=40, box=1, border=2, fit=True):
+    # Create qr code instance
+    qr = qrcode.QRCode(
+        version=version,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=box,
+        border=border,
+    )
+
+    # Add data to qr code
+    qr.add_data(data)
+
+    qr.make(fit=fit)
+
+    # Create an image from the QR Code instance
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    # Resize the image to 512x512
+    resized_img = img.resize((768,768), Image.ANTIALIAS)
+
+    return resized_img
+
+def multiForward(
+    self,
+    sample: torch.FloatTensor,
+    timestep: Union[torch.Tensor, float, int],
+    encoder_hidden_states: torch.Tensor,
+    controlnet_cond: List[torch.tensor],
+    conditioning_scale: List[float],
+    class_labels: Optional[torch.Tensor] = None,
+    timestep_cond: Optional[torch.Tensor] = None,
+    attention_mask: Optional[torch.Tensor] = None,
+    cross_attention_kwargs: Optional[Dict[str, Any]] = None,
+    guess_mode: bool = False,
+    return_dict: bool = True,
+) -> Union[ControlNetOutput, Tuple]:
+
+    mid_block_res_sample = None
+    down_block_res_samples = None
+
+    for i, (image, scale, controlnet) in enumerate(zip(controlnet_cond, conditioning_scale, self.nets)):
+
+        percentage = 100 - (int(timestep) / 10)
+        if hasattr(controlnet, "start_control"):
+            start = controlnet.start_control
+        else:
+            start = 0
+        if hasattr(controlnet, "stop_control"):
+            stop = controlnet.stop_control
+        else:
+            stop = 100
+        if hasattr(controlnet, "conditioning_scale"):
+            scale = controlnet.conditioning_scale
+        if start <= percentage <= stop:
+            print("DOING CNET", percentage)
+            down_samples, mid_sample = controlnet(
+                sample,
+                timestep,
+                encoder_hidden_states,
+                image,
+                scale,
+                class_labels,
+                timestep_cond,
+                attention_mask,
+                cross_attention_kwargs,
+                guess_mode,
+                return_dict,
+            )
+
+            # merge samples
+            if i == 0:
+                down_block_res_samples, mid_block_res_sample = down_samples, mid_sample
+            else:
+                if down_block_res_samples is not None:
+                    down_block_res_samples = [
+                        samples_prev + samples_curr
+                        for samples_prev, samples_curr in zip(down_block_res_samples, down_samples)
+                    ]
+                else:
+                    down_block_res_samples = down_samples
+                if mid_block_res_sample is not None:
+                    mid_block_res_sample += mid_sample
+                else:
+                    mid_block_res_sample = mid_sample
+
+    return down_block_res_samples, mid_block_res_sample
+
+        
+# genny = SegmindQrGenerator()
+#
+#
+# image = genny(prompt="A beautiful butterfly",
+#               qr_string="www.google.com")
+#
+#
+# image.save("test_qr.png")
+#
+        
+        
+        

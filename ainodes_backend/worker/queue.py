@@ -1,6 +1,6 @@
 from qtpy.QtCore import QObject, QThreadPool, Signal, Slot
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.worker.worker import Worker
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.worker.worker import Worker
 
 
 class QueueSystem(QObject):

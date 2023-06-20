@@ -4,7 +4,7 @@ import torch
 import argparse
 from torch.nn import functional as F
 import warnings
-from .train_log.RIFE_HDv3 import Model
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.RIFE.train_log.RIFE_HDv3 import Model
 
 warnings.filterwarnings("ignore")
 

@@ -305,6 +305,158 @@ def model_lora_keys(model, key_map={}):
 
     return key_map
 class ModelPatcher:
+    def __init__(self, model, size=0):
+        self.size = size
+        self.model = model
+        self.patches = []
+        self.backup = {}
+        self.model_options = {"transformer_options":{}}
+        self.model_size()
+
+    def model_size(self):
+        if self.size > 0:
+            return self.size
+        model_sd = self.model.state_dict()
+        size = 0
+        for k in model_sd:
+            t = model_sd[k]
+            size += t.nelement() * t.element_size()
+        self.size = size
+        return size
+
+    def clone(self):
+        n = ModelPatcher(self.model, self.size)
+        n.patches = self.patches[:]
+        n.model_options = copy.deepcopy(self.model_options)
+        return n
+
+    def set_model_tomesd(self, ratio):
+        self.model_options["transformer_options"]["tomesd"] = {"ratio": ratio}
+
+    def set_model_sampler_cfg_function(self, sampler_cfg_function):
+        if len(inspect.signature(sampler_cfg_function).parameters) == 3:
+            self.model_options["sampler_cfg_function"] = lambda args: sampler_cfg_function(args["cond"], args["uncond"], args["cond_scale"]) #Old way
+        else:
+            self.model_options["sampler_cfg_function"] = sampler_cfg_function
+
+    def set_model_patch(self, patch, name):
+        to = self.model_options["transformer_options"]
+        if "patches" not in to:
+            to["patches"] = {}
+        to["patches"][name] = to["patches"].get(name, []) + [patch]
+
+    def set_model_attn1_patch(self, patch):
+        self.set_model_patch(patch, "attn1_patch")
+
+    def set_model_attn2_patch(self, patch):
+        self.set_model_patch(patch, "attn2_patch")
+
+    def set_model_attn2_output_patch(self, patch):
+        self.set_model_patch(patch, "attn2_output_patch")
+
+    def model_patches_to(self, device):
+        to = self.model_options["transformer_options"]
+        if "patches" in to:
+            patches = to["patches"]
+            for name in patches:
+                patch_list = patches[name]
+                for i in range(len(patch_list)):
+                    if hasattr(patch_list[i], "to"):
+                        patch_list[i] = patch_list[i].to(device)
+
+    def model_dtype(self):
+        return self.model.get_dtype()
+
+    def add_patches(self, patches, strength=1.0):
+        p = {}
+        model_sd = self.model.state_dict()
+        for k in patches:
+            if k in model_sd:
+                p[k] = patches[k]
+        self.patches += [(strength, p)]
+        return p.keys()
+
+    def patch_model(self):
+        model_sd = self.model.state_dict()
+        for p in self.patches:
+            for k in p[1]:
+                v = p[1][k]
+                key = k
+                if key not in model_sd:
+                    print("could not patch. key doesn't exist in model:", k)
+                    continue
+
+                weight = model_sd[key]
+                if key not in self.backup:
+                    self.backup[key] = weight.clone()
+
+                alpha = p[0]
+
+                if len(v) == 4: #lora/locon
+                    mat1 = v[0]
+                    mat2 = v[1]
+                    if v[2] is not None:
+                        alpha *= v[2] / mat2.shape[0]
+                    if v[3] is not None:
+                        #locon mid weights, hopefully the math is fine because I didn't properly test it
+                        final_shape = [mat2.shape[1], mat2.shape[0], v[3].shape[2], v[3].shape[3]]
+                        mat2 = torch.mm(mat2.transpose(0, 1).flatten(start_dim=1).float(), v[3].transpose(0, 1).flatten(start_dim=1).float()).reshape(final_shape).transpose(0, 1)
+                    weight += (alpha * torch.mm(mat1.flatten(start_dim=1).float(), mat2.flatten(start_dim=1).float())).reshape(weight.shape).type(weight.dtype).to(weight.device)
+                elif len(v) == 8: #lokr
+                    w1 = v[0]
+                    w2 = v[1]
+                    w1_a = v[3]
+                    w1_b = v[4]
+                    w2_a = v[5]
+                    w2_b = v[6]
+                    t2 = v[7]
+                    dim = None
+
+                    if w1 is None:
+                        dim = w1_b.shape[0]
+                        w1 = torch.mm(w1_a.float(), w1_b.float())
+
+                    if w2 is None:
+                        dim = w2_b.shape[0]
+                        if t2 is None:
+                            w2 = torch.mm(w2_a.float(), w2_b.float())
+                        else:
+                            w2 = torch.einsum('i j k l, j r, i p -> p r k l', t2.float(), w2_b.float(), w2_a.float())
+
+                    if len(w2.shape) == 4:
+                        w1 = w1.unsqueeze(2).unsqueeze(2)
+                    if v[2] is not None and dim is not None:
+                        alpha *= v[2] / dim
+
+                    weight += alpha * torch.kron(w1.float(), w2.float()).reshape(weight.shape).type(weight.dtype).to(weight.device)
+                else: #loha
+                    w1a = v[0]
+                    w1b = v[1]
+                    if v[2] is not None:
+                        alpha *= v[2] / w1b.shape[0]
+                    w2a = v[3]
+                    w2b = v[4]
+                    if v[5] is not None: #cp decomposition
+                        t1 = v[5]
+                        t2 = v[6]
+                        m1 = torch.einsum('i j k l, j r, i p -> p r k l', t1.float(), w1b.float(), w1a.float())
+                        m2 = torch.einsum('i j k l, j r, i p -> p r k l', t2.float(), w2b.float(), w2a.float())
+                    else:
+                        m1 = torch.mm(w1a.float(), w1b.float())
+                        m2 = torch.mm(w2a.float(), w2b.float())
+
+                    weight += (alpha * m1 * m2).reshape(weight.shape).type(weight.dtype).to(weight.device)
+        return self.model
+    def unpatch_model(self):
+        model_sd = self.model.state_dict()
+        keys = list(self.backup.keys())
+        for k in keys:
+            model_sd[k][:] = self.backup[k]
+            del self.backup[k]
+
+        self.backup = {}
+
+class ModelPatcher_:
     def __init__(self, model):
         self.model = model
         self.patches = []

@@ -63,7 +63,7 @@ class KSamplerNode(AiNode):
     content_label_objname = "K_sampling_node"
     category = "Sampling"
 
-    custom_input_socket_name = ["CONTROLNET", "VAE", "UNET", "DATA", "LATENT", "NEG COND", "POS COND", "EXEC"]
+    custom_input_socket_name = ["CONTROLNET", "VAE", "MODEL", "DATA", "LATENT", "NEG COND", "POS COND", "EXEC"]
 
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[4,4,4,6,2,3,3,1], outputs=[5,2,1])
@@ -208,7 +208,7 @@ class KSamplerNode(AiNode):
                     if "control" in c[1]:
                         del c[1]["control"]
 
-                cpu_s = sample.cpu()
+                cpu_s = sample
                 x_sample = self.decode_sample(sample, vae)
 
                 return_samples.append(cpu_s)
@@ -237,31 +237,31 @@ class KSamplerNode(AiNode):
         return decoded_array
 
     def callback(self, tensors, *args, **kwargs):
-
-        i = tensors["i"]
-        self.content.progress_signal.emit(1)
-        if self.content.tensor_preview.isChecked():
-            if i < self.last_step - 2:
-
-                latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
-                latent = (((latent + 1) / 2)
-                          .clamp(0, 1)  # change scale from -1..1 to 0..1
-                          .mul(0xFF)  # to 0..255
-                          .byte())
-                # Copying to cpu as numpy array
-                latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
-                img = Image.fromarray(latent)
-                img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
-                latent_pixmap = pil_image_to_pixmap(img)
-                #self.setOutput(0, [latent_pixmap])
-                if len(self.getOutputs(2)) > 0:
-                    nodes = self.getOutputs(0)
-                    for node in nodes:
-                        if isinstance(node, ImagePreviewNode):
-                            node.content.preview_signal.emit(latent_pixmap)
-                        if isinstance(node, VideoOutputNode):
-                            frame = np.array(img)
-                            node.content.video.add_frame(frame, dump=node.content.dump_at.value())
+        print(tensors)
+        # i = tensors["i"]
+        # self.content.progress_signal.emit(1)
+        # if self.content.tensor_preview.isChecked():
+        #     if i < self.last_step - 2:
+        #
+        #         latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
+        #         latent = (((latent + 1) / 2)
+        #                   .clamp(0, 1)  # change scale from -1..1 to 0..1
+        #                   .mul(0xFF)  # to 0..255
+        #                   .byte())
+        #         # Copying to cpu as numpy array
+        #         latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
+        #         img = Image.fromarray(latent)
+        #         img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
+        #         latent_pixmap = pil_image_to_pixmap(img)
+        #         #self.setOutput(0, [latent_pixmap])
+        #         if len(self.getOutputs(2)) > 0:
+        #             nodes = self.getOutputs(0)
+        #             for node in nodes:
+        #                 if isinstance(node, ImagePreviewNode):
+        #                     node.content.preview_signal.emit(latent_pixmap)
+        #                 if isinstance(node, VideoOutputNode):
+        #                     frame = np.array(img)
+        #                     node.content.video.add_frame(frame, dump=node.content.dump_at.value())
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
@@ -273,12 +273,11 @@ class KSamplerNode(AiNode):
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result[0])
-        self.setOutput(1, result[1])
+        self.setOutput(1, result[1][0])
 
 
         self.content.progress_signal.emit(100)
         if gs.should_run:
-
             if len(self.getOutputs(2)) > 0:
                 self.executeChild(output_index=2)
 
