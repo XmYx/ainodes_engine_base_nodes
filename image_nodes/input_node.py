@@ -204,8 +204,8 @@ class ImageInputNode(AiNode):
                             break
                         count += 1
 
-                    # with open(temp_filename, 'w') as file:
-                    #     json.dump(deserialized_data, file)
+                    with open(temp_filename, 'w') as file:
+                         json.dump(deserialized_data, file)
                     # meta = temp_filename
 
                     # Extract the filename from the URL

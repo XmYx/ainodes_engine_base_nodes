@@ -12,6 +12,7 @@ from diffusers.models.controlnet import ControlNetOutput
 diffusers_models = [
 
     {"name": "stable-diffusion-v1-5", "repo": "runwayml/stable-diffusion-v1-5"},
+    {"name": "revAnimated", "repo": "danbrown/RevAnimated-v1-2-2"},
     {"name": "Realistic_Vision_V1.4", "repo": "SG161222/Realistic_Vision_V1.4"},
     {"name": "stable-diffusion-v1-4", "repo": "CompVis/stable-diffusion-v1-4"},
     {"name": "openjourney", "repo": "prompthero/openjourney"},

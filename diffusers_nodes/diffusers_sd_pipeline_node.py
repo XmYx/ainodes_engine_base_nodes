@@ -111,7 +111,7 @@ class DiffusersPipeLineNode(AiNode):
                 self.control_params = control_params
 
 
-        do_hijack = None
+        do_hijack = True
         if len(controlnets) > 0:
             diffusion_class = StableDiffusionControlNetPipeline
             do_hijack = True
@@ -156,7 +156,7 @@ class DiffusersPipeLineNode(AiNode):
                         generator = generator,
                         latents = latents,
                         controlnet_conditioning_scale = cnet_scales,
-                        guess_mode = guess_mode).images[0]
+                        guess_mode = False).images[0]
         else:
             image = self.pipe(prompt = prompt,
                         height = height,
