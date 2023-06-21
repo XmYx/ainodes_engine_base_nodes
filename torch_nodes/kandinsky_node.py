@@ -1,6 +1,12 @@
+import os.path
+from copy import deepcopy
+
+import gdown
 import numpy as np
 from PIL import Image
 from einops import rearrange
+from huggingface_hub import hf_hub_url, cached_download
+from omegaconf import DictConfig
 
 from .ksampler_node import get_fixed_seed
 from ..ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image
@@ -14,7 +20,7 @@ from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 
 
-from kandinsky2 import get_kandinsky2
+from kandinsky2 import CONFIG_2_1, Kandinsky2_1
 
 from ..image_nodes.image_preview_node import ImagePreviewNode
 from ..video_nodes.video_save_node import VideoOutputNode
@@ -34,6 +40,7 @@ class KandinskyWidget(QDMNodeContentWidget):
         self.create_widgets()
         self.create_main_layout(grid=1)
     def create_widgets(self):
+        self.use_finetune = self.create_check_box("Use Finetune")
         self.task = self.create_combo_box(["TXT2IMG", "INPAINT"], "Task")
         self.tensor_preview = self.create_check_box("Tensor Preview")
         self.prompt = self.create_text_edit("Prompt:", placeholder="Prompt")
@@ -104,7 +111,8 @@ class KandinskyNode(AiNode):
             task_type = 'inpainting'
 
         if f"kandinsky" not in gs.models or gs.loaded_kandinsky != task_type:
-            gs.models["kandinsky"] = get_kandinsky2('cuda', task_type=task_type, model_version='2.1', use_flash_attention=False)
+            use_finetune = self.content.use_finetune.isChecked()
+            gs.models["kandinsky"] = get_kandinsky2_1('cuda', task_type=task_type, use_flash_attention=False, use_finetune=use_finetune)
             gs.loaded_kandinsky = task_type
         masks = self.getInputData(0)
         images = self.getInputData(1)
@@ -147,6 +155,8 @@ class KandinskyNode(AiNode):
                 self.seed = args.seed
         torch.manual_seed(self.seed)
         print(f"KANDINSKY NODE: seed:{self.seed}")
+        gs.models["kandinsky"].clip_model.to("cuda")
+        gs.models["kandinsky"].image_encoder.to("cuda")
 
         if images is not None:
             for image in images:
@@ -264,3 +274,120 @@ class KandinskyNode(AiNode):
 
     def onInputChanged(self, socket=None):
         pass
+
+def get_kandinsky2_1(
+    device,
+    task_type="text2img",
+    cache_dir="models/kandinsky2",
+    use_auth_token=None,
+    use_flash_attention=False,
+    use_finetune=False,
+):
+    cache_dir = os.path.join(cache_dir, "2_1") if not use_finetune else os.path.join(cache_dir, "2_1_finetune")
+
+    os.makedirs(cache_dir, exist_ok=True)
+
+    config = DictConfig(deepcopy(CONFIG_2_1))
+    config["model_config"]["use_flash_attention"] = use_flash_attention
+    if task_type == "text2img":
+        model_name = "decoder_fp16.ckpt"
+        config_file_url = hf_hub_url(repo_id="sberbank-ai/Kandinsky_2.1", filename=model_name)
+    elif task_type == "inpainting":
+        model_name = "inpainting_fp16.ckpt"
+        config_file_url = hf_hub_url(repo_id="sberbank-ai/Kandinsky_2.1", filename=model_name)
+
+    if not use_finetune:
+        cached_download(
+            config_file_url,
+            cache_dir=cache_dir,
+            force_filename=model_name,
+            use_auth_token=use_auth_token,
+        )
+    else:
+        assert task_type == "text2img", "There is only normal finetune available yet, make sure to set Kandinsky to Text2Image mode."
+        if not os.path.isfile(os.path.join(cache_dir, model_name)):
+            done = download_pretrained_models({model_name:"1w3q5C0uzQSdGRwNSnokfIiLBlT8liTjy"}, cache_dir)
+
+
+    prior_name = "prior_fp16.ckpt"
+    config_file_url = hf_hub_url(repo_id="sberbank-ai/Kandinsky_2.1", filename=prior_name)
+
+    if not use_finetune:
+        cached_download(
+            config_file_url,
+            cache_dir=cache_dir,
+            force_filename=prior_name,
+            use_auth_token=use_auth_token,
+        )
+    else:
+        assert task_type == "text2img", "There is only normal finetune available yet, make sure to set Kandinsky to Text2Image mode."
+        if not os.path.isfile(os.path.join(cache_dir, prior_name)):
+            done = download_pretrained_models({prior_name:"1dp90YLwYXXQxZX2EWrujqSAwWk2xdL3V"}, cache_dir)
+
+    cache_dir_text_en = os.path.join(cache_dir, "text_encoder")
+    for name in [
+        "config.json",
+        "pytorch_model.bin",
+        "sentencepiece.bpe.model",
+        "special_tokens_map.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+    ]:
+        config_file_url = hf_hub_url(repo_id="sberbank-ai/Kandinsky_2.1", filename=f"text_encoder/{name}")
+        cached_download(
+            config_file_url,
+            cache_dir=cache_dir_text_en,
+            force_filename=name,
+            use_auth_token=use_auth_token,
+        )
+
+    config_file_url = hf_hub_url(repo_id="sberbank-ai/Kandinsky_2.1", filename="movq_final.ckpt")
+    cached_download(
+        config_file_url,
+        cache_dir=cache_dir,
+        force_filename="movq_final.ckpt",
+        use_auth_token=use_auth_token,
+    )
+
+    config_file_url = hf_hub_url(repo_id="sberbank-ai/Kandinsky_2.1", filename="ViT-L-14_stats.th")
+    cached_download(
+        config_file_url,
+        cache_dir=cache_dir,
+        force_filename="ViT-L-14_stats.th",
+        use_auth_token=use_auth_token,
+    )
+
+    config["tokenizer_name"] = cache_dir_text_en
+    config["text_enc_params"]["model_path"] = cache_dir_text_en
+    config["prior"]["clip_mean_std_path"] = os.path.join(cache_dir, "ViT-L-14_stats.th")
+    config["image_enc_params"]["ckpt_path"] = os.path.join(cache_dir, "movq_final.ckpt")
+    cache_model_name = os.path.join(cache_dir, model_name)
+    cache_prior_name = os.path.join(cache_dir, prior_name)
+    model = Kandinsky2_1(config, cache_model_name, cache_prior_name, device, task_type=task_type)
+    return model
+
+
+def download_pretrained_models(file_ids, save_path_root):
+    import os.path as osp
+    import gdown
+
+    os.makedirs(save_path_root, exist_ok=True)
+
+    for file_name, file_id in file_ids.items():
+        file_url = 'https://drive.google.com/uc?id=' + file_id
+        save_path = osp.abspath(osp.join(save_path_root, file_name))
+        if osp.exists(save_path):
+            user_response = input(f'{file_name} already exist. Do you want to cover it? Y/N\n')
+            if user_response.lower() == 'y':
+                print(f'Covering {file_name} to {save_path}')
+                gdown.download(file_url, save_path, quiet=False)
+                # download_file_from_google_drive(file_id, save_path)
+            elif user_response.lower() == 'n':
+                print(f'Skipping {file_name}')
+            else:
+                raise ValueError('Wrong input. Only accepts Y/N.')
+        else:
+            print(f'Downloading {file_name} to {save_path}')
+            gdown.download(file_url, save_path, quiet=False)
+            # download_file_from_google_drive(file_id, save_path)
+    return True
