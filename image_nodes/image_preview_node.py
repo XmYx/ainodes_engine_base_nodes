@@ -183,6 +183,8 @@ class ImagePreviewNode(AiNode):
 
             if meta_save:
 
+                filename = f"{gs.output}/stills/{timestamp}_i.png"
+
                 metadata = PngInfo()
 
                 json_data = self.scene.serialize()
