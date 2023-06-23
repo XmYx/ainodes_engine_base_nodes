@@ -3,13 +3,15 @@ import json
 import os
 import time
 
+import numpy as np
+import torch
 from PIL.PngImagePlugin import PngInfo
 from PyQt6.QtGui import QGuiApplication, QImage
 from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
 from qtpy import QtWidgets, QtGui, QtCore
 
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, tensor2pil
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -19,12 +21,16 @@ from PIL import Image
 
 OP_NODE_IMG_PREVIEW = get_next_opcode()
 
+
+
+
+
 class ImagePreviewWidget(QDMNodeContentWidget):
     preview_signal = QtCore.Signal(object)
     def initUI(self):
 
         self.image = self.create_label("")
-        self.fps = self.create_spin_box(min_val=1, max_val=250, default_val=24, step_value=1, label_text="FPS")
+        self.fps = self.create_spin_box(min_val=1, max_val=250, default_val=24, step=1, label_text="FPS")
         self.checkbox = QtWidgets.QCheckBox("Autosave")
         self.meta_checkbox = QtWidgets.QCheckBox("Embed Node graph in PNG")
         self.clipboard = QtWidgets.QCheckBox("Copy to Clipboard")
@@ -68,7 +74,7 @@ class ImagePreviewNode(AiNode):
     op_code = OP_NODE_IMG_PREVIEW
     op_title = "Image Preview"
     content_label_objname = "image_output_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
     dims = (512,512)
 
     def __init__(self, scene):
@@ -122,11 +128,11 @@ class ImagePreviewNode(AiNode):
             if self.index >= length:
                 self.index = 0
             if length > 0:
-                pixmap = self.images[self.index]
+                pixmap = tensor_image_to_pixmap(self.images[self.index])
                 #pixmap = pil_image_to_pixmap(img)
                 self.resize(pixmap)
 
-                self.content.image.setPixmap(pixmap)
+                self.content.preview_signal.emit(pixmap)
                 self.setOutput(0, [pixmap])
                 self.index += 1
         else:
@@ -140,6 +146,9 @@ class ImagePreviewNode(AiNode):
             return images
 
     def show_image(self, image):
+
+        #pixmap = tensor_image_to_pixmap(image)
+
         self.content.image.setPixmap(image)
         #self.resize()
 
@@ -150,16 +159,14 @@ class ImagePreviewNode(AiNode):
         if self.content.checkbox.isChecked() == True:
             self.save_image(result[0])
         if result is not None:
-            self.content.preview_signal.emit(result[0])
+            pixmap = tensor_image_to_pixmap(result[0])
+            self.content.preview_signal.emit(pixmap)
+            self.resize(pixmap)
             # for image in result:
             #     self.content.preview_signal.emit(image)
                 #time.sleep(0.1)
 
-        if result is not None:
-            self.resize(result[0])
-            #self.timer.start()
         self.setOutput(0, self.images)
-        print(len(self.images))
         self.markInvalid(False)
         self.markDirty(False)
         if gs.should_run:
@@ -172,7 +179,7 @@ class ImagePreviewNode(AiNode):
 
     def save_image(self, pixmap):
         try:
-            image = pixmap_to_pil_image(pixmap)
+            image = tensor2pil(pixmap)
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
             os.makedirs(os.path.join(gs.output, "stills"), exist_ok=True)
             filename = f"{gs.output}/stills/{timestamp}.png"

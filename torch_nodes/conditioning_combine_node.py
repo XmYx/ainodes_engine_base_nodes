@@ -52,7 +52,7 @@ class ConditioningCombineNode(AiNode):
     op_code = OP_NODE_CONDITIONING_COMBINE
     op_title = "Combine Conditioning"
     content_label_objname = "cond_combine_node"
-    category = "Conditioning"
+    category = "aiNodes Base/Conditioning"
 
 
     def __init__(self, scene):
@@ -86,6 +86,9 @@ class ConditioningCombineNode(AiNode):
             cond2_list = self.getInputData(1)
             strength = self.content.strength.value()
             if strength > 0:
+
+
+
                 c = self.addWeighted(cond1_list[0], cond2_list[0], strength)
                 if gs.logging:
                     print("COND COMBINE NODE: Conditionings weighted.")
@@ -93,16 +96,31 @@ class ConditioningCombineNode(AiNode):
             else:
                 conds_list_length = self.content.cond_list_length.value()
                 if conds_list_length > 1:
+
+                    if isinstance(cond1_list, dict):
+                        cond1_list = cond1_list["conds"]
+
+                        if len(cond1_list) == 1:
+                            cond1_list = [cond1_list]
+
+                    else:
+                        cond1_list = [cond1_list]
+
+                    if isinstance(cond2_list, dict):
+                        cond2_list = cond2_list["conds"]
+                        if len(cond2_list) == 1:
+                            cond2_list = [cond2_list]
+                    else:
+                        cond2_list = [cond2_list]
                     c = self.calculate_blended_conditionings(cond1_list[len(cond1_list) - 1], cond2_list[len(cond2_list) - 1],
                                                              self.content.cond_list_length.value())
 
 
-                    print(len(cond1_list))
-                    print(len(cond2_list))
+                    print("DONE", c)
                     if len(cond2_list) > 1:
                         return cond2_list[:-1] + c
                     else:
-                        return c
+                        return {"conds":c}
                 else:
 
 
@@ -179,7 +197,7 @@ class ConditioningAreaNode(AiNode):
     op_code = OP_NODE_CONDITIONING_SET_AREA
     op_title = "Set Conditioning Area"
     content_label_objname = "cond_area_node"
-    category = "Conditioning"
+    category = "aiNodes Base/Conditioning"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[3,1], outputs=[3,1])

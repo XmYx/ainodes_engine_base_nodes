@@ -134,7 +134,7 @@ class AudioCraftNode(AiNode):
     op_code = OP_NODE_AUDIOCRAFT
     op_title = "Audiocraft Music Node"
     content_label_objname = "audiocraft_node"
-    category = "Audio Processing"
+    category = "aiNodes Base/Audio Processing"
     NodeContent_class = AudiocraftWidget
     dim = (400, 420)
     output_data_ports = [0]

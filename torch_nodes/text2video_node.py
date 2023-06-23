@@ -10,7 +10,7 @@ import cv2
 
 
 from ..ainodes_backend.model_loader import ModelLoader
-from ..ainodes_backend import pil_image_to_pixmap
+from ..ainodes_backend import tensor_image_to_pixmap
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -67,7 +67,7 @@ class Text2VideoNode(AiNode):
     op_code = OP_NODE_T2V
     op_title = "Text2Video Node"
     content_label_objname = "t2v_loader_node"
-    category = "Sampling"
+    category = "aiNodes Base/Sampling"
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC"]
     def __init__(self, scene):
@@ -215,7 +215,7 @@ class Text2VideoNode(AiNode):
             for frame in return_samples:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 image = Image.fromarray(copy.deepcopy(frame))
-                pixmap = pil_image_to_pixmap(image)
+                pixmap = tensor_image_to_pixmap(image)
                 return_pixmaps.append(pixmap)
 
             #if len(self.getOutputs(1)) > 0:
@@ -261,7 +261,7 @@ class Text2VideoNode(AiNode):
             if node is not None:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 image = Image.fromarray(copy.deepcopy(frame))
-                pixmap = pil_image_to_pixmap(image)
+                pixmap = tensor_image_to_pixmap(image)
                 self.setOutput(0, pixmap)
                 node.eval()
                 time.sleep(0.1)

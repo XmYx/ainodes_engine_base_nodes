@@ -40,7 +40,7 @@ class ControlnetLoaderNode(AiNode):
     op_code = OP_NODE_CONTROLNET_LOADER
     op_title = "ControlNet Loader"
     content_label_objname = "controlnet_loader_node"
-    category = "Model Loading"
+    category = "aiNodes Base/Model Loading"
 
     custom_input_socket_name = ["CNET", "EXEC"]
     custom_output_socket_name = ["CNET", "EXEC"]

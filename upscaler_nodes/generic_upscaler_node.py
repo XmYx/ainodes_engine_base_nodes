@@ -7,7 +7,7 @@ from PIL import Image
 from qtpy import QtWidgets, QtGui, QtCore
 
 from ..ainodes_backend.model_loader import UpscalerLoader
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, tensor2pil, pil2tensor
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -48,7 +48,7 @@ class UpscalerNode(AiNode):
     op_code = OP_NODE_TORCH_UPSCALER
     op_title = "Torch Upscaler"
     content_label_objname = "torch_upscaler_node"
-    category = "Upscalers"
+    category = "aiNodes Base/Upscalers"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])
@@ -79,7 +79,7 @@ class UpscalerNode(AiNode):
             if images:
                 for image in images:
 
-                    img = pixmap_to_pil_image(image).convert("RGB")
+                    img = tensor2pil(image).convert("RGB")
                     img = np.array(img).astype(np.float32) / 255.0
                     img = torch.from_numpy(img)[None,]
 
@@ -94,7 +94,7 @@ class UpscalerNode(AiNode):
                     s = torch.clamp(s.movedim(-3, -1), min=0, max=1.0) * 255
                     img = s[0].detach().numpy().astype(np.uint8)
                     img = Image.fromarray(img)
-                    pixmap = pil_image_to_pixmap(img)
+                    pixmap = pil2tensor(img)
                     return_pixmaps.append(pixmap)
         except:
             return_pixmaps = []

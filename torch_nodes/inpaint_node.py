@@ -1,7 +1,7 @@
 import secrets
 
 from ..ainodes_backend.inpaint import run_inpaint
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap
 
 from qtpy import QtWidgets, QtGui, QtCore
 from ainodes_frontend.base import register_node, get_next_opcode
@@ -67,7 +67,7 @@ class InpaintNode(AiNode):
     op_code = OP_NODE_INPAINT
     op_title = "InPaint Alpha"
     content_label_objname = "inpaint_sampling_node"
-    category = "WIP Experimental"
+    category = "aiNodes Base/WIP Experimental"
     custom_input_socket_name = ["MASK", "IMAGE", "EXEC"]
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,5,1], outputs=[5,1])
@@ -99,8 +99,8 @@ class InpaintNode(AiNode):
         except Exception as e:
             print(e)
         if image_pixmap is not None and mask_pixmap is not None:
-            init_image = pixmap_to_pil_image(image_pixmap[0])
-            mask_image = pixmap_to_pil_image(mask_pixmap[0])
+            init_image = pixmap_to_tensor(image_pixmap[0])
+            mask_image = pixmap_to_tensor(mask_pixmap[0])
 
             prompt = self.content.prompt.toPlainText()
             try:
@@ -117,7 +117,7 @@ class InpaintNode(AiNode):
             result = run_inpaint(init_image, mask_image, prompt, seed, scale, steps, blend_mask, mask_blur, recons_blur)
 
             #print("RESULT", result)
-            pixmap = pil_image_to_pixmap(result)
+            pixmap = tensor_image_to_pixmap(result)
             return pixmap
 
     def onWorkerFinished(self, result):

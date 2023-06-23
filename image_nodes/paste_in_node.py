@@ -1,4 +1,5 @@
-from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, tensor2pil, \
+    pil2tensor
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.base.settings import handle_ainodes_exception
@@ -22,7 +23,7 @@ class DataMergeNode(AiNode):
     op_code = OP_NODE_IMAGE_PASTE
     op_title = "Paste Image"
     content_label_objname = "imagepaste_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
     NodeContent_class = ImagePasteWidget
     dim = (340, 180)
     output_data_ports = [0]
@@ -43,12 +44,12 @@ class DataMergeNode(AiNode):
         pixmap2 = self.getInputData(1)
 
         if pixmap1 and pixmap2:
-            img1 = pixmap_to_pil_image(pixmap1[0])
-            img2 = pixmap_to_pil_image(pixmap2[0])
+            img1 = tensor2pil(pixmap1[0])
+            img2 = tensor2pil(pixmap2[0])
 
             result = paste_image_center(img1, img2, 192, 192)
             print(result)
-            result = [pil_image_to_pixmap(result)]
+            result = [pil2tensor(result)]
 
         return [result]
 

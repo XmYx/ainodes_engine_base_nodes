@@ -54,7 +54,7 @@ class OpenAiNode(AiNode):
     op_code = OP_NODE_LLM
     op_title = "OpenAI Prompter"
     content_label_objname = "openai_chat"
-    category = "LLM"
+    category = "aiNodes Base/LLM"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])

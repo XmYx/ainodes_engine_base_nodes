@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from qtpy import QtWidgets, QtCore, QtGui
 
-from ..ainodes_backend import pixmap_to_pil_image
+from ..ainodes_backend import pixmap_to_tensor
 
 from ainodes_frontend import singleton as gs
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -47,7 +47,7 @@ class CNApplyNode(AiNode):
     op_code = OP_NODE_CN_APPLY
     op_title = "Apply ControlNet"
     content_label_objname = "CN_apply_node"
-    category = "ControlNet"
+    category = "aiNodes Base/ControlNet"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,3,1], outputs=[3,1])
@@ -135,7 +135,7 @@ class CNApplyNode(AiNode):
 
         model_net = None
 
-        image = pixmap_to_pil_image(image)
+        image = pixmap_to_tensor(image)
 
         processor_res = int(image.size[0] // 8)
 
@@ -204,7 +204,7 @@ class CNApplyNode(AiNode):
         # gs.models["sd"].model.model.start_control = start
         # gs.models["sd"].model.model.stop_control = stop
 
-        image = pixmap_to_pil_image(image)
+        image = pixmap_to_tensor(image)
 
         image = np.array(image).astype(np.float32) / 255.0
 

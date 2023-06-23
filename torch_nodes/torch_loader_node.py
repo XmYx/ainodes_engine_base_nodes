@@ -67,7 +67,7 @@ class TorchLoaderNode(AiNode):
     op_code = OP_NODE_TORCH_LOADER
     op_title = "Torch Loader"
     content_label_objname = "torch_loader_node"
-    category = "Model Loading"
+    category = "aiNodes Base/Model Loading"
     input_socket_name = ["EXEC"]
     # output_socket_name = ["EXEC"]
     custom_output_socket_name = ["VAE", "CLIP", "MODEL", "EXEC"]

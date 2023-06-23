@@ -4,7 +4,7 @@ import secrets
 import numpy as np
 from einops import rearrange
 
-from ..ainodes_backend import common_ksampler, pil_image_to_pixmap, get_torch_device
+from ..ainodes_backend import common_ksampler, tensor_image_to_pixmap, get_torch_device
 
 import torch
 from PIL import Image
@@ -61,7 +61,7 @@ class KSamplerNode(AiNode):
     op_code = OP_NODE_K_SAMPLER
     op_title = "K Sampler"
     content_label_objname = "K_sampling_node"
-    category = "Sampling"
+    category = "aiNodes Base/Sampling"
 
     custom_input_socket_name = ["CONTROLNET", "VAE", "MODEL", "DATA", "LATENT", "NEG COND", "POS COND", "EXEC"]
 
@@ -98,14 +98,30 @@ class KSamplerNode(AiNode):
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
         #pass
         # Add a task to the task queue
-        cond_list = self.getInputData(6)
-        n_cond_list = self.getInputData(5)
+        cond_list = [self.getInputData(6)]
+        n_cond_list = [self.getInputData(5)]
+        print("C", cond_list, isinstance(cond_list, dict))
+        if isinstance(cond_list[0], dict):
+            cond_list = cond_list[0]["conds"]
+
+            print(len(cond_list))
+
+            if len(cond_list) == 1:
+                cond_list = [cond_list]
+
+        if isinstance(n_cond_list[0], dict):
+            n_cond_list = n_cond_list[0]["conds"]
+
+            if len(n_cond_list) == 1:
+                n_cond_list = [n_cond_list]
+
         self.steps = self.content.steps.value()
         latent_list = self.getInputData(4)
         data = self.getInputData(3)
         unet = self.getInputData(2)
         vae = self.getInputData(1)
         control_model = self.getInputData(0)
+
 
         assert unet is not None, "UNET NOT FOUND, MAKE SURE TO LOAD A MODEL AND CONNECT IT'S OUTPUTS"
         assert vae is not None, "VAE NOT FOUND"
@@ -116,7 +132,7 @@ class KSamplerNode(AiNode):
             latent_list = [torch.zeros([1, 4, 512 // 8, 512 // 8])]
 
 
-        return_pixmaps = []
+        return_latents = []
         return_samples = []
         try:
             x=0
@@ -150,9 +166,9 @@ class KSamplerNode(AiNode):
                     n_cond = n_cond_list[x]
                 else:
                     n_cond = n_cond_list[0]
-                for i in cond:
-                    if 'control_hint' in i[1]:
-                        cond = self.apply_control_net(cond, control_model)
+                # for i in cond:
+                #     if 'control_hint' in i[1]:
+                #         cond = self.apply_control_net(cond, control_model)
 
                 self.denoise = self.content.denoise.value()
                 self.steps = self.content.steps.value()
@@ -204,37 +220,39 @@ class KSamplerNode(AiNode):
                                          model=unet,
                                          control_model=control_model)
 
-                for c in cond:
-                    if "control" in c[1]:
-                        del c[1]["control"]
+                # for c in cond:
+                #     if "control" in c[1]:
+                #         del c[1]["control"]
 
                 cpu_s = sample
                 x_sample = self.decode_sample(sample, vae)
 
-                return_samples.append(cpu_s)
+                #return_samples.append(cpu_s)
 
-                image = Image.fromarray(x_sample.astype(np.uint8))
-                pm = pil_image_to_pixmap(image)
-                return_pixmaps.append(pm)
+                #image = Image.fromarray(x_sample.astype(np.uint8))
+                #pm = tensor_image_to_pixmap(image)
+                return_latents.append(x_sample.detach())
                 if self.content.tensor_preview.isChecked():
                     if len(self.getOutputs(2)) > 0:
                         nodes = self.getOutputs(0)
                         for node in nodes:
                             if isinstance(node, ImagePreviewNode):
-                                node.content.preview_signal.emit(pm)
+                                node.content.preview_signal.emit(tensor_image_to_pixmap(x_sample))
 
 
                 x+=1
-            return [return_pixmaps, return_samples]
+            return [return_latents, return_samples]
         except Exception as e:
             handle_ainodes_exception()
             return_pixmaps, return_samples = None, None
             print(e)
         return [return_pixmaps, return_samples]
     def decode_sample(self, sample, vae):
+
         decoded = vae.decode_tiled(sample)
-        decoded_array = 255. * decoded[0].detach().numpy()
-        return decoded_array
+        #decoded = vae.decode(sample)
+        #decoded_array = 255. * decoded[0].detach().numpy()
+        return decoded
 
     def callback(self, tensors, *args, **kwargs):
         print(tensors)
@@ -273,7 +291,7 @@ class KSamplerNode(AiNode):
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result[0])
-        self.setOutput(1, result[1][0])
+        self.setOutput(1, result[1])
 
 
         self.content.progress_signal.emit(100)

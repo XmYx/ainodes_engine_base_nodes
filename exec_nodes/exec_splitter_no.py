@@ -16,7 +16,7 @@ class ExecSplitterNode(AiNode):
     op_code = OP_NODE_EXEC_SPLITTER
     op_title = "Execute Splitter"
     content_label_objname = "exec_splitter_node"
-    category = "WIP Experimental"
+    category = "aiNodes Base/WIP Experimental"
     help_text = "Execution Splitter Node\n\n" \
                 "You can split your processes into\n" \
                 "as many branches as you want\n" \

@@ -7,7 +7,7 @@ from qtpy import QtCore, QtGui
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, tensor2pil, pil2tensor
 from ..ainodes_backend.RIFE.infer_rife import RIFEModel
 
 OP_NODE_RIFE = get_next_opcode()
@@ -34,7 +34,7 @@ class RIFENode(AiNode):
     op_code = OP_NODE_RIFE
     op_title = "RIFE"
     content_label_objname = "rife_node"
-    category = "Interpolation"
+    category = "aiNodes Base/Interpolation"
 
 
     def __init__(self, scene):
@@ -79,15 +79,15 @@ class RIFENode(AiNode):
         else:
             pixmap2 = None
         if pixmap1 != None and pixmap2 != None:
-            image1 = pixmap_to_pil_image(pixmap1)
-            image2 = pixmap_to_pil_image(pixmap2)
+            image1 = tensor2pil(pixmap1)
+            image2 = tensor2pil(pixmap2)
             np_image1 = np.array(image1)
             np_image2 = np.array(image2)
             frames = gs.models["rife"].infer(image1=np_image1, image2=np_image2, exp=exp, ratio=ratio, rthreshold=rthreshold, rmaxcycles=rmaxcycles)
             print(f"RIFE NODE:  {len(frames)}")
             for frame in frames:
                 image = Image.fromarray(frame)
-                pixmap = pil_image_to_pixmap(image)
+                pixmap = pil2tensor(image)
                 self.setOutput(0, pixmap)
                 if len(self.getOutputs(1)) > 0:
                     self.executeChild(output_index=1)
@@ -96,7 +96,7 @@ class RIFENode(AiNode):
             self.markInvalid(False)
         elif pixmap1 != None:
             try:
-                image = pixmap_to_pil_image(pixmap1[0])
+                image = tensor2pil(pixmap1[0])
                 np_image = np.array(image)
                 self.rife_temp.append(np_image)
 
@@ -137,7 +137,7 @@ class RIFENode(AiNode):
     def iterate_frames(self, frames):
         for frame in frames:
             image = Image.fromarray(frame)
-            pixmap = pil_image_to_pixmap(image)
+            pixmap = tensor_image_to_pixmap(image)
             self.setOutput(0, [pixmap])
             node = self.getOutputs(1)[0]
             node.eval()

@@ -6,7 +6,8 @@ from ainodes_frontend.base import AiNode
 from ainodes_frontend.base.settings import handle_ainodes_exception
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
-from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, tensor2pil, \
+    pil2tensor
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.model import run_codeformer
 
 OP_NODE_CODEFORMER = get_next_opcode()
@@ -27,7 +28,7 @@ class CodeFormerNode(AiNode):
     op_code = OP_NODE_CODEFORMER
     op_title = "Codeformer"
     content_label_objname = "codeformer_node"
-    category = "Upscalers"
+    category = "aiNodes Base/Upscalers"
     NodeContent_class = CodeFormerWidget
     dim = (340, 260)
     output_data_ports = [0]
@@ -43,7 +44,7 @@ class CodeFormerNode(AiNode):
         results = []
         if images:
             for image in images:
-                pil_img = pixmap_to_pil_image(image)
+                pil_img = tensor2pil(image)
                 bg_up = self.content.bg_upsample.isChecked()
                 bg_up = 'realesrgan' if bg_up else 'None'
                 args = SimpleNamespace(
@@ -63,7 +64,7 @@ class CodeFormerNode(AiNode):
                 )
                 #print(args)
                 result = run_codeformer(args, [pil_img])
-                pixmap = pil_image_to_pixmap(result[0])
+                pixmap = pil2tensor(result[0])
                 results.append(pixmap)
         return [results]
 

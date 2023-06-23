@@ -113,7 +113,7 @@ class ConditioningNode(AiNode):
     op_code = OP_NODE_CONDITIONING
     op_title = "Conditioning"
     content_label_objname = "cond_node"
-    category = "Conditioning"
+    category = "aiNodes Base/Conditioning"
 
     custom_input_socket_name = ["CLIP", "DATA", "EXEC"]
 
@@ -206,7 +206,7 @@ class ConditioningNode(AiNode):
             else:
                 data = {}
                 data["prompt"] = prompt
-                result = [self.get_conditioning(prompt=prompt, clip=clip)]
+                result = self.get_conditioning(prompt=prompt, clip=clip)
             if gs.logging:
                 print(f"CONDITIONING NODE: Applying conditioning with prompt: {prompt}")
             return result, data
@@ -252,7 +252,7 @@ class ConditioningNode(AiNode):
                     self.clip_skip = clip_skip
                 c = clip.encode(prompt)
                 uc = {}
-                return [[c, uc]]
+                return {"conds":[[c, uc]]}
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):

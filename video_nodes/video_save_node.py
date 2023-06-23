@@ -9,7 +9,7 @@ from PIL import Image
 from qtpy import QtWidgets, QtGui, QtCore
 from qtpy.QtWidgets import QPushButton, QVBoxLayout
 
-from ..ainodes_backend import pixmap_to_pil_image
+from ..ainodes_backend import pixmap_to_tensor, tensor2pil
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -27,9 +27,9 @@ class VideoOutputWidget(QDMNodeContentWidget):
         #self.new_button = QPushButton("New Video", self)
         #self.save_button.clicked.connect(self.loadVideo)
 
-        self.width_value = self.create_spin_box("Width", min_val=64, max_val=4096, default_val=512, step_value=64)
-        self.height_value = self.create_spin_box("Height", min_val=64, max_val=4096, default_val=512, step_value=64)
-        self.fps = self.create_spin_box("FPS", min_val=1, max_val=4096, default_val=30, step_value=1)
+        self.width_value = self.create_spin_box("Width", min_val=64, max_val=4096, default_val=512, step=64)
+        self.height_value = self.create_spin_box("Height", min_val=64, max_val=4096, default_val=512, step=64)
+        self.fps = self.create_spin_box("FPS", min_val=1, max_val=4096, default_val=30, step=1)
         # self.width_value = QtWidgets.QSpinBox()
         # self.width_value.setMinimum(64)
         # self.width_value.setSingleStep(64)
@@ -80,7 +80,7 @@ class VideoOutputNode(AiNode):
     op_code = OP_NODE_VIDEO_SAVE
     op_title = "Video Save"
     content_label_objname = "video_output_node"
-    category = "Video"
+    category = "aiNodes Base/Video"
     input_socket_name = ["EXEC", "IMAGE"]
     output_socket_name = ["EXEC", "IMAGE"]
     def __init__(self, scene):
@@ -114,7 +114,7 @@ class VideoOutputNode(AiNode):
 
             pixmap_list = input_node.getOutput(other_index)
             for val in pixmap_list:
-                image = pixmap_to_pil_image(val)
+                image = tensor2pil(val)
                 frame = np.array(image)
                 #self.markInvalid(False)
                 #self.markDirty(True)

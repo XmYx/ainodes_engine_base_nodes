@@ -6,7 +6,7 @@ from PIL import Image
 from qtpy import QtWidgets, QtCore, QtGui
 
 from ..ainodes_backend.resizeRight import resizeright, interp_methods
-from ..ainodes_backend import pixmap_to_pil_image, torch_gc
+from ..ainodes_backend import pixmap_to_tensor, torch_gc
 
 from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
@@ -41,7 +41,7 @@ class LatentNode(AiNode):
     op_code = OP_NODE_LATENT
     op_title = "Empty Latent Image"
     content_label_objname = "empty_latent_node"
-    category = "Latent"
+    category = "aiNodes Base/Latent"
     custom_input_socket_name = ["VAE", "LATENT", "IMAGE", "EXEC"]
     def __init__(self, scene):
 
@@ -86,7 +86,7 @@ class LatentNode(AiNode):
                 assert vae is not None, "No VAE found for encoding your image, please make sure to load and connect one."
                 vae.first_stage_model.cuda()
                 for pixmap in pixmap_list:
-                    image = pixmap_to_pil_image(pixmap)
+                    image = pixmap_to_tensor(pixmap)
 
                     #print("image", image)
 
@@ -259,7 +259,7 @@ class LatentCompositeNode(AiNode):
     op_code = OP_NODE_LATENT_COMPOSITE
     op_title = "Composite Latent Images"
     content_label_objname = "latent_comp_node"
-    category = "Latent"
+    category = "aiNodes Base/Latent"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[2,2,3], outputs=[2,3])

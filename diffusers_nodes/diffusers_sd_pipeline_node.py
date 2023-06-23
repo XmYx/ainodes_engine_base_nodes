@@ -9,7 +9,7 @@ from diffusers.models.controlnet import ControlNetOutput
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc, \
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc, \
     get_torch_device
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler, \
     StableDiffusionPipeline, StableDiffusionControlNetImg2ImgPipeline
@@ -28,9 +28,9 @@ class DiffusersPipeLineWidget(QDMNodeContentWidget):
         self.scheduler_name = self.create_combo_box(scheduler_type_values, "Scheduler")
         self.prompt = self.create_text_edit("Prompt")
         self.n_prompt = self.create_text_edit("Negative Prompt")
-        self.height_val = self.create_spin_box("Height", min_val=64, max_val=4096, default_val=512, step_value=64)
-        self.width_val = self.create_spin_box("Width", min_val=64, max_val=4096, default_val=512, step_value=64)
-        self.steps = self.create_spin_box("Steps", min_val=1, max_val=4096, default_val=25, step_value=1)
+        self.height_val = self.create_spin_box("Height", min_val=64, max_val=4096, default_val=512, step=64)
+        self.width_val = self.create_spin_box("Width", min_val=64, max_val=4096, default_val=512, step=64)
+        self.steps = self.create_spin_box("Steps", min_val=1, max_val=4096, default_val=25, step=1)
         self.scale = self.create_double_spin_box("Scale", min_val=0.01, max_val=25.00, default_val=7.5, step=0.01)
         self.eta = self.create_double_spin_box("Eta", min_val=0.00, max_val=1.00, default_val=1.0, step=0.01)
         self.seed = self.create_line_edit("Seed")
@@ -44,7 +44,7 @@ class DiffusersPipeLineNode(AiNode):
     op_code = OP_NODE_DIFF_PIPELINE
     op_title = "Diffusers - StableDiffusionControlNet"
     content_label_objname = "diffusers_pipeline_node"
-    category = "Diffusers"
+    category = "aiNodes Base/Diffusers"
     NodeContent_class = DiffusersPipeLineWidget
     dim = (340, 700)
     output_data_ports = [0]
@@ -169,7 +169,7 @@ class DiffusersPipeLineNode(AiNode):
                         latents = latents).images[0]
 
         torch_gc()
-        return [[pil_image_to_pixmap(image)]]
+        return [[tensor_image_to_pixmap(image)]]
 
 
 

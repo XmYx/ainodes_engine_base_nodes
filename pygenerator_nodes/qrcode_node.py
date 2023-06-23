@@ -1,7 +1,7 @@
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pil2tensor
 
 #Function imports
 import qrcode
@@ -28,7 +28,7 @@ class QRNode(AiNode):
     op_code = OP_NODE_QRCODE
     op_title = "QR Code Generator"
     content_label_objname = "qrcode_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
     NodeContent_class = QRWidget
     dim = (340, 260)
     output_data_ports = [0]
@@ -47,7 +47,7 @@ class QRNode(AiNode):
         border = self.content.qr_border.value()
         fit = self.content.qr_fit.isChecked()
         qr_image = create_qr_code(data, version, box, border, fit)
-        pixmap = pil_image_to_pixmap(qr_image)
+        pixmap = pil2tensor(qr_image)
         return [[pixmap]]
 
 

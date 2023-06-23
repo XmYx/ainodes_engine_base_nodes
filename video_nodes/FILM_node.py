@@ -7,7 +7,7 @@ from qtpy import QtWidgets, QtCore, QtGui
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, tensor2pil, pil2tensor
 from ..ainodes_backend.FILM.inference import FilmModel
 
 OP_NODE_FILM = get_next_opcode()
@@ -32,7 +32,7 @@ class FILMNode(AiNode):
     op_code = OP_NODE_FILM
     op_title = "FILM"
     content_label_objname = "FILM_node"
-    category = "Interpolation"
+    category = "aiNodes Base/Interpolation"
 
 
     def __init__(self, scene):
@@ -80,19 +80,19 @@ class FILMNode(AiNode):
         else:
             pixmap2 = None
         if pixmap1 != None and pixmap2 != None:
-            image1 = pixmap_to_pil_image(pixmap1[0])
-            image2 = pixmap_to_pil_image(pixmap2[0])
+            image1 = tensor2pil(pixmap1[0])
+            image2 = tensor2pil(pixmap2[0])
             np_image1 = np.array(image1)
             np_image2 = np.array(image2)
             frames = gs.models["FILM"].inference(np_image1, np_image2, inter_frames=25)
             print(f"FILM NODE:  {len(frames)}")
             for frame in range(len(frames) - 2):
                 image = Image.fromarray(frame)
-                pixmap = pil_image_to_pixmap(image)
+                pixmap = tensor_image_to_pixmap(image)
                 return_frames.append(pixmap)
         elif pixmap1 != None:
             for pixmap in pixmap1:
-                image = pixmap_to_pil_image(pixmap)
+                image = tensor2pil(pixmap)
                 np_image = np.array(image.convert("RGB"))
                 self.FILM_temp.append(np_image)
                 if len(self.FILM_temp) == 2:
@@ -105,7 +105,7 @@ class FILMNode(AiNode):
 
                     for frame in frames:
                         image = Image.fromarray(copy.deepcopy(frame))
-                        pixmap = pil_image_to_pixmap(image)
+                        pixmap = pil2tensor(image)
                         return_frames.append(pixmap)
                     self.FILM_temp = [self.FILM_temp[1]]
         print(f"FILM NODE: Using only First input, created {len(return_frames) - 2} between frames, returning {len(return_frames)} frames.")
@@ -124,7 +124,7 @@ class FILMNode(AiNode):
                 node = self.getOutputs(1)[0]
             if node is not None:
                 image = Image.fromarray(copy.deepcopy(frame))
-                pixmap = pil_image_to_pixmap(image)
+                pixmap = tensor_image_to_pixmap(image)
                 self.setOutput(0, pixmap)
                 node.eval()
         self.iterating = False

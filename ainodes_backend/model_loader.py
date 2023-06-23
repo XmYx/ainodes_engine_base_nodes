@@ -396,6 +396,7 @@ class ModelLoader(torch.nn.Module):
             return
 
     def load_vae(self, file):
+        from comfy.sd import VAE
         path = os.path.join('models/vae', file)
         print("Loading", path)
         #gs.models["sd"].first_stage_model.cpu()

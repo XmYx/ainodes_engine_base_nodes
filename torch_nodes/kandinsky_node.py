@@ -9,7 +9,7 @@ from huggingface_hub import hf_hub_url, cached_download
 from omegaconf import DictConfig
 
 from .ksampler_node import get_fixed_seed
-from ..ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image
+from ..ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, pil2tensor, tensor2pil
 
 import torch
 from qtpy import QtWidgets, QtCore, QtGui
@@ -65,7 +65,7 @@ class KandinskyNode(AiNode):
     op_code = OP_NODE_KANDINSKY
     op_title = "Kandinsky"
     content_label_objname = "kandinsky_node"
-    category = "Sampling"
+    category = "aiNodes Base/Sampling"
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[5,5,6,1], outputs=[5,1])
         self.content.button.clicked.connect(self.evalImplementation)
@@ -163,7 +163,7 @@ class KandinskyNode(AiNode):
 
                 if task_type == "text2img":
 
-                    pil_img = pixmap_to_pil_image(image)
+                    pil_img = tensor2pil(image)
                     return_pil_images = gs.models["kandinsky"].generate_img2img(
                         prompt,
                         pil_img,
@@ -179,8 +179,8 @@ class KandinskyNode(AiNode):
                         callback=self.callback
                     )
                 else:
-                    pil_img = pixmap_to_pil_image(image)
-                    img_mask = pixmap_to_pil_image(masks[0]).convert("L")
+                    pil_img = tensor2pil(image)
+                    img_mask = pixmap_to_tensor(masks[0]).convert("L")
 
                     # Get the original dimensions
                     #original_height, original_width = img_mask.size
@@ -222,8 +222,8 @@ class KandinskyNode(AiNode):
 
             )
         for image in return_pil_images:
-            pixmap = pil_image_to_pixmap(image)
-            return_images.append(pixmap)
+            tensor = pil2tensor(image)
+            return_images.append(tensor)
         return return_images
     def callback(self, tensors):
         i = tensors["i"]
@@ -240,7 +240,7 @@ class KandinskyNode(AiNode):
                 latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
                 img = Image.fromarray(latent)
                 img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
-                latent_pixmap = pil_image_to_pixmap(img)
+                latent_pixmap = tensor_image_to_pixmap(img)
                 if len(self.getOutputs(0)) > 0:
                     nodes = self.getOutputs(0)
                     for node in nodes:

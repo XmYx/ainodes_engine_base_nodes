@@ -1,6 +1,8 @@
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtWidgets import QGraphicsView
 from qtpy import QtCore, QtGui
+
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap
 from ainodes_frontend.base import register_node, get_next_opcode, handle_ainodes_exception
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -34,7 +36,7 @@ class SubgraphNode(AiNode):
     op_code = OP_NODE_SUBGRAPH
     op_title = "Subgraph"
     content_label_objname = "subgraph_node"
-    category = "Subgraph Nodes"
+    category = "aiNodes Base/Subgraph Nodes"
     help_text = "Execution Node\n\n" \
                 "Execution chain is essential\n" \
                 "in aiNodes. You control the flow\n" \
@@ -116,7 +118,7 @@ class SubgraphNode(AiNode):
             self.setOutput(1, result[1])
             self.setOutput(2, result[2])
             if result[2] is not None:
-                self.content.image_signal.emit(result[2][0])
+                self.content.image_signal.emit(tensor_image_to_pixmap(result[2][0]))
             self.setOutput(3, result[3])
             self.executeChild(4)
 
@@ -180,7 +182,7 @@ class SubGraphInputNode(AiNode):
     op_code = OP_NODE_SUBGRAPH_INPUT
     op_title = "Subgraph Inputs"
     content_label_objname = "subgraph_input_node"
-    category = "Subgraph Nodes"
+    category = "aiNodes Base/Subgraph Nodes"
     help_text = "Execution Node\n\n" \
                 "Execution chain is essential\n" \
                 "in aiNodes. You control the flow\n" \
@@ -230,7 +232,7 @@ class SubGraphOutputNode(AiNode):
     op_code = OP_NODE_SUBGRAPH_OUTPUT
     op_title = "Subgraph Outputs"
     content_label_objname = "subgraph_output_node"
-    category = "Subgraph Nodes"
+    category = "aiNodes Base/Subgraph Nodes"
     help_text = "Execution Node\n\n" \
                 "Execution chain is essential\n" \
                 "in aiNodes. You control the flow\n" \

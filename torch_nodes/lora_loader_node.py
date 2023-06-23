@@ -64,7 +64,7 @@ class LoraLoaderNode(AiNode):
     op_code = OP_NODE_LORA_LOADER
     op_title = "Lora Loader"
     content_label_objname = "lora_loader_node"
-    category = "Model Loading"
+    category = "aiNodes Base/Model Loading"
     custom_input_socket_name = ["CLIP", "MODEL", "EXEC"]
     custom_output_socket_name = ["CLIP", "MODEL", "EXEC"]
 
