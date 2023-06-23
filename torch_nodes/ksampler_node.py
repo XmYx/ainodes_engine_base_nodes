@@ -166,9 +166,9 @@ class KSamplerNode(AiNode):
                     n_cond = n_cond_list[x]
                 else:
                     n_cond = n_cond_list[0]
-                # for i in cond:
-                #     if 'control_hint' in i[1]:
-                #         cond = self.apply_control_net(cond, control_model)
+                for i in cond:
+                    if 'control_hint' in i[1]:
+                        cond = self.apply_control_net(cond, control_model)
 
                 self.denoise = self.content.denoise.value()
                 self.steps = self.content.steps.value()
@@ -220,9 +220,9 @@ class KSamplerNode(AiNode):
                                          model=unet,
                                          control_model=control_model)
 
-                # for c in cond:
-                #     if "control" in c[1]:
-                #         del c[1]["control"]
+                for c in cond:
+                    if "control" in c[1]:
+                        del c[1]["control"]
 
                 cpu_s = sample
                 x_sample = self.decode_sample(sample, vae)
