@@ -38,8 +38,8 @@ class AddNoiseNode(AiNode):
     def evalImplementation_thread(self, index=0):
 
         results = []
-        tensors = self.getInputData(0)
-        mask_tensors = self.getInputData(1)
+        tensors = self.getInputData(1)
+        mask_tensors = self.getInputData(0)
 
         noise_type = self.content.noise_type.currentText()
         noise_amount = self.content.noise_amount.value()
