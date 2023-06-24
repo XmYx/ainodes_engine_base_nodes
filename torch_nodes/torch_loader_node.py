@@ -44,7 +44,7 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         self.vae_dropdown = self.create_combo_box(vae_files, "Vae")
         self.vae_dropdown.addItem("default")
         self.vae_dropdown.setCurrentText("default")
-        self.optimization = self.create_combo_box(valid_optimizations, "LDM Optimization")
+        self.optimization = self.create_combo_box(["None"] + valid_optimizations, "LDM Optimization")
 
         self.force_reload = self.create_check_box("Force Reload")
 

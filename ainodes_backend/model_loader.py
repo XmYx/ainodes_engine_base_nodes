@@ -149,6 +149,9 @@ class ModelLoader(torch.nn.Module):
         #     torch.backends.cuda.matmul.allow_tf32 = True
         #     torch.backends.cudnn.allow_tf32 = True
         # apply_optimizations(style)
+        if style is not "None":
+            apply_optimizations(style)
+
         return ModelPatcher(model), clip, vae
         # gs.models["sd"] = ModelPatcher(model)
         # gs.models["clip"] = clip
@@ -156,7 +159,6 @@ class ModelLoader(torch.nn.Module):
         #print("LOADED")
         # if gs.debug:
         #     print(gs.models["sd"],gs.models["clip"],gs.models["vae"])
-
 
     def load_model_old(self, file=None, config=None, inpaint=False, verbose=False):
 

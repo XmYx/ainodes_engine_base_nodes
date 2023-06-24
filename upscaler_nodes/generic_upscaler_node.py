@@ -23,6 +23,9 @@ class UpscalerWidget(QDMNodeContentWidget):
 
     def create_widgets(self):
         checkpoint_folder = gs.upscalers
+
+        print(os.getcwd())
+
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
         self.dropdown = self.create_combo_box(checkpoint_files, "Models")
         if checkpoint_files == []:

@@ -121,6 +121,8 @@ class KandinskyNode(AiNode):
             flash = False if not self.content.flash_attn_avail else self.content.flash_attn.isChecked()
             gs.models["kandinsky"] = get_kandinsky2_1('cuda', task_type=task_type, use_flash_attention=flash, use_finetune=use_finetune)
             gs.loaded_kandinsky = task_type
+
+
         masks = self.getInputData(0)
         images = self.getInputData(1)
         data = self.getInputData(2)

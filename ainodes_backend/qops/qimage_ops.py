@@ -18,6 +18,8 @@ def tensor_image_to_pixmap(tensor_image, input_type="tensor"):
 
     if isinstance(tensor_image, torch.Tensor):
         pil_image = tensor2pil(tensor_image)
+    elif isinstance(tensor_image, np.ndarray):
+        pil_image = Image.fromarray(tensor_image)
     else:
         pil_image = tensor_image
 

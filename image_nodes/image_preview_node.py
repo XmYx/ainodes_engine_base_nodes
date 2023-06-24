@@ -3,6 +3,7 @@ import json
 import os
 import time
 
+import PIL.Image
 import numpy as np
 import torch
 from PIL.PngImagePlugin import PngInfo
@@ -150,7 +151,7 @@ class ImagePreviewNode(AiNode):
         #pixmap = tensor_image_to_pixmap(image)
 
         self.content.image.setPixmap(image)
-        #self.resize()
+        self.resize(image)
 
 
     def onWorkerFinished(self, result):
@@ -160,12 +161,19 @@ class ImagePreviewNode(AiNode):
             if result:
                 self.save_image(result[0])
         if result is not None:
-            pixmap = tensor_image_to_pixmap(result[0])
-            self.content.preview_signal.emit(pixmap)
-            self.resize(pixmap)
-            # for image in result:
-            #     self.content.preview_signal.emit(image)
-                #time.sleep(0.1)
+
+            for item in result:
+
+                if not isinstance(item, QtGui.QPixmap):
+
+                    pixmap = tensor_image_to_pixmap(item)
+                else:
+                    pixmap = item
+                self.content.preview_signal.emit(pixmap)
+                self.resize(pixmap)
+                # for image in result:
+                #     self.content.preview_signal.emit(image)
+                    #time.sleep(0.1)
 
         self.setOutput(0, self.images)
         self.markInvalid(False)
