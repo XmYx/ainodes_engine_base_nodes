@@ -40,6 +40,12 @@ class KandinskyWidget(QDMNodeContentWidget):
         self.create_widgets()
         self.create_main_layout(grid=1)
     def create_widgets(self):
+        try:
+            import flash_attn
+            self.flash_attn = self.create_check_box("Use Flash Attn")
+            self.flash_attn_avail = True
+        except:
+            self.flash_attn_avail = False
         self.use_finetune = self.create_check_box("Use Finetune")
         self.task = self.create_combo_box(["TXT2IMG", "INPAINT"], "Task")
         self.tensor_preview = self.create_check_box("Tensor Preview")
@@ -112,7 +118,8 @@ class KandinskyNode(AiNode):
 
         if f"kandinsky" not in gs.models or gs.loaded_kandinsky != task_type:
             use_finetune = self.content.use_finetune.isChecked()
-            gs.models["kandinsky"] = get_kandinsky2_1('cuda', task_type=task_type, use_flash_attention=False, use_finetune=use_finetune)
+            flash = False if not self.content.flash_attn_avail else self.content.flash_attn.isChecked()
+            gs.models["kandinsky"] = get_kandinsky2_1('cuda', task_type=task_type, use_flash_attention=flash, use_finetune=use_finetune)
             gs.loaded_kandinsky = task_type
         masks = self.getInputData(0)
         images = self.getInputData(1)
