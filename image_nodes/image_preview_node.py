@@ -157,7 +157,8 @@ class ImagePreviewNode(AiNode):
         self.busy = False
         self.images = result
         if self.content.checkbox.isChecked() == True:
-            self.save_image(result[0])
+            if result:
+                self.save_image(result[0])
         if result is not None:
             pixmap = tensor_image_to_pixmap(result[0])
             self.content.preview_signal.emit(pixmap)
