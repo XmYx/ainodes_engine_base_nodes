@@ -43,13 +43,13 @@ class AddNoiseNode(AiNode):
 
         noise_type = self.content.noise_type.currentText()
         noise_amount = self.content.noise_amount.value()
-
-        for tensor in tensors:
-            if mask_tensors is not None:
-                result = add_noise_with_mask(tensor, mask_tensors[0], noise_type=noise_type, noise_amount=noise_amount)
-            else:
-                result = add_noise(tensor, noise_type=noise_type, noise_amount=noise_amount)
-            results.append(result)
+        if tensors:
+            for tensor in tensors:
+                if mask_tensors is not None:
+                    result = add_noise_with_mask(tensor, mask_tensors[0], noise_type=noise_type, noise_amount=noise_amount)
+                else:
+                    result = add_noise(tensor, noise_type=noise_type, noise_amount=noise_amount)
+                results.append(result)
 
         return [results]
 
