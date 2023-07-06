@@ -6,7 +6,7 @@ from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc, \
-    get_torch_device
+    get_torch_device, pil2tensor, tensor2pil
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler, \
     StableDiffusionImageVariationPipeline
 
@@ -48,7 +48,7 @@ class DiffusersVarPipeLineNode(AiNode):
 
     def evalImplementation_thread(self, index=0):
         images = self.getInputData(0)
-        image = pixmap_to_tensor(images[0])
+        image = tensor2pil(images[0])
 
         pipe = self.getInputData(1)
 
@@ -89,7 +89,7 @@ class DiffusersVarPipeLineNode(AiNode):
                           eta=eta).images[0]
 
         torch_gc()
-        return [[tensor_image_to_pixmap(image)], self.pipe]
+        return [[pil2tensor(image)], self.pipe]
 
 
     def remove(self):

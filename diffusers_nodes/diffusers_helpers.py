@@ -132,7 +132,6 @@ def multiForward(
     return down_block_res_samples, mid_block_res_sample
 
 
-
 class SchedulerType(Enum):
     DDIM = "ddim"
     HEUN = "heun"

@@ -1,7 +1,8 @@
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc, \
+    tensor2pil, pil2tensor
 from diffusers import StableUnCLIPImg2ImgPipeline
 import torch
 
@@ -43,7 +44,7 @@ class DiffusersUnclipNode(AiNode):
         images = self.getInputData(0)
         return_pixmaps = []
         for image in images:
-            pil_image = pixmap_to_tensor(image)
+            pil_image = tensor2pil(image)
             if not self.pipe:
                 self.pipe = StableUnCLIPImg2ImgPipeline.from_pretrained(
                     "stabilityai/stable-diffusion-2-1-unclip", torch_dtype=torch.float16, variation="fp16"
@@ -68,7 +69,7 @@ class DiffusersUnclipNode(AiNode):
                               noise_level=noise_level,
                               generator=generator
                               ).images[0]
-            return_pixmaps.append(tensor_image_to_pixmap(image))
+            return_pixmaps.append(pil2tensor(image))
         return [return_pixmaps]
     def callback(self, i, j, tensor):
         print(i, j)
