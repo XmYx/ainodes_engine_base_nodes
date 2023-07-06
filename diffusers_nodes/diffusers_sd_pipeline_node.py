@@ -1,6 +1,7 @@
 import secrets
 from typing import Union, List, Optional, Dict, Any, Tuple
 
+import diffusers
 import qrcode
 import torch
 from PIL import Image
@@ -10,9 +11,15 @@ from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc, \
-    get_torch_device
+    get_torch_device, pil2tensor
+
+
+#from .diffusers_restart_pipeline import StableDiffusionPipeline
+
+#diffusers.StableDiffusionPipeline = StableDiffusionPipeline
+
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler, \
-    StableDiffusionPipeline, StableDiffusionControlNetImg2ImgPipeline
+    StableDiffusionControlNetImg2ImgPipeline, DDIMScheduler, StableDiffusionPipeline
 from diffusers.models.attention_processor import AttnProcessor2_0
 from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
     diffusers_indexed, scheduler_type_values, get_scheduler, SchedulerType
@@ -122,6 +129,9 @@ class DiffusersPipeLineNode(AiNode):
             self.pipe = diffusion_class.from_pretrained(
                 model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None
             ).to(device)
+
+            #self.load_lora()
+
             # self.pipe.unet.set_attn_processor(AttnProcessor2_0())
             # print(self.pipe.unet.conv_out.state_dict()["weight"].stride())  # (2880, 9, 3, 1)
             # self.pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
@@ -134,6 +144,10 @@ class DiffusersPipeLineNode(AiNode):
         scheduler_name = self.content.scheduler_name.currentText()
         scheduler_enum = SchedulerType(scheduler_name)
         self.pipe = get_scheduler(self.pipe, scheduler_enum)
+
+        # self.pipe.scheduler = DDIMScheduler.from_config(self.pipe.scheduler.config)
+        # self.pipe.scheduler.use_sigma = True
+
         prompt = self.content.prompt.toPlainText()
         height = self.content.height_val.value()
         width = self.content.width_val.value()
@@ -169,8 +183,12 @@ class DiffusersPipeLineNode(AiNode):
                         latents = latents).images[0]
 
         torch_gc()
-        return [[tensor_image_to_pixmap(image)]]
+        return [[pil2tensor(image)]]
 
+    def load_lora(self):
+        from .diffusers_lora_loader import install_lora_hook
+        install_lora_hook(self.pipe)
+        lora1 = self.pipe.apply_lora("models/loras/add_detail.safetensors", alpha=0.8)
 
 
     def remove(self):

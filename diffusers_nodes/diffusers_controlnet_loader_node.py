@@ -1,7 +1,8 @@
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc, \
+    tensor2pil
 from diffusers import StableUnCLIPImg2ImgPipeline, UnCLIPImageVariationPipeline
 from diffusers.utils import load_image
 import torch
@@ -34,6 +35,7 @@ controlnets_15 = {
 }
 
 controlnets_21 = {
+    "qrControl": "DionTimmer/controlnet_qrcode-control_v11p_sd21",
     "Normalbae": "thibaud/controlnet-sd21-normalbae-diffusers",
     "Lineart": "thibaud/controlnet-sd21-lineart-diffusers",
     "Ade20k": "thibaud/controlnet-sd21-ade20k-diffusers",
@@ -103,7 +105,7 @@ class DiffusersControlNetNode(AiNode):
 
         data = self.getInputData(1)
 
-        image = pixmap_to_tensor(images[0])
+        image = tensor2pil(images[0])
         scale = self.content.scale.value()
         start = self.content.start_value.value()
         stop = self.content.stop_value.value()
@@ -124,8 +126,6 @@ class DiffusersControlNetNode(AiNode):
                 data["control_diff"] = [to_insert]
         else:
             data = {"control_diff":[to_insert]}
-
-        print(data)
         return [data]
 
 

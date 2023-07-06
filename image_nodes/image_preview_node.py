@@ -144,6 +144,8 @@ class ImagePreviewNode(AiNode):
         self.busy = True
         if len(self.getInputs(0)) > 0:
             images = self.getInputData(0)
+
+
             return images
 
     def show_image(self, image):
@@ -175,7 +177,7 @@ class ImagePreviewNode(AiNode):
                 #     self.content.preview_signal.emit(image)
                     #time.sleep(0.1)
 
-        self.setOutput(0, self.images)
+        self.setOutput(0, result)
         self.markInvalid(False)
         self.markDirty(False)
         if gs.should_run:

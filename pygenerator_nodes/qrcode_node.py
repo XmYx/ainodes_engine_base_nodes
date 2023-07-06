@@ -47,15 +47,15 @@ class QRNode(AiNode):
         border = self.content.qr_border.value()
         fit = self.content.qr_fit.isChecked()
         qr_image = create_qr_code(data, version, box, border, fit)
-        pixmap = pil2tensor(qr_image)
-        return [[pixmap]]
+        tensor = [pil2tensor(qr_image)]
+        return [tensor]
 
 
 def create_qr_code(data, version, box, border, fit):
     # Create qr code instance
     qr = qrcode.QRCode(
         version=version,
-        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        error_correction=qrcode.constants.ERROR_CORRECT_Q,
         box_size=box,
         border=border,
     )
@@ -69,6 +69,8 @@ def create_qr_code(data, version, box, border, fit):
     img = qr.make_image(fill_color="black", back_color="white")
 
     # Resize the image to 512x512
-    resized_img = img.resize((512,512), Image.ANTIALIAS)
+    resized_img = img.resize((512,512), Image.ANTIALIAS).convert("RGBA")
+
+    resized_img.save("qr_test.png")
 
     return resized_img
