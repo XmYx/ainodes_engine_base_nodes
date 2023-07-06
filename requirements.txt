@@ -11,7 +11,7 @@ git+https://github.com/openai/CLIP.git
 tensorflow==2.8.4
 tb_nightly==2.12.0a20230126
 #transformers==4.27.0
-diffusers[torch]>=0.16.1
+#diffusers[torch]>=0.16.1
 imageio[ffmpeg]
 ##diffusers==0.14.0
 einops==0.6.0
@@ -48,3 +48,5 @@ git+https://github.com/XmYx/CodeFormerBasicSR.git
 transformers>=4.29.2
 PyQt6-QScintilla
 pyflakes
+git+https://github.com/huggingface/diffusers.git
+git+https://github.com/ShieldMnt/invisible-watermark.git
