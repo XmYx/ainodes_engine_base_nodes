@@ -5,6 +5,8 @@ import torch
 from diffusers import DiffusionPipeline
 
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil2tensor, torch_gc, tensor2pil
+from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import scheduler_type_values, SchedulerType, \
+    get_scheduler
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -20,6 +22,7 @@ class DiffRefineXLWidget(QDMNodeContentWidget):
     def initUI(self):
 
         self.token = self.create_line_edit("Token")
+        self.scheduler_name = self.create_combo_box(scheduler_type_values, "Scheduler")
 
         self.prompt = self.create_text_edit("Prompt")
         self.n_prompt = self.create_text_edit("Negative Prompt")
@@ -86,6 +89,9 @@ class DiffRefineXLNode(AiNode):
         seed = secrets.randbelow(9999999999) if self.content.seed.text() == "" else int(self.content.seed.text())
         generator = torch.Generator("cuda").manual_seed(seed)
         latents = None
+        scheduler_name = self.content.scheduler_name.currentText()
+        scheduler_enum = SchedulerType(scheduler_name)
+        self.pipe = get_scheduler(self.pipe, scheduler_enum)
 
         image = self.pipe(  prompt = prompt,
                             image=image,

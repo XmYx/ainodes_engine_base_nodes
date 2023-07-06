@@ -5,6 +5,8 @@ import torch
 from diffusers import DiffusionPipeline
 
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil2tensor, torch_gc
+from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import scheduler_type_values, SchedulerType, \
+    get_scheduler
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -20,15 +22,23 @@ class DiffBaseXLWidget(QDMNodeContentWidget):
     def initUI(self):
 
         self.token = self.create_line_edit("Token")
+        self.scheduler_name = self.create_combo_box(scheduler_type_values, "Scheduler")
 
         self.prompt = self.create_text_edit("Prompt")
         self.n_prompt = self.create_text_edit("Negative Prompt")
-        self.height_val = self.create_spin_box("Height", min_val=64, max_val=4096, default_val=512, step=64)
-        self.width_val = self.create_spin_box("Width", min_val=64, max_val=4096, default_val=512, step=64)
+        self.height_val = self.create_spin_box("Height", min_val=64, max_val=4096, default_val=1024, step=64)
+        self.width_val = self.create_spin_box("Width", min_val=64, max_val=4096, default_val=1024, step=64)
         self.steps = self.create_spin_box("Steps", min_val=1, max_val=4096, default_val=25, step=1)
         self.scale = self.create_double_spin_box("Scale", min_val=0.01, max_val=25.00, default_val=7.5, step=0.01)
         self.eta = self.create_double_spin_box("Eta", min_val=0.00, max_val=1.00, default_val=1.0, step=0.01)
         self.seed = self.create_line_edit("Seed")
+
+        self.guidance_rescale = self.create_double_spin_box("Guidance Rescale", min_val=0.00, max_val=25.00, default_val=0.0, step=0.01)
+
+        self.original_width = self.create_spin_box("Orig Width", min_val=64, max_val=4096, default_val=1024, step=64)
+        self.original_height = self.create_spin_box("Orig height", min_val=64, max_val=4096, default_val=1024, step=64)
+        self.target_width = self.create_spin_box("Target width", min_val=64, max_val=4096, default_val=1024, step=64)
+        self.target_height = self.create_spin_box("Target height", min_val=64, max_val=4096, default_val=1024, step=64)
 
 
         self.create_main_layout(grid=1)
@@ -74,6 +84,13 @@ class DiffBaseXLNode(AiNode):
         seed = secrets.randbelow(9999999999) if self.content.seed.text() == "" else int(self.content.seed.text())
         generator = torch.Generator("cuda").manual_seed(seed)
         latents = None
+        scheduler_name = self.content.scheduler_name.currentText()
+        scheduler_enum = SchedulerType(scheduler_name)
+        self.pipe = get_scheduler(self.pipe, scheduler_enum)
+
+        guidance_rescale = self.content.guidance_rescale.value()
+        original_size = (self.content.original_width.value(), self.content.original_height.value())
+        target_size = (self.content.target_width.value(), self.content.target_height.value())
 
         image = self.pipe(prompt = prompt,
                     height = height,
@@ -83,7 +100,10 @@ class DiffBaseXLNode(AiNode):
                     negative_prompt = negative_prompt,
                     eta = eta,
                     generator = generator,
-                    latents = latents).images[0]
+                    latents = latents,
+                    guidance_rescale=guidance_rescale,
+                    original_size=original_size,
+                    target_size=target_size).images[0]
 
         tensor = pil2tensor(image)
 
