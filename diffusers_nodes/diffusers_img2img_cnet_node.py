@@ -13,7 +13,6 @@ from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_p
 from ainodes_frontend import singleton as gs
 
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler
-from diffusers import StableDiffusionControlNetImg2ImgPipeline
 
 from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
     diffusers_indexed, scheduler_type_values, get_scheduler, SchedulerType
@@ -103,6 +102,7 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
         if self.content.reload.isChecked() or not self.pipe:
             text_encoder = CLIPTextModel.from_pretrained(model_name, subfolder="text_encoder",
                                                          num_hidden_layers=11, torch_dtype=torch.float16)
+            from diffusers import StableDiffusionControlNetImg2ImgPipeline
 
             self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
                 model_name, text_encoder=text_encoder, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None,

@@ -2,7 +2,7 @@ import secrets
 import subprocess
 
 import torch
-from diffusers import DiffusionPipeline
+from diffusers import DiffusionPipeline, StableDiffusionXLPipeline
 
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil2tensor, torch_gc
 from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import scheduler_type_values, SchedulerType, \
@@ -22,6 +22,7 @@ class DiffBaseXLWidget(QDMNodeContentWidget):
     def initUI(self):
 
         self.token = self.create_line_edit("Token")
+        self.return_type = self.create_combo_box(["latent", "pil"], "Return Type")
         self.scheduler_name = self.create_combo_box(scheduler_type_values, "Scheduler")
 
         self.prompt = self.create_text_edit("Prompt")
@@ -53,19 +54,20 @@ class DiffBaseXLNode(AiNode):
     category = "aiNodes Base/WIP Experimental"
     NodeContent_class = DiffBaseXLWidget
     dim = (340, 800)
-    output_data_ports = [0, 1]
-    exec_port = 2
+    output_data_ports = [0, 1, 2]
+    exec_port = 3
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[4,1], outputs=[4,5,1])
-        self.path = "nichijoufan777/stable-diffusion-xl-base-0.9"
+        super().__init__(scene, inputs=[4,1], outputs=[4,5,2,1])
+        self.path = "stabilityai/stable-diffusion-xl-base-0.9"
         self.pipe = None
     def evalImplementation_thread(self, index=0):
-
+        tensor = None
+        return_latent = None
         token = self.content.token.text()
 
         assert token != "", "Token must be a valid HF Token string"
-        subprocess.call(["pip", "install", "git+https://github.com/patrickvonplaten/invisible-watermark.git@remove_onnxruntime_depedency"])
+        #subprocess.call(["pip", "install", "git+https://github.com/patrickvonplaten/invisible-watermark.git@remove_onnxruntime_depedency"])
 
         if not self.pipe:
             self.pipe = self.getInputData(0)
@@ -92,6 +94,8 @@ class DiffBaseXLNode(AiNode):
         original_size = (self.content.original_width.value(), self.content.original_height.value())
         target_size = (self.content.target_width.value(), self.content.target_height.value())
 
+        return_type = self.content.return_type.currentText()
+
         image = self.pipe(prompt = prompt,
                     height = height,
                     width = width,
@@ -103,14 +107,18 @@ class DiffBaseXLNode(AiNode):
                     latents = latents,
                     guidance_rescale=guidance_rescale,
                     original_size=original_size,
-                    target_size=target_size).images[0]
+                    target_size=target_size,
+                    output_type=return_type).images[0]
 
-        tensor = pil2tensor(image)
 
         self.pipe.to("cpu")
         torch_gc()
+        if return_type == "pil":
+            tensor = pil2tensor(image)
+            return [self.pipe, [tensor], [None]]
+        else:
+            return [self.pipe, [None], [image]]
 
-        return [self.pipe, [tensor]]
 
     def remove(self):
         if self.pipe is not None:
