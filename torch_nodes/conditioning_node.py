@@ -250,9 +250,14 @@ class ConditioningNode(AiNode):
                     clip.layer_idx = clip_skip
                     clip.clip_layer(clip_skip)
                     self.clip_skip = clip_skip
-                c = clip.encode(prompt)
-                uc = {}
-                return {"conds":[[c, uc]]}
+
+                tokens = clip.tokenize(prompt)
+                cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+                return {"conds":[[cond, {"pooled_output": pooled}]]}
+
+                # c = clip.encode(prompt)
+                # uc = {}
+                # return {"conds":[[c, uc]]}
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):

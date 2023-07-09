@@ -239,7 +239,7 @@ class LoRAHookInjector(object):
         container.remove_from_hooks(self.hooks)
 
 
-def install_lora_hook(pipe: DiffusionPipeline):
+def install_lora_hook(pipe):
     """Install LoRAHook to the pipe."""
     assert not hasattr(pipe, "lora_injector")
     assert not hasattr(pipe, "apply_lora")

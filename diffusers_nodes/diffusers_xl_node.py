@@ -72,7 +72,7 @@ class DiffBaseXLNode(AiNode):
         if not self.pipe:
             self.pipe = self.getInputData(0)
             if not self.pipe:
-                self.pipe = DiffusionPipeline.from_pretrained(self.path, torch_dtype=torch.float16, safety_checker=None, requires_safety_checker=False, use_auth_token=token)
+                self.pipe = StableDiffusionXLPipeline.from_pretrained(self.path, torch_dtype=torch.float16, safety_checker=None, requires_safety_checker=False, use_auth_token=token)
 
         self.pipe.to("cuda")
         self.pipe.watermark.apply_watermark = dont_apply_watermark

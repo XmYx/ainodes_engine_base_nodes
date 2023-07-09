@@ -74,7 +74,63 @@ class ModelLoader(torch.nn.Module):
         super().__init__()
         self.device = gs.device
 
+    def load_checkpoint_guess_config(self, ckpt_path, output_vae=True, output_clip=True, output_clipvision=False,
+                                     embedding_directory=None, style=""):
+        from comfy.sd import ModelPatcher, load_model_weights, CLIP, VAE
+        from comfy.utils import load_torch_file
+        from comfy import model_detection, clip_vision, model_management
+        from comfy.model_management import should_use_fp16
+        from comfy.sd import calculate_parameters, VAE, load_model_weights, CLIP
+        from comfy.utils import load_torch_file
+        ckpt_path = os.path.join(gs.checkpoints, ckpt_path)
+        sd = load_torch_file(ckpt_path)
+        sd_keys = sd.keys()
+        clip = None
+        clipvision = None
+        vae = None
+        model = None
+        clip_target = None
 
+        parameters = calculate_parameters(sd, "model.diffusion_model.")
+        fp16 = should_use_fp16(model_params=parameters)
+
+        class WeightsLoader(torch.nn.Module):
+            pass
+
+        model_config = model_detection.model_config_from_unet(sd, "model.diffusion_model.", fp16)
+        if model_config is None:
+            raise RuntimeError("ERROR: Could not detect model type of: {}".format(ckpt_path))
+
+        if model_config.clip_vision_prefix is not None:
+            if output_clipvision:
+                clipvision = clip_vision.load_clipvision_from_sd(sd, model_config.clip_vision_prefix, True)
+
+        offload_device = model_management.unet_offload_device()
+        model = model_config.get_model(sd, "model.diffusion_model.")
+        model = model.to(offload_device)
+        model.load_model_weights(sd, "model.diffusion_model.")
+
+        if output_vae:
+            vae = VAE()
+            w = WeightsLoader()
+            w.first_stage_model = vae.first_stage_model
+            load_model_weights(w, sd)
+
+        if output_clip:
+            w = WeightsLoader()
+            clip_target = model_config.clip_target()
+            clip = CLIP(clip_target, embedding_directory=embedding_directory)
+            w.cond_stage_model = clip.cond_stage_model
+            sd = model_config.process_clip_state_dict(sd)
+            load_model_weights(w, sd)
+
+        left_over = sd.keys()
+        if len(left_over) > 0:
+            print("left over keys:", left_over)
+        if style is not "None":
+            apply_optimizations(style)
+
+        return ModelPatcher(model, load_device=model_management.get_torch_device(), offload_device=offload_device), clip, vae, clipvision
 
     def load_model(self, file=None, config_name=None, inpaint=False, verbose=False, style="sdp"):
         from comfy.sd import ModelPatcher, load_model_weights, CLIP, VAE

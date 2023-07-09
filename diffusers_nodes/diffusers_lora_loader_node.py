@@ -7,6 +7,7 @@ from diffusers import StableDiffusionPipeline
 
 #MANDATORY
 OP_NODE_DIFF_LOADLORA = get_next_opcode()
+from ainodes_frontend import singleton as gs
 
 #NODE WIDGET
 class DiffusersLoraWidget(QDMNodeContentWidget):
@@ -49,9 +50,9 @@ class DiffusersControlNetNode(AiNode):
         pipe = self.getInputData(0)
 
         assert pipe is not None, "No Pipe found"
-        assert isinstance(pipe, StableDiffusionPipeline), "Can only work with a diffusers pipeline"
-
-        pipe = self.load_lora(pipe)
+        #assert isinstance(pipe, StableDiffusionPipeline), "Can only work with a diffusers pipeline"
+        pipe.load_lora_weights("models/loras/", weight_name="last.safetensors")
+        #pipe = self.load_lora(pipe)
         return [pipe]
 
     def load_lora(self, pipe):

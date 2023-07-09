@@ -5,7 +5,6 @@ from qtpy.QtCore import QObject, Signal
 from qtpy import QtWidgets, QtCore, QtGui
 
 from ..ainodes_backend.hash import sha256
-from ..ainodes_backend.lora_loader import load_lora_for_models
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -85,6 +84,7 @@ class LoraLoaderNode(AiNode):
         self.content.eval_signal.connect(self.evalImplementation)
         self.current_lora = ""
         self.apihandler = APIHandler()
+        self.loaded_lora = None
 
     def evalImplementation_thread(self, index=0):
 
@@ -112,11 +112,11 @@ class LoraLoaderNode(AiNode):
                 }
 
         if self.values != data or self.current_lora != file:
-            print("LOADING LORA")
-            if not force:
-                unet.unpatch_model()
-                clip.patcher.unpatch_model()
-            new_unet, new_clip = self.load_lora_to_ckpt(file, unet, clip)
+            # if not force:
+            #     unet.unpatch_model()
+            #     clip.patcher.unpatch_model()
+            # new_unet, new_clip = self.load_lora_to_ckpt(file, unet, clip)
+            new_unet, new_clip = self.load_lora(unet, clip, file, strength_model, strength_clip)
             self.current_lora = file
             self.values = data
 
@@ -146,6 +146,27 @@ class LoraLoaderNode(AiNode):
 
     def onInputChanged(self, socket=None):
         pass
+    def load_lora(self, model, clip, lora_name, strength_model, strength_clip):
+        from comfy.sd import load_lora_for_models
+        from comfy.utils import load_torch_file
+
+        if strength_model == 0 and strength_clip == 0:
+            return model, clip
+
+        lora_path = os.path.join(gs.loras, lora_name)
+        lora = None
+        if self.loaded_lora is not None:
+            if self.loaded_lora[0] == lora_path:
+                lora = self.loaded_lora[1]
+            else:
+                del self.loaded_lora
+
+        if lora is None:
+            lora = load_torch_file(lora_path, safe_load=True)
+            self.loaded_lora = (lora_path, lora)
+
+        model_lora, clip_lora = load_lora_for_models(model, clip, lora, strength_model, strength_clip)
+        return model_lora, clip_lora
 
     def load_lora_to_ckpt(self, lora_name, unet, clip):
         lora_path = os.path.join(gs.loras, lora_name)

@@ -32,11 +32,11 @@ class TorchLoaderWidget(QDMNodeContentWidget):
             print(f"TORCH LOADER NODE: No model file found at {os.getcwd()}/models/checkpoints,")
             print(f"TORCH LOADER NODE: please download your favorite ckpt before Evaluating this node.")
 
-        config_folder = "models/configs"
-        config_files = [f for f in os.listdir(config_folder) if f.endswith((".yaml"))]
-        config_files = sorted(config_files, key=str.lower)
-        self.config_dropdown = self.create_combo_box(config_files, "Config:")
-        self.config_dropdown.setCurrentText("v1-inference_fp16.yaml")
+        # config_folder = "models/configs"
+        # config_files = [f for f in os.listdir(config_folder) if f.endswith((".yaml"))]
+        # config_files = sorted(config_files, key=str.lower)
+        # self.config_dropdown = self.create_combo_box(config_files, "Config:")
+        # self.config_dropdown.setCurrentText("v1-inference_fp16.yaml")
 
         vae_folder = gs.vae
         vae_files = [f for f in os.listdir(vae_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
@@ -135,7 +135,7 @@ class TorchLoaderNode(AiNode):
     def evalImplementation_thread(self, index=0):
         self.busy = True
         model_name = self.content.dropdown.currentText()
-        config_name = self.content.config_dropdown.currentText()
+        # config_name = self.content.config_dropdown.currentText()
 
         #print(gs.loaded_sd, model_name)
 
@@ -144,7 +144,8 @@ class TorchLoaderNode(AiNode):
         if self.loaded_sd != model_name or self.content.force_reload.isChecked() == True:
             self.clean_sd()
             #gs.loaded_hypernetworks.clear()
-            self.model, self.clip, self.vae = self.loader.load_model(model_name, config_name, inpaint, style=self.content.optimization.currentText())
+            # self.model, self.clip, self.vae, self.clipvision = self.loader.load_model(model_name, config_name, inpaint, style=self.content.optimization.currentText())
+            self.model, self.clip, self.vae, self.clipvision = self.loader.load_checkpoint_guess_config(model_name, style=self.content.optimization.currentText())
             self.loaded_sd = model_name
         if self.content.vae_dropdown.currentText() != 'default':
             model = self.content.vae_dropdown.currentText()

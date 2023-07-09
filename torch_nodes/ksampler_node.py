@@ -4,7 +4,7 @@ import secrets
 import numpy as np
 from einops import rearrange
 
-from ..ainodes_backend import common_ksampler, tensor_image_to_pixmap, get_torch_device
+from ..ainodes_backend import tensor_image_to_pixmap, get_torch_device
 
 import torch
 from PIL import Image
@@ -96,6 +96,8 @@ class KSamplerNode(AiNode):
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
+        from src.ComfyUI.nodes import common_ksampler
+
         #pass
         # Add a task to the task queue
         cond_list = [self.getInputData(6)]
@@ -201,31 +203,49 @@ class KSamplerNode(AiNode):
                         self.denoise = self.content.denoise.value()
                     else:
                         self.denoise = 1.0
-                sample = common_ksampler(device=self.device,
+                latent_dict = {}
+                latent_dict["samples"] = latent
+                sample = common_ksampler(model=unet,
                                          seed=self.seed,
                                          steps=self.steps,
-                                         start_step=self.start_step,
-                                         last_step=self.last_step,
                                          cfg=self.cfg,
                                          sampler_name=self.sampler_name,
                                          scheduler=self.scheduler,
                                          positive=cond,
                                          negative=n_cond,
-                                         latent=latent,
-                                         disable_noise=self.content.disable_noise.isChecked(),
-                                         force_full_denoise=self.content.force_denoise.isChecked(),
+                                         latent=latent_dict,
                                          denoise=self.denoise,
-                                         callback=self.callback,
-                                         noise_mask=noise_mask,
-                                         model=unet,
-                                         control_model=control_model)
+                                         disable_noise=self.content.disable_noise.isChecked(),
+                                         start_step=self.start_step,
+                                         last_step=self.last_step,
+                                         force_full_denoise=self.content.force_denoise.isChecked())
+
+                # sample = common_ksampler(device=self.device,
+                #                          seed=self.seed,
+                #                          steps=self.steps,
+                #                          start_step=self.start_step,
+                #                          last_step=self.last_step,
+                #                          cfg=self.cfg,
+                #                          sampler_name=self.sampler_name,
+                #                          scheduler=self.scheduler,
+                #                          positive=cond,
+                #                          negative=n_cond,
+                #                          latent=latent,
+                #                          disable_noise=self.content.disable_noise.isChecked(),
+                #                          force_full_denoise=self.content.force_denoise.isChecked(),
+                #                          denoise=self.denoise,
+                #                          callback=self.callback,
+                #                          noise_mask=noise_mask,
+                #                          model=unet,
+                #                          control_model=control_model)
+                print("SAMPLE DONE", sample)
 
                 for c in cond:
                     if "control" in c[1]:
                         del c[1]["control"]
 
-                cpu_s = sample
-                x_sample = self.decode_sample(sample, vae)
+                cpu_s = sample[0]
+                x_sample = self.decode_sample(sample[0]["samples"], vae)
 
                 #return_samples.append(cpu_s)
 
