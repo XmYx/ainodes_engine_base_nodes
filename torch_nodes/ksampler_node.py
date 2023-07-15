@@ -248,7 +248,7 @@ class KSamplerNode(AiNode):
                 #
                 # cpu_s = sample[0]
                 x_sample = self.decode_sample(sample[0]["samples"], vae)
-                return_samples.append(sample[0]["samples"].detach())
+                return_samples.append(sample[0]["samples"].clone().detach())
 
                 #return_samples.append(cpu_s)
 
@@ -315,6 +315,9 @@ class KSamplerNode(AiNode):
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result[0])
+
+        print("result latents", len(result[1]))
+
         self.setOutput(1, result[1])
 
 
