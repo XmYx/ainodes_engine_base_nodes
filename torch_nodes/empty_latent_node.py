@@ -99,8 +99,9 @@ class LatentNode(AiNode):
                     # image = torch.from_numpy(image)
                     # image = image.detach().cpu()
                     # torch_gc()
-
-                    latent = vae.encode(image)
+                    img = image.movedim(-1,1).detach().clone()
+                    print("img", img.shape)
+                    latent = vae.encode_tiled_(vae, img)
                     latent = latent.to("cpu")
                     image = image.detach().to("cpu")
                     del image

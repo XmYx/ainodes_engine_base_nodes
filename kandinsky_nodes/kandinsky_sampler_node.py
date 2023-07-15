@@ -85,7 +85,7 @@ class KandinskySamplerNode(AiNode):
             if index == 0:
                 decoder.to("cuda")
             if input_image is not None:
-                args["image"] = tensor2pil(input_image)
+                args["image"] = tensor2pil(input_image[0])
             if use_feedback and len(images) > 0:
                 decoder = self.getInputData(3)
                 args["image"] = tensor2pil(images[len(images) - 1])

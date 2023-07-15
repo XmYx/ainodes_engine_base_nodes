@@ -237,7 +237,7 @@ class KSamplerNode(AiNode):
                 #                          noise_mask=noise_mask,
                 #                          model=unet,
                 #                          control_model=control_model)
-                print("SAMPLE DONE", sample)
+                #print("K SAMPLE DONE", sample.shape)
 
                 for c in cond:
                     if "control" in c[1]:
@@ -247,6 +247,7 @@ class KSamplerNode(AiNode):
                 #
                 # cpu_s = sample[0]
                 x_sample = self.decode_sample(sample[0]["samples"], vae)
+                return_samples.append(sample[0]["samples"].detach())
 
                 #return_samples.append(cpu_s)
 
