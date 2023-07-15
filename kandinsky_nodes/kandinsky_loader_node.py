@@ -26,18 +26,18 @@ class KandinskyLoaderNode(AiNode):
     category = "aiNodes Base/Kandinsky"
     NodeContent_class = KandinskyLoaderWidget
     dim = (340, 180)
-    output_data_ports = [0,1]
-    exec_port = 2
+    output_data_ports = [0,1,2]
+    exec_port = 3
 
-    custom_output_socket_name = ["PRIOR", "DECODER", "EXEC"]
+    custom_output_socket_name = ["PRIOR", "DECODER", "IMG2IMG", "EXEC"]
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[1], outputs=[4,4,1])
+        super().__init__(scene, inputs=[1], outputs=[4,4,4,1])
         self.prior = None
         self.decoder = None
 
     def evalImplementation_thread(self, index=0):
-        from diffusers import KandinskyV22PriorPipeline, KandinskyV22Pipeline
+        from diffusers import KandinskyV22PriorPipeline, KandinskyV22Pipeline, KandinskyV22Img2ImgPipeline
 
         if self.prior == None:
 
@@ -53,5 +53,8 @@ class KandinskyLoaderNode(AiNode):
             #                                              torch_dtype=torch.float16)
             self.decoder = KandinskyV22Pipeline.from_pretrained("kandinsky-community/kandinsky-2-2-decoder",
                                                         torch_dtype=torch.float16)
+            self.img2img_decoder = KandinskyV22Img2ImgPipeline(unet = self.decoder.unet,
+                                                                scheduler = self.decoder.scheduler,
+                                                                movq = self.decoder.movq)
 
-        return [self.prior, self.decoder]
+            return [self.prior, self.decoder, self.img2img_decoder]
