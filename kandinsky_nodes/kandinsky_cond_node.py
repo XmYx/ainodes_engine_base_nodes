@@ -50,4 +50,4 @@ class KandinskyCondNode(AiNode):
         prior.to("cuda")
         image_embeds, negative_image_embeds = prior(prompt, n_prompt, guidance_scale=scale).to_tuple()
         prior.to("cpu")
-        return [image_embeds, negative_image_embeds]
+        return [[image_embeds], [negative_image_embeds]]

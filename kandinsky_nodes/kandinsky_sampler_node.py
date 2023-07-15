@@ -48,23 +48,31 @@ class KandinskySamplerNode(AiNode):
         decoder = self.getInputData(0)
         image_embeds = self.getInputData(1)
         negative_image_embeds = self.getInputData(2)
+        images = []
         assert decoder is not None, "No DECODER model found"
+        assert len(image_embeds) == len(negative_image_embeds), "Make sure to pass the same amount of positive and negative conditionings"
+        total_imgs = len(image_embeds)
+        index = 0
+        for image_embed, negative_image_embed in zip(image_embeds, negative_image_embeds):
+            num_steps = self.content.steps.value()
+            guidance_scale = self.content.cfg_scale.value()
+            h = self.content.h_param.value()
+            w = self.content.w_param.value()
+            self.seed = self.content.seed.text()
+            try:
+                self.seed = int(self.seed)
+            except:
+                self.seed = get_fixed_seed('')
+            generator = torch.Generator(gs.device.type).manual_seed(self.seed)
 
-        num_steps = self.content.steps.value()
-        guidance_scale = self.content.cfg_scale.value()
-        h = self.content.h_param.value()
-        w = self.content.w_param.value()
-        self.seed = self.content.seed.text()
-        try:
-            self.seed = int(self.seed)
-        except:
-            self.seed = get_fixed_seed('')
-        generator = torch.Generator(gs.device.type).manual_seed(self.seed)
 
+            #scale = self.content.guidance_scale.value()
+            if index == 0:
+                decoder.to("cuda")
 
-        #scale = self.content.guidance_scale.value()
-        decoder.to("cuda")
-
-        image = decoder(image_embeds=image_embeds, negative_image_embeds=negative_image_embeds, height=h, width=w, generator=generator, num_inference_steps=num_steps, guidance_scale=guidance_scale).images[0]
-        decoder.to("cpu")
-        return [pil2tensor(image)]
+            image = decoder(image_embeds=image_embed, negative_image_embeds=negative_image_embed, height=h, width=w, generator=generator, num_inference_steps=num_steps, guidance_scale=guidance_scale).images[0]
+            if index == total_imgs:
+                decoder.to("cpu")
+            images.append(pil2tensor(image))
+            index += 1
+        return [images]
