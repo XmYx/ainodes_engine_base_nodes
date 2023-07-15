@@ -12,7 +12,7 @@ class AddNoiseWidget(QDMNodeContentWidget):
         self.noise_type = self.create_combo_box(['gaussian', 'salt_pepper', 'poisson'], "Noise Type")
         self.noise_amount = self.create_double_spin_box(label_text="Noise Amount", min_val=0.0, max_val=10.0)
 
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_ADD_NOISE)
 class AddNoiseNode(AiNode):

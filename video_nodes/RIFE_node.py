@@ -17,7 +17,7 @@ from ainodes_frontend import singleton as gs
 class RIFEWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
     def create_widgets(self):
         self.text_label = self.create_label("Image Operators")
         self.exp = self.create_spin_box("exp", 1, 1000, 5, 1)
@@ -35,6 +35,9 @@ class RIFENode(AiNode):
     op_title = "RIFE"
     content_label_objname = "rife_node"
     category = "aiNodes Base/Interpolation"
+    dim = (220, 320)
+    NodeContent_class = RIFEWidget
+
 
 
     def __init__(self, scene):
@@ -48,16 +51,16 @@ class RIFENode(AiNode):
         self.iterating = False
         pass
 
-    def initInnerClasses(self):
-        self.content = RIFEWidget(self)
-        self.grNode = CalcGraphicsNode(self)
-        self.grNode.icon = self.icon
-        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
-
-        self.output_socket_name = ["EXEC", "EXEC/F", "IMAGE"]
-        self.input_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
-
-        self.grNode.height = 220
+    # def initInnerClasses(self):
+    #     self.content = RIFEWidget(self)
+    #     self.grNode = CalcGraphicsNode(self)
+    #     self.grNode.icon = self.icon
+    #     self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
+    #
+    #     self.output_socket_name = ["EXEC", "EXEC/F", "IMAGE"]
+    #     self.input_socket_name = ["EXEC", "IMAGE1", "IMAGE2"]
+    #
+    #     #self.grNode.height = 220
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):

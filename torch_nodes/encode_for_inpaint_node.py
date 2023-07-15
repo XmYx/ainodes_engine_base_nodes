@@ -16,7 +16,7 @@ OP_NODE_ENCODE_INPAINT = get_next_opcode()
 class InpaintEncodeWidget(QDMNodeContentWidget):
     def initUI(self):
         self.channel = self.create_combo_box(["R", "G", "B", "A"], "Color Channel")
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_ENCODE_INPAINT)
 class InpaintEncodeNode(AiNode):

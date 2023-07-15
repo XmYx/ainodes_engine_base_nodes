@@ -52,7 +52,7 @@ image_ops_valid_methods = [
 class ImageOpsWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
         self.dropdown.currentIndexChanged.connect(self.dropdownChanged)
         self.height_value.valueChanged.connect(self.calculate_image_ratio)
         self.width_value.valueChanged.connect(self.calculate_image_ratio)

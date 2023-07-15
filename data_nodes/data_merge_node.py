@@ -7,7 +7,7 @@ from ainodes_frontend import singleton as gs
 OP_NODE_DATA_MERGE = get_next_opcode()
 class DataMergeWidget(QDMNodeContentWidget):
     def initUI(self):
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_DATA_MERGE)
 class DataMergeNode(AiNode):

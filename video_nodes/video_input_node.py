@@ -17,7 +17,7 @@ OP_NODE_VIDEO_INPUT = get_next_opcode()
 class VideoInputWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
     def create_widgets(self):
         self.video = VideoPlayer()
         self.current_frame = 0

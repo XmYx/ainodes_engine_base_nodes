@@ -15,7 +15,7 @@ OP_NODE_MATTE = get_next_opcode()
 class MatteWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 
 
