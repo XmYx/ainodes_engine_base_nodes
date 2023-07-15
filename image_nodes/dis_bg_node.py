@@ -10,7 +10,7 @@ OP_NODE_DIS = get_next_opcode()
 class DISBGWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_DIS)
 class DISBGNode(AiNode):

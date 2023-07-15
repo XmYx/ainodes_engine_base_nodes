@@ -9,7 +9,7 @@ from ainodes_frontend import singleton as gs
 OP_NODE_IMAGE_PASTE = get_next_opcode()
 class ImagePasteWidget(QDMNodeContentWidget):
     def initUI(self):
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_IMAGE_PASTE)
 class DataMergeNode(AiNode):

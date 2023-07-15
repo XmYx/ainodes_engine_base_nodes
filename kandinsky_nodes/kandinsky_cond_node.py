@@ -12,7 +12,7 @@ class KandinskyCondWidget(QDMNodeContentWidget):
         self.n_prompt = self.create_text_edit("Negative Prompt")
         self.guidance_scale = self.create_double_spin_box("Guidance Scale", min_val=0.1, max_val=25.0, default_val=1.0)
 
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_KANDINSKY_COND)
 class KandinskyCondNode(AiNode):

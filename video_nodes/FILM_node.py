@@ -17,12 +17,8 @@ from ainodes_frontend import singleton as gs
 class FILMWidget(QDMNodeContentWidget):
     def initUI(self):
         # Create a label to display the image
-        self.text_label = QtWidgets.QLabel("FILM Interpolation:")
         self.film = self.create_spin_box("FRAMES", 1, 4096, 10, 1)
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(15,15,15,15)
-        layout.addWidget(self.film)
-        self.setLayout(layout)
+        self.create_main_layout(grid=1)
 
 
 

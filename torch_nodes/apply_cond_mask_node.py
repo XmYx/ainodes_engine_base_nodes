@@ -13,7 +13,7 @@ OP_NODE_COND_MASK = get_next_opcode()
 class CondMaskWidget(QDMNodeContentWidget):
     def initUI(self):
         self.strength = self.create_double_spin_box("Strength")
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_COND_MASK)
 class CondMaskNode(AiNode):

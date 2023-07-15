@@ -19,7 +19,7 @@ class KandinskySamplerWidget(QDMNodeContentWidget):
         self.w_param = self.create_spin_box("Width:", 64, 2048, 512, 64)
         self.h_param = self.create_spin_box("Height:", 64, 2048, 512, 64)
         self.use_feedback = self.create_check_box("Image Feedback")
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_KANDINSKY_SAMPLER)
 class KandinskySamplerNode(AiNode):

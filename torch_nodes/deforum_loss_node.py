@@ -38,7 +38,7 @@ class DeforumLossWidget(QDMNodeContentWidget):
     progress_signal = QtCore.Signal(int)
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
     def create_widgets(self):
 
         self.seed = self.create_line_edit("Seed:")

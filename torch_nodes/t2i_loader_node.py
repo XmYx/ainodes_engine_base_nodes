@@ -15,7 +15,7 @@ OP_NODE_T2I_LOADER = get_next_opcode()
 class T2ILoaderWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
     def create_widgets(self):
         checkpoint_folder = gs.t2i_adapter
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', ".safetensors"))]

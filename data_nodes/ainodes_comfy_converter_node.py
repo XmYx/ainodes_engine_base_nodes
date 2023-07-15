@@ -8,7 +8,7 @@ OP_NODE_CONVERT = get_next_opcode()
 class ConvertWidget(QDMNodeContentWidget):
     def initUI(self):
         self.select_direction = self.create_combo_box(["aiNodes-Comfy", "Comfy-aiNodes"], "direction")
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_CONVERT)
 class ConvertNode(AiNode):

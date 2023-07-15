@@ -34,7 +34,7 @@ class DiffusersLoaderWidget(QDMNodeContentWidget):
         self.pipe_type = self.create_combo_box(pipes.keys(), "Pipeline Type")
         self.reload = self.create_check_box("Reload")
         self.scheduler_name = self.create_combo_box(scheduler_type_values, "Scheduler")
-        self.create_main_layout()
+        self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_DIFF_LOADER)
 class DataMergeNode(AiNode):
