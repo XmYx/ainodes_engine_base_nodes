@@ -3,18 +3,18 @@ from typing import Union, Optional, Dict, Any, Tuple, List
 
 import torch
 from diffusers.models.controlnet import ControlNetOutput
+from transformers import CLIPTextModel
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc, \
-    get_torch_device
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc, \
+    get_torch_device, tensor2pil, pil2tensor
 from ainodes_frontend import singleton as gs
 
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler
-from diffusers import StableDiffusionControlNetImg2ImgPipeline
 
-from custom_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
+from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
     diffusers_indexed, scheduler_type_values, get_scheduler, SchedulerType
 
 #MANDATORY
@@ -29,9 +29,9 @@ class DiffusersImg2ImgPipeLineWidget(QDMNodeContentWidget):
         self.reload = self.create_check_box("Reload")
         self.prompt = self.create_text_edit("Prompt")
         self.n_prompt = self.create_text_edit("Negative Prompt")
-        self.height_val = self.create_spin_box("Height", min_val=64, max_val=4096, default_val=512, step_value=64)
-        self.width_val = self.create_spin_box("Width", min_val=64, max_val=4096, default_val=512, step_value=64)
-        self.steps = self.create_spin_box("Steps", min_val=1, max_val=4096, default_val=25, step_value=1)
+        self.height_val = self.create_spin_box("Height", min_val=64, max_val=4096, default_val=512, step=64)
+        self.width_val = self.create_spin_box("Width", min_val=64, max_val=4096, default_val=512, step=64)
+        self.steps = self.create_spin_box("Steps", min_val=1, max_val=4096, default_val=25, step=1)
         self.scale = self.create_double_spin_box("Scale", min_val=0.01, max_val=25.00, default_val=7.5, step=0.01)
         self.eta = self.create_double_spin_box("Eta", min_val=0.00, max_val=1.00, default_val=1.0, step=0.01)
         self.strength = self.create_double_spin_box("Strength", min_val=0.00, max_val=1.00, default_val=1.0, step=0.01)
@@ -48,7 +48,7 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
     op_code = OP_NODE_DIFF_IMG2IMG_PIPELINE
     op_title = "Diffusers - StableDiffusionImg2ImgControlNet"
     content_label_objname = "diffusers_img2imgcnet_node"
-    category = "Diffusers"
+    category = "aiNodes Base/Diffusers"
     NodeContent_class = DiffusersImg2ImgPipeLineWidget
     dim = (340, 700)
     output_data_ports = [0]
@@ -67,7 +67,7 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
         data = self.getInputData(0)
         images = self.getInputData(1)
 
-        image = pixmap_to_pil_image(images[0])
+        image = tensor2pil(images[0])
 
         control_images = []
         controlnets = []
@@ -100,9 +100,17 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
         #if reload or not self.pipe:
 
         if self.content.reload.isChecked() or not self.pipe:
+            text_encoder = CLIPTextModel.from_pretrained(model_name, subfolder="text_encoder",
+                                                         num_hidden_layers=11, torch_dtype=torch.float16)
+            from diffusers import StableDiffusionControlNetImg2ImgPipeline
+
             self.pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-                model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None,
+                model_name, text_encoder=text_encoder, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None,
             ).to(gs.device)
+
+            # self.load_lora()
+
+        #self.pipe.text_encoder.num_hidden_layer = 11
 
         if hasattr(self.pipe, "controlnet"):
             self.pipe.controlnet.forward = replace_forward_with(self.pipe.controlnet, multiForward)
@@ -125,6 +133,7 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
         generator = torch.Generator(gs.device).manual_seed(seed)
         latents = None
 
+
         image = self.pipe(prompt = prompt,
                     image = image,
                     control_image = control_images,
@@ -140,13 +149,14 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
                     controlnet_conditioning_scale = cnet_scales,
                     guess_mode = guess_mode).images[0]
 
-        pixmap = pil_image_to_pixmap(image)
-        print(pixmap)
+        pixmap = pil2tensor(image)
         return [pixmap]
-
+    def load_lora(self):
+        from .diffusers_lora_loader import install_lora_hook
+        install_lora_hook(self.pipe)
+        lora1 = self.pipe.apply_lora("models/loras/add_detail.safetensors", alpha=0.8)
     def onWorkerFinished(self, result):
         self.busy = False
-        print(result)
 
         self.setOutput(0, result)
         self.executeChild(2)

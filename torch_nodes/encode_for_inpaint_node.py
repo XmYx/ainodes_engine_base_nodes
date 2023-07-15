@@ -10,7 +10,7 @@ from ainodes_frontend.base import AiNode
 from ainodes_frontend.base.settings import handle_ainodes_exception
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_tensor
 
 OP_NODE_ENCODE_INPAINT = get_next_opcode()
 class InpaintEncodeWidget(QDMNodeContentWidget):
@@ -24,7 +24,7 @@ class InpaintEncodeNode(AiNode):
     op_code = OP_NODE_ENCODE_INPAINT
     op_title = "Encode for Inpaint"
     content_label_objname = "inpaint_encode_node"
-    category = "Latent"
+    category = "aiNodes Base/Latent"
     NodeContent_class = InpaintEncodeWidget
     dim = (340, 180)
     output_data_ports = [0, 1]
@@ -38,8 +38,8 @@ class InpaintEncodeNode(AiNode):
         masks = self.getInputData(0)
         images = self.getInputData(1)
 
-        image = pixmap_to_pil_image(images[0])
-        mask = pixmap_to_pil_image(masks[0])
+        image = pixmap_to_tensor(images[0])
+        mask = pixmap_to_tensor(masks[0])
         try:
             latent, noise_mask = self.encode(image, mask)
 

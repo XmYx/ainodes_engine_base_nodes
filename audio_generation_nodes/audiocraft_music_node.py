@@ -23,7 +23,7 @@ import torch
 from audiocraft.data.audio import audio_write
 import typing as tp
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
 
 #MANDATORY
 OP_NODE_AUDIOCRAFT = get_next_opcode()
@@ -134,7 +134,7 @@ class AudioCraftNode(AiNode):
     op_code = OP_NODE_AUDIOCRAFT
     op_title = "Audiocraft Music Node"
     content_label_objname = "audiocraft_node"
-    category = "Audio Processing"
+    category = "aiNodes Base/Audio Processing"
     NodeContent_class = AudiocraftWidget
     dim = (400, 420)
     output_data_ports = [0]

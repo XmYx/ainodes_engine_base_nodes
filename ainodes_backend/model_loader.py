@@ -11,17 +11,18 @@ import math
 import os
 
 import numpy as np
+import yaml
 from omegaconf import OmegaConf
 from torch.nn.functional import silu
 
 from ldm.models.autoencoder import AutoencoderKL
 from ldm.modules.sub_quadratic_attention import OOM_EXCEPTION
-from . import diffusers_convert
+from . import diffusers_convert, model_base
 from .chainner_models import model_loading
-from .lora_loader import ModelPatcher
+#from .lora_loader import ModelPatcher
 from .sd_optimizations.sd_hijack import apply_optimizations
 from .torch_gc import torch_gc
-from ldm.util import instantiate_from_config, get_free_memory, get_torch_device
+from ldm.util import instantiate_from_config, get_free_memory
 from ainodes_frontend import singleton as gs
 
 from .ESRGAN import model as upscaler
@@ -39,10 +40,12 @@ class UpscalerLoader(torch.nn.Module):
 
     def __init__(self, parent=None):
         super().__init__()
-        self.device = "cuda"
+        self.device = gs.device
         self.loaded_model = None
 
     def load_model(self, file="", name=""):
+        from comfy.utils import load_torch_file
+
         load = None
         if self.loaded_model:
             if self.loaded_model != name:
@@ -57,7 +60,7 @@ class UpscalerLoader(torch.nn.Module):
 
         if load:
             state_dict = load_torch_file(file)
-            gs.models[name] = model_loading.load_state_dict(state_dict).eval().to("cuda")
+            gs.models[name] = model_loading.load_state_dict(state_dict).eval().to(gs.device)
             self.loaded_model = name
 
         return self.loaded_model
@@ -69,19 +72,97 @@ class ModelLoader(torch.nn.Module):
     """
     def __init__(self, parent=None):
         super().__init__()
-        self.device = "cuda"
+        self.device = gs.device
 
+    def load_checkpoint_guess_config(self, ckpt_path, output_vae=True, output_clip=True, output_clipvision=False,
+                                     embedding_directory=None, style=""):
+        from comfy.sd import ModelPatcher, load_model_weights, CLIP, VAE
+        from comfy.utils import load_torch_file
+        from comfy import model_detection, clip_vision, model_management
+        from comfy.model_management import should_use_fp16
+        from comfy.sd import calculate_parameters, VAE, load_model_weights, CLIP
+        from comfy.utils import load_torch_file
+        ckpt_path = os.path.join(gs.checkpoints, ckpt_path)
+        sd = load_torch_file(ckpt_path)
+        sd_keys = sd.keys()
+        clip = None
+        clipvision = None
+        vae = None
+        model = None
+        clip_target = None
 
+        parameters = calculate_parameters(sd, "model.diffusion_model.")
+        fp16 = should_use_fp16(model_params=parameters)
+
+        class WeightsLoader(torch.nn.Module):
+            pass
+
+        model_config = model_detection.model_config_from_unet(sd, "model.diffusion_model.", fp16)
+        if model_config is None:
+            raise RuntimeError("ERROR: Could not detect model type of: {}".format(ckpt_path))
+
+        if model_config.clip_vision_prefix is not None:
+            if output_clipvision:
+                clipvision = clip_vision.load_clipvision_from_sd(sd, model_config.clip_vision_prefix, True)
+
+        offload_device = model_management.unet_offload_device()
+        model = model_config.get_model(sd, "model.diffusion_model.")
+        model = model.to(offload_device)
+        model.load_model_weights(sd, "model.diffusion_model.")
+
+        if output_vae:
+            vae = VAE()
+            w = WeightsLoader()
+            w.first_stage_model = vae.first_stage_model
+            load_model_weights(w, sd)
+
+        if output_clip:
+            w = WeightsLoader()
+            clip_target = model_config.clip_target()
+            clip = CLIP(clip_target, embedding_directory=embedding_directory)
+            w.cond_stage_model = clip.cond_stage_model
+            sd = model_config.process_clip_state_dict(sd)
+            load_model_weights(w, sd)
+
+        left_over = sd.keys()
+        if len(left_over) > 0:
+            print("left over keys:", left_over)
+        if style is not "None":
+            apply_optimizations(style)
+
+        return ModelPatcher(model, load_device=model_management.get_torch_device(), offload_device=offload_device), clip, vae, clipvision
 
     def load_model(self, file=None, config_name=None, inpaint=False, verbose=False, style="sdp"):
+        from comfy.sd import ModelPatcher, load_model_weights, CLIP, VAE
+        from comfy.utils import load_torch_file
+
+        state_dict = None
         ckpt_path = os.path.join(gs.checkpoints, file)
         config_path = os.path.join('models/configs', config_name)
-        config = OmegaConf.load(config_path)
+
+        with open(config_path, 'r') as stream:
+            config = yaml.safe_load(stream)
         model_config_params = config['model']['params']
         clip_config = model_config_params['cond_stage_config']
         scale_factor = model_config_params['scale_factor']
         vae_config = model_config_params['first_stage_config']
 
+        fp16 = False
+        if "unet_config" in model_config_params:
+            if "params" in model_config_params["unet_config"]:
+                unet_config = model_config_params["unet_config"]["params"]
+                if "use_fp16" in unet_config:
+                    fp16 = unet_config["use_fp16"]
+
+        noise_aug_config = None
+        if "noise_aug_config" in model_config_params:
+            noise_aug_config = model_config_params["noise_aug_config"]
+
+        v_prediction = False
+
+        if "parameterization" in model_config_params:
+            if model_config_params["parameterization"] == "v":
+                v_prediction = True
         clip = None
         vae = None
 
@@ -100,27 +181,41 @@ class ModelLoader(torch.nn.Module):
         load_state_dict_to = [w]
         clip.cond_stage_model = w.cond_stage_model
 
-        model = instantiate_from_config(config.model)
-        sd = load_torch_file(ckpt_path)
-        model = load_model_weights(model, sd, verbose=False, load_state_dict_to=load_state_dict_to)
-        model = model.half()
+        # model = instantiate_from_config(config.model)
+        # sd = load_torch_file(ckpt_path)
+        # model = load_model_weights(model, sd, verbose=False, load_state_dict_to=load_state_dict_to)
+        # model = model.half()
+        if config['model']["target"].endswith("LatentInpaintDiffusion"):
+            model = model_base.SDInpaint(unet_config, v_prediction=v_prediction)
+        elif config['model']["target"].endswith("ImageEmbeddingConditionedLatentDiffusion"):
+            model = model_base.SD21UNCLIP(unet_config, noise_aug_config["params"], v_prediction=v_prediction)
+        else:
+            model = model_base.BaseModel(unet_config, v_prediction=v_prediction)
 
+        if state_dict is None:
+            state_dict = load_torch_file(ckpt_path)
+        model = load_model_weights(model, state_dict, verbose=False, load_state_dict_to=load_state_dict_to)
         # enabling benchmark option seems to enable a range of cards to do fp16 when they otherwise can't
         # see https://github.com/AUTOMATIC1111/stable-diffusion-webui/pull/4407
-        if any([torch.cuda.get_device_capability(devid) == (7, 5) for devid in range(0, torch.cuda.device_count())]):
-            torch.backends.cudnn.benchmark = True
 
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
+        # if torch.cuda.is_available():
+        #     if any([torch.cuda.get_device_capability(devid) == (7, 5) for devid in range(0, torch.cuda.device_count())]):
+        #         torch.backends.cudnn.benchmark = True
+        #
+        #     torch.backends.cuda.matmul.allow_tf32 = True
+        #     torch.backends.cudnn.allow_tf32 = True
+        # apply_optimizations(style)
+        if style is not "None":
+            apply_optimizations(style)
 
-        gs.models["sd"] = ModelPatcher(model)
-        gs.models["clip"] = clip
-        gs.models["vae"] = vae
+        return ModelPatcher(model), clip, vae
+        # gs.models["sd"] = ModelPatcher(model)
+        # gs.models["clip"] = clip
+        # gs.models["vae"] = vae
         #print("LOADED")
-        if gs.debug:
-            print(gs.models["sd"],gs.models["clip"],gs.models["vae"])
+        # if gs.debug:
+        #     print(gs.models["sd"],gs.models["clip"],gs.models["vae"])
 
-        apply_optimizations(style)
     def load_model_old(self, file=None, config=None, inpaint=False, verbose=False):
 
         if file not in gs.loaded_models["loaded"]:
@@ -359,12 +454,16 @@ class ModelLoader(torch.nn.Module):
             return
 
     def load_vae(self, file):
+        from comfy.sd import VAE
         path = os.path.join('models/vae', file)
         print("Loading", path)
         #gs.models["sd"].first_stage_model.cpu()
-        gs.models["sd"].first_stage_model = None
-        gs.models["sd"].first_stage_model = VAE(ckpt_path=path)
+        # gs.models["sd"].first_stage_model = None
+        # gs.models["sd"].first_stage_model = VAE(ckpt_path=path)
+        vae = VAE(ckpt_path=path)
         print("VAE Loaded", file)
+        return vae
+
 
 
 # Decodes the image without passing through the upscaler. The resulting image will be the same size as the latent
@@ -391,590 +490,601 @@ def make_linear_decode(model_version, device='cuda:0'):
     return linear_decode
 
 
-class VAE:
-    def __init__(self, ckpt_path=None, scale_factor=0.18215, device=None, config=None):
-        if config is None:
-            #default SD1.x/SD2.x VAE parameters
-            ddconfig = {'double_z': True, 'z_channels': 4, 'resolution': 256, 'in_channels': 3, 'out_ch': 3, 'ch': 128, 'ch_mult': [1, 2, 4, 4], 'num_res_blocks': 2, 'attn_resolutions': [], 'dropout': 0.0}
-            self.first_stage_model = AutoencoderKL(ddconfig, {'target': 'torch.nn.Identity'}, 4, monitor="val/rec_loss")
-        else:
-            self.first_stage_model = AutoencoderKL(**(config['params']))
-        self.first_stage_model = self.first_stage_model.eval()
-        if ckpt_path is not None:
-            sd = load_torch_file(ckpt_path)
-            if 'decoder.up_blocks.0.resnets.0.norm1.weight' in sd.keys(): #diffusers format
-                sd = diffusers_convert.convert_vae_state_dict(sd)
-            self.first_stage_model.load_state_dict(sd, strict=False)
-
-        self.scale_factor = scale_factor
-        if device is None:
-            device = get_torch_device()
-        self.device = device
-
-    def decode_tiled_(self, samples, tile_x=64, tile_y=64, overlap = 16):
-        steps = samples.shape[0] * get_tiled_scale_steps(samples.shape[3], samples.shape[2], tile_x, tile_y, overlap)
-        steps += samples.shape[0] * get_tiled_scale_steps(samples.shape[3], samples.shape[2], tile_x // 2, tile_y * 2, overlap)
-        steps += samples.shape[0] * get_tiled_scale_steps(samples.shape[3], samples.shape[2], tile_x * 2, tile_y // 2, overlap)
-        #pbar = utils.ProgressBar(steps)
-
-        decode_fn = lambda a: (self.first_stage_model.decode(1. / self.scale_factor * a.to(self.device)) + 1.0)
-        output = torch.clamp((
-            (tiled_scale(samples, decode_fn, tile_x // 2, tile_y * 2, overlap, upscale_amount = 8, pbar = None) +
-            tiled_scale(samples, decode_fn, tile_x * 2, tile_y // 2, overlap, upscale_amount = 8, pbar = None) +
-             tiled_scale(samples, decode_fn, tile_x, tile_y, overlap, upscale_amount = 8, pbar = None))
-            / 3.0) / 2.0, min=0.0, max=1.0)
-        return output
-
-    def decode(self, samples_in):
-        #model_management.unload_model()
-        self.first_stage_model = self.first_stage_model.to(self.device)
-        try:
-            free_memory = get_free_memory(self.device)
-            batch_number = int((free_memory * 0.7) / (2562 * samples_in.shape[2] * samples_in.shape[3] * 64))
-            batch_number = max(1, batch_number)
-
-            pixel_samples = torch.empty((samples_in.shape[0], 3, round(samples_in.shape[2] * 8), round(samples_in.shape[3] * 8)), device="cpu")
-            for x in range(0, samples_in.shape[0], batch_number):
-                samples = samples_in[x:x+batch_number].to(self.device)
-                pixel_samples[x:x+batch_number] = torch.clamp((self.first_stage_model.decode(1. / self.scale_factor * samples) + 1.0) / 2.0, min=0.0, max=1.0).cpu()
-        except OOM_EXCEPTION as e:
-            print("Warning: Ran out of memory when regular VAE decoding, retrying with tiled VAE decoding.")
-            pixel_samples = self.decode_tiled_(samples_in)
-
-        self.first_stage_model = self.first_stage_model.cpu()
-        pixel_samples = pixel_samples.cpu().movedim(1,-1)
-        return pixel_samples
-
-    def decode_tiled(self, samples, tile_x=64, tile_y=64, overlap = 16):
-        #model_management.unload_model()
-        self.first_stage_model = self.first_stage_model.to(self.device)
-        output = self.decode_tiled_(samples, tile_x, tile_y, overlap)
-        self.first_stage_model = self.first_stage_model.cpu()
-        return output.movedim(1,-1)
-
-    def encode(self, pixel_samples):
-        #model_management.unload_model()
-        self.first_stage_model = self.first_stage_model.to(self.device)
-        pixel_samples = pixel_samples.movedim(-1,1).to(self.device)
-        samples = self.first_stage_model.encode(2. * pixel_samples - 1.).sample() * self.scale_factor
-        self.first_stage_model = self.first_stage_model.cpu()
-        samples = samples.cpu()
-        return samples
-
-    def encode_tiled(self, pixel_samples, tile_x=512, tile_y=512, overlap = 64):
-        #model_management.unload_model()
-        self.first_stage_model = self.first_stage_model.to(self.device)
-        pixel_samples = pixel_samples.movedim(-1,1).to(self.device)
-
-        steps = pixel_samples.shape[0] * get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2], tile_x, tile_y, overlap)
-        steps += pixel_samples.shape[0] * get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2], tile_x // 2, tile_y * 2, overlap)
-        steps += pixel_samples.shape[0] * get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2], tile_x * 2, tile_y // 2, overlap)
-
-        samples = tiled_scale(pixel_samples, lambda a: self.first_stage_model.encode(2. * a - 1.).sample() * self.scale_factor, tile_x, tile_y, overlap, upscale_amount = (1/8), out_channels=4, pbar=None)
-        samples += tiled_scale(pixel_samples, lambda a: self.first_stage_model.encode(2. * a - 1.).sample() * self.scale_factor, tile_x * 2, tile_y // 2, overlap, upscale_amount = (1/8), out_channels=4, pbar=None)
-        samples += tiled_scale(pixel_samples, lambda a: self.first_stage_model.encode(2. * a - 1.).sample() * self.scale_factor, tile_x // 2, tile_y * 2, overlap, upscale_amount = (1/8), out_channels=4, pbar=None)
-        samples /= 3.0
-        self.first_stage_model = self.first_stage_model.cpu()
-        samples = samples.cpu()
-        return samples
-
-    
-
-class CLIP:
-    def __init__(self, config={}, embedding_directory=None, no_init=False):
-        if no_init:
-            return
-        self.target_clip = config["target"]
-        if "params" in config:
-            params = config["params"]
-        else:
-            params = {}
-
-        if self.target_clip == "ldm.modules.encoders.modules.FrozenOpenCLIPEmbedder":
-            clip = SD2ClipModel
-            tokenizer = SD2Tokenizer
-        elif self.target_clip == "ldm.modules.encoders.modules.FrozenCLIPEmbedder":
-            clip = SD1ClipModel
-            tokenizer = SD1Tokenizer
-
-        self.cond_stage_model = clip(**(params))
-        self.tokenizer = tokenizer(embedding_directory=embedding_directory)
-        self.patcher = ModelPatcher(self.cond_stage_model)
-        self.layer_idx = -1
-
-    def clone(self):
-        n = CLIP(no_init=True)
-        n.target_clip = self.target_clip
-        n.patcher = self.patcher.clone()
-        n.cond_stage_model = self.cond_stage_model
-        n.tokenizer = self.tokenizer
-        n.layer_idx = self.layer_idx
-        return n
-
-    def load_from_state_dict(self, sd):
-        self.cond_stage_model.transformer.load_state_dict(sd, strict=False)
-
-    def add_patches(self, patches, strength=1.0):
-        return self.patcher.add_patches(patches, strength)
-
-    def clip_layer(self, layer_idx):
-        self.layer_idx = layer_idx
-
-    def encode(self, text):
-        self.cond_stage_model.clip_layer(self.layer_idx)
-        tokens = self.tokenizer.tokenize_with_weights(text)
-        try:
-            self.patcher.patch_model()
-            cond = self.cond_stage_model.encode_token_weights(tokens)
-            self.patcher.unpatch_model()
-        except Exception as e:
-            self.patcher.unpatch_model()
-            raise e
-        return cond
-
-
-import os
-
-from transformers import CLIPTokenizer, CLIPTextModel, CLIPTextConfig
-import torch
-
-class ClipTokenWeightEncoderSD1:
-    def encode_token_weights(self, token_weight_pairs):
-        z_empty = self.encode(self.empty_tokens)
-        output = []
-        for x in token_weight_pairs:
-            tokens = [list(map(lambda a: a[0], x))]
-            z = self.encode(tokens)
-            for i in range(len(z)):
-                for j in range(len(z[i])):
-                    weight = x[j][1]
-                    z[i][j] = (z[i][j] - z_empty[0][j]) * weight + z_empty[0][j]
-            output += [z]
-        if (len(output) == 0):
-            return self.encode(self.empty_tokens)
-        return torch.cat(output, dim=-2)
-
-class SD1ClipModel(torch.nn.Module, ClipTokenWeightEncoderSD1):
-    """Uses the CLIP transformer encoder for text (from huggingface)"""
-    LAYERS = [
-        "last",
-        "pooled",
-        "hidden"
-    ]
-    def __init__(self, version="openai/clip-vit-large-patch14", device="cpu", max_length=77,
-                 freeze=True, layer="last", layer_idx=None, textmodel_json_config=None, textmodel_path=None):  # clip-vit-base-patch32
-        super().__init__()
-        assert layer in self.LAYERS
-        if textmodel_path is not None:
-            self.transformer = CLIPTextModel.from_pretrained(textmodel_path)
-        else:
-            if textmodel_json_config is None:
-                textmodel_json_config = os.path.join("models/configs/sd1_clip_config.json")
-            config = CLIPTextConfig.from_json_file(textmodel_json_config)
-            self.transformer = CLIPTextModel(config)
-
-        self.device = device
-        self.max_length = max_length
-        if freeze:
-            self.freeze()
-        self.layer = layer
-        self.layer_idx = None
-        self.empty_tokens = [[49406] + [49407] * 76]
-        if layer == "hidden":
-            assert layer_idx is not None
-            assert abs(layer_idx) <= 12
-            self.clip_layer(layer_idx)
-
-    def freeze(self):
-        self.transformer = self.transformer.eval()
-        #self.train = disabled_train
-        for param in self.parameters():
-            param.requires_grad = False
-
-    def clip_layer(self, layer_idx):
-        if abs(layer_idx) >= 12:
-            self.layer = "last"
-        else:
-            self.layer = "hidden"
-            self.layer_idx = layer_idx
-
-    def set_up_textual_embeddings(self, tokens, current_embeds):
-        out_tokens = []
-        next_new_token = token_dict_size = current_embeds.weight.shape[0]
-        embedding_weights = []
-
-        for x in tokens:
-            tokens_temp = []
-            for y in x:
-                if isinstance(y, int):
-                    tokens_temp += [y]
-                else:
-                    embedding_weights += [y]
-                    tokens_temp += [next_new_token]
-                    next_new_token += 1
-            out_tokens += [tokens_temp]
-        if len(embedding_weights) > 0:
-            new_embedding = torch.nn.Embedding(next_new_token, current_embeds.weight.shape[1])
-            new_embedding.weight[:token_dict_size] = current_embeds.weight[:]
-            n = token_dict_size
-            for x in embedding_weights:
-                new_embedding.weight[n] = x
-                n += 1
-            self.transformer.set_input_embeddings(new_embedding)
-        return out_tokens
-
-    def forward(self, tokens):
-        backup_embeds = self.transformer.get_input_embeddings()
-        tokens = self.set_up_textual_embeddings(tokens, backup_embeds)
-        tokens = torch.LongTensor(tokens).to(self.device)
-        outputs = self.transformer(input_ids=tokens, output_hidden_states=self.layer=="hidden")
-        self.transformer.set_input_embeddings(backup_embeds)
-
-        if self.layer == "last":
-            z = outputs.last_hidden_state
-        elif self.layer == "pooled":
-            z = outputs.pooler_output[:, None, :]
-        else:
-            z = outputs.hidden_states[self.layer_idx]
-            z = self.transformer.text_model.final_layer_norm(z)
-
-        return z
-
-    def encode(self, tokens):
-        return self(tokens)
-
-def parse_parentheses(string):
-    result = []
-    current_item = ""
-    nesting_level = 0
-    for char in string:
-        if char == "(":
-            if nesting_level == 0:
-                if current_item:
-                    result.append(current_item)
-                    current_item = "("
-                else:
-                    current_item = "("
-            else:
-                current_item += char
-            nesting_level += 1
-        elif char == ")":
-            nesting_level -= 1
-            if nesting_level == 0:
-                result.append(current_item + ")")
-                current_item = ""
-            else:
-                current_item += char
-        else:
-            current_item += char
-    if current_item:
-        result.append(current_item)
-    return result
-
-def token_weights(string, current_weight):
-    a = parse_parentheses(string)
-    out = []
-    for x in a:
-        weight = current_weight
-        if len(x) >= 2 and x[-1] == ')' and x[0] == '(':
-            x = x[1:-1]
-            xx = x.rfind(":")
-            weight *= 1.1
-            if xx > 0:
-                try:
-                    weight = float(x[xx+1:])
-                    x = x[:xx]
-                except:
-                    pass
-            out += token_weights(x, weight)
-        else:
-            out += [(x, current_weight)]
-    return out
-
-def escape_important(text):
-    text = text.replace("\\)", "\0\1")
-    text = text.replace("\\(", "\0\2")
-    return text
-
-def unescape_important(text):
-    text = text.replace("\0\1", ")")
-    text = text.replace("\0\2", "(")
-    return text
-
-def load_embed(embedding_name, embedding_directory):
-    embed_path = os.path.join(embedding_directory, embedding_name)
-    if not os.path.isfile(embed_path):
-        extensions = ['.safetensors', '.pt', '.bin']
-        valid_file = None
-        for x in extensions:
-            t = embed_path + x
-            if os.path.isfile(t):
-                valid_file = t
-                break
-        if valid_file is None:
-            return None
-        else:
-            embed_path = valid_file
-
-    if embed_path.lower().endswith(".safetensors"):
-        import safetensors.torch
-        embed = safetensors.torch.load_file(embed_path, device="cpu")
-    else:
-        if 'weights_only' in torch.load.__code__.co_varnames:
-            embed = torch.load(embed_path, weights_only=True, map_location="cpu")
-        else:
-            embed = torch.load(embed_path, map_location="cpu")
-    if 'string_to_param' in embed:
-        values = embed['string_to_param'].values()
-    else:
-        values = embed.values()
-    return next(iter(values))
-
-class SD1Tokenizer:
-    def __init__(self, tokenizer_path=None, max_length=77, pad_with_end=True, embedding_directory=None):
-        if tokenizer_path is None:
-            tokenizer_path = os.path.join("models/configs/sd1_tokenizer")
-        self.tokenizer = CLIPTokenizer.from_pretrained(tokenizer_path)
-        self.max_length = max_length
-        self.max_tokens_per_section = self.max_length - 2
-
-        empty = self.tokenizer('')["input_ids"]
-        self.start_token = empty[0]
-        self.end_token = empty[1]
-        self.pad_with_end = pad_with_end
-        vocab = self.tokenizer.get_vocab()
-        self.inv_vocab = {v: k for k, v in vocab.items()}
-        self.embedding_directory = gs.embeddings
-        self.max_word_length = 8
-
-    def tokenize_with_weights(self, text):
-        text = escape_important(text)
-        parsed_weights = token_weights(text, 1.0)
-
-        tokens = []
-        for t in parsed_weights:
-            to_tokenize = unescape_important(t[0]).replace("\n", " ").split(' ')
-            while len(to_tokenize) > 0:
-                word = to_tokenize.pop(0)
-                temp_tokens = []
-                embedding_identifier = "embedding:"
-                if word.startswith(embedding_identifier) and self.embedding_directory is not None:
-                    embedding_name = word[len(embedding_identifier):].strip('\n')
-
-                    print("EMBED NAME", embedding_name)
-
-                    embed = load_embed(embedding_name, self.embedding_directory)
-                    if embed is None:
-                        stripped = embedding_name.strip(',')
-                        if len(stripped) < len(embedding_name):
-                            embed = load_embed(stripped, self.embedding_directory)
-                            if embed is not None:
-                                to_tokenize.insert(0, embedding_name[len(stripped):])
-
-                    if embed is not None:
-                        if len(embed.shape) == 1:
-                            temp_tokens += [(embed, t[1])]
-                        else:
-                            for x in range(embed.shape[0]):
-                                temp_tokens += [(embed[x], t[1])]
-                    else:
-                        print("warning, embedding:{} does not exist, ignoring".format(embedding_name))
-                elif len(word) > 0:
-                    tt = self.tokenizer(word)["input_ids"][1:-1]
-                    for x in tt:
-                        temp_tokens += [(x, t[1])]
-                tokens_left = self.max_tokens_per_section - (len(tokens) % self.max_tokens_per_section)
-
-                #try not to split words in different sections
-                if tokens_left < len(temp_tokens) and len(temp_tokens) < (self.max_word_length):
-                    for x in range(tokens_left):
-                        tokens += [(self.end_token, 1.0)]
-                tokens += temp_tokens
-
-        out_tokens = []
-        for x in range(0, len(tokens), self.max_tokens_per_section):
-            o_token = [(self.start_token, 1.0)] + tokens[x:min(self.max_tokens_per_section + x, len(tokens))]
-            o_token += [(self.end_token, 1.0)]
-            if self.pad_with_end:
-                o_token +=[(self.end_token, 1.0)] * (self.max_length - len(o_token))
-            else:
-                o_token +=[(0, 1.0)] * (self.max_length - len(o_token))
-
-            out_tokens += [o_token]
-
-        return out_tokens
-
-    def untokenize(self, token_weight_pair):
-        return list(map(lambda a: (a, self.inv_vocab[a[0]]), token_weight_pair))
-
-
-class SD2ClipModel(SD1ClipModel):
-    def __init__(self, arch="ViT-H-14", device="cpu", max_length=77, freeze=True, layer="penultimate", layer_idx=None):
-        textmodel_json_config = os.path.join("models/configs/sd2_clip_config.json")
-        super().__init__(device=device, freeze=freeze, textmodel_json_config=textmodel_json_config)
-        self.empty_tokens = [[49406] + [49407] + [0] * 75]
-        if layer == "last":
-            pass
-        elif layer == "penultimate":
-            layer_idx = -1
-            self.clip_layer(layer_idx)
-        elif self.layer == "hidden":
-            assert layer_idx is not None
-            assert abs(layer_idx) < 24
-            self.clip_layer(layer_idx)
-        else:
-            raise NotImplementedError()
-
-    def clip_layer(self, layer_idx):
-        if layer_idx < 0:
-            layer_idx -= 1 #The real last layer of SD2.x clip is the penultimate one. The last one might contain garbage.
-        if abs(layer_idx) >= 24:
-            self.layer = "hidden"
-            self.layer_idx = -2
-        else:
-            self.layer = "hidden"
-            self.layer_idx = layer_idx
-
-class SD2Tokenizer(SD1Tokenizer):
-    def __init__(self, tokenizer_path=None, embedding_directory=None):
-        super().__init__(tokenizer_path, pad_with_end=False, embedding_directory=embedding_directory)
-
-
-def load_torch_file(ckpt, safe_load=False):
-    if ckpt.lower().endswith(".safetensors"):
-        import safetensors.torch
-        sd = safetensors.torch.load_file(ckpt, device="cpu")
-    else:
-        if safe_load:
-            if not 'weights_only' in torch.load.__code__.co_varnames:
-                print("Warning torch.load doesn't support weights_only on this pytorch version, loading unsafely.")
-                safe_load = False
-        if safe_load:
-            pl_sd = torch.load(ckpt, map_location="cpu", weights_only=True)
-        else:
-            pl_sd = torch.load(ckpt, map_location="cpu")
-        if "global_step" in pl_sd:
-            print(f"Global Step: {pl_sd['global_step']}")
-        if "state_dict" in pl_sd:
-            sd = pl_sd["state_dict"]
-        else:
-            sd = pl_sd
-    return sd
-
-def load_model_weights(model, sd, verbose=False, load_state_dict_to=[]):
-    m, u = model.load_state_dict(sd, strict=False)
-
-    k = list(sd.keys())
-    for x in k:
-        # print(x)
-        if x.startswith("cond_stage_model.transformer.") and not x.startswith("cond_stage_model.transformer.text_model."):
-            y = x.replace("cond_stage_model.transformer.", "cond_stage_model.transformer.text_model.")
-            sd[y] = sd.pop(x)
-
-    if 'cond_stage_model.transformer.text_model.embeddings.position_ids' in sd:
-        ids = sd['cond_stage_model.transformer.text_model.embeddings.position_ids']
-        if ids.dtype == torch.float32:
-            sd['cond_stage_model.transformer.text_model.embeddings.position_ids'] = ids.round()
-
-    keys_to_replace = {
-        "cond_stage_model.model.positional_embedding": "cond_stage_model.transformer.text_model.embeddings.position_embedding.weight",
-        "cond_stage_model.model.token_embedding.weight": "cond_stage_model.transformer.text_model.embeddings.token_embedding.weight",
-        "cond_stage_model.model.ln_final.weight": "cond_stage_model.transformer.text_model.final_layer_norm.weight",
-        "cond_stage_model.model.ln_final.bias": "cond_stage_model.transformer.text_model.final_layer_norm.bias",
-    }
-
-    for x in keys_to_replace:
-        if x in sd:
-            sd[keys_to_replace[x]] = sd.pop(x)
-
-    resblock_to_replace = {
-        "ln_1": "layer_norm1",
-        "ln_2": "layer_norm2",
-        "mlp.c_fc": "mlp.fc1",
-        "mlp.c_proj": "mlp.fc2",
-        "attn.out_proj": "self_attn.out_proj",
-    }
-
-    for resblock in range(24):
-        for x in resblock_to_replace:
-            for y in ["weight", "bias"]:
-                k = "cond_stage_model.model.transformer.resblocks.{}.{}.{}".format(resblock, x, y)
-                k_to = "cond_stage_model.transformer.text_model.encoder.layers.{}.{}.{}".format(resblock, resblock_to_replace[x], y)
-                if k in sd:
-                    sd[k_to] = sd.pop(k)
-
-        for y in ["weight", "bias"]:
-            k_from = "cond_stage_model.model.transformer.resblocks.{}.attn.in_proj_{}".format(resblock, y)
-            if k_from in sd:
-                weights = sd.pop(k_from)
-                for x in range(3):
-                    p = ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"]
-                    k_to = "cond_stage_model.transformer.text_model.encoder.layers.{}.{}.{}".format(resblock, p[x], y)
-                    sd[k_to] = weights[1024*x:1024*(x + 1)]
-
-    for x in load_state_dict_to:
-        x.load_state_dict(sd, strict=False)
-
-    if len(m) > 0 and verbose:
-        print("missing keys:")
-        print(m)
-    if len(u) > 0 and verbose:
-        print("unexpected keys:")
-        print(u)
-
-    model.eval()
-    return model
-
-
-def load_torch_file(ckpt, safe_load=False):
-    if ckpt.lower().endswith(".safetensors"):
-        import safetensors.torch
-        sd = safetensors.torch.load_file(ckpt, device="cpu")
-    else:
-        if safe_load:
-            if not 'weights_only' in torch.load.__code__.co_varnames:
-                print("Warning torch.load doesn't support weights_only on this pytorch version, loading unsafely.")
-                safe_load = False
-        if safe_load:
-            pl_sd = torch.load(ckpt, map_location="cpu", weights_only=True)
-        else:
-            pl_sd = torch.load(ckpt, map_location="cpu")
-        if "global_step" in pl_sd:
-            print(f"Global Step: {pl_sd['global_step']}")
-        if "state_dict" in pl_sd:
-            sd = pl_sd["state_dict"]
-        else:
-            sd = pl_sd
-    return sd
-
-
-def transformers_convert(sd, prefix_from, prefix_to, number):
-    resblock_to_replace = {
-        "ln_1": "layer_norm1",
-        "ln_2": "layer_norm2",
-        "mlp.c_fc": "mlp.fc1",
-        "mlp.c_proj": "mlp.fc2",
-        "attn.out_proj": "self_attn.out_proj",
-    }
-
-    for resblock in range(number):
-        for x in resblock_to_replace:
-            for y in ["weight", "bias"]:
-                k = "{}.transformer.resblocks.{}.{}.{}".format(prefix_from, resblock, x, y)
-                k_to = "{}.encoder.layers.{}.{}.{}".format(prefix_to, resblock, resblock_to_replace[x], y)
-                if k in sd:
-                    sd[k_to] = sd.pop(k)
-
-        for y in ["weight", "bias"]:
-            k_from = "{}.transformer.resblocks.{}.attn.in_proj_{}".format(prefix_from, resblock, y)
-            if k_from in sd:
-                weights = sd.pop(k_from)
-                shape_from = weights.shape[0] // 3
-                for x in range(3):
-                    p = ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"]
-                    k_to = "{}.encoder.layers.{}.{}.{}".format(prefix_to, resblock, p[x], y)
-                    sd[k_to] = weights[shape_from * x:shape_from * (x + 1)]
-    return sd
+# class VAE:
+#     def __init__(self, ckpt_path=None, scale_factor=0.18215, device=None, config=None):
+#         if config is None:
+#             #default SD1.x/SD2.x VAE parameters
+#             ddconfig = {'double_z': True, 'z_channels': 4, 'resolution': 256, 'in_channels': 3, 'out_ch': 3, 'ch': 128, 'ch_mult': [1, 2, 4, 4], 'num_res_blocks': 2, 'attn_resolutions': [], 'dropout': 0.0}
+#             self.first_stage_model = AutoencoderKL(ddconfig, {'target': 'torch.nn.Identity'}, 4, monitor="val/rec_loss")
+#         else:
+#             self.first_stage_model = AutoencoderKL(**(config['params']))
+#         self.first_stage_model = self.first_stage_model.eval()
+#         if ckpt_path is not None:
+#             sd = load_torch_file(ckpt_path)
+#             if 'decoder.up_blocks.0.resnets.0.norm1.weight' in sd.keys(): #diffusers format
+#                 sd = diffusers_convert.convert_vae_state_dict(sd)
+#             self.first_stage_model.load_state_dict(sd, strict=False)
+#
+#         self.scale_factor = scale_factor
+#         if device is None:
+#             device = gs.device
+#         self.device = device
+#
+#     def decode_tiled_(self, samples, tile_x=64, tile_y=64, overlap = 16):
+#         steps = samples.shape[0] * get_tiled_scale_steps(samples.shape[3], samples.shape[2], tile_x, tile_y, overlap)
+#         steps += samples.shape[0] * get_tiled_scale_steps(samples.shape[3], samples.shape[2], tile_x // 2, tile_y * 2, overlap)
+#         steps += samples.shape[0] * get_tiled_scale_steps(samples.shape[3], samples.shape[2], tile_x * 2, tile_y // 2, overlap)
+#         #pbar = utils.ProgressBar(steps)
+#
+#         decode_fn = lambda a: (self.first_stage_model.decode(1. / self.scale_factor * a.to(self.device)) + 1.0)
+#         output = torch.clamp((
+#             (tiled_scale(samples, decode_fn, tile_x // 2, tile_y * 2, overlap, upscale_amount = 8, pbar = None) +
+#             tiled_scale(samples, decode_fn, tile_x * 2, tile_y // 2, overlap, upscale_amount = 8, pbar = None) +
+#              tiled_scale(samples, decode_fn, tile_x, tile_y, overlap, upscale_amount = 8, pbar = None))
+#             / 3.0) / 2.0, min=0.0, max=1.0)
+#         return output
+#
+#     def decode(self, samples_in):
+#
+#         print(samples_in.shape)
+#
+#         # self.first_stage_model = self.first_stage_model.to(self.device)
+#         #
+#         # output = self.decode_tiled_(samples_in, 64, 64, 16)
+#         # self.first_stage_model = self.first_stage_model.cpu()
+#         #
+#         # return output.movedim(1,-1)
+#
+#         #model_management.unload_model()
+#         self.first_stage_model = self.first_stage_model.to(self.device)
+#         try:
+#             free_memory = get_free_memory(self.device)
+#             batch_number = int((free_memory * 0.7) / (2562 * samples_in.shape[2] * samples_in.shape[3] * 64))
+#             batch_number = max(1, batch_number)
+#
+#             pixel_samples = torch.empty((samples_in.shape[0], 3, round(samples_in.shape[2] * 8), round(samples_in.shape[3] * 8)), device="cpu")
+#             for x in range(0, samples_in.shape[0], batch_number):
+#                 samples = samples_in[x:x+batch_number].to(self.device)
+#                 pixel_samples[x:x+batch_number] = torch.clamp((self.first_stage_model.decode(1. / self.scale_factor * samples) + 1.0) / 2.0, min=0.0, max=1.0).cpu()
+#         except OOM_EXCEPTION as e:
+#             print("Warning: Ran out of memory when regular VAE decoding, retrying with tiled VAE decoding.")
+#             pixel_samples = self.decode_tiled_(samples_in)
+#
+#         self.first_stage_model = self.first_stage_model.cpu()
+#         pixel_samples = pixel_samples.cpu().movedim(1,-1)
+#
+#         return pixel_samples
+#
+#     def decode_tiled(self, samples, tile_x=64, tile_y=64, overlap = 16):
+#         #model_management.unload_model()
+#         self.first_stage_model = self.first_stage_model.to(self.device)
+#         output = self.decode_tiled_(samples, tile_x, tile_y, overlap)
+#         self.first_stage_model = self.first_stage_model.cpu()
+#         return output.movedim(1,-1)
+#
+#     def encode(self, pixel_samples):
+#         #model_management.unload_model()
+#         self.first_stage_model = self.first_stage_model.to(self.device)
+#         pixel_samples = pixel_samples.movedim(-1,1).to(self.device)
+#         samples = self.first_stage_model.encode(2. * pixel_samples - 1.).sample() * self.scale_factor
+#         self.first_stage_model = self.first_stage_model.cpu()
+#         samples = samples.cpu()
+#         return samples
+#
+#     def encode_tiled(self, pixel_samples, tile_x=512, tile_y=512, overlap = 64):
+#         #model_management.unload_model()
+#         self.first_stage_model = self.first_stage_model.to(self.device)
+#         pixel_samples = pixel_samples.movedim(-1,1).to(self.device)
+#
+#         steps = pixel_samples.shape[0] * get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2], tile_x, tile_y, overlap)
+#         steps += pixel_samples.shape[0] * get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2], tile_x // 2, tile_y * 2, overlap)
+#         steps += pixel_samples.shape[0] * get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2], tile_x * 2, tile_y // 2, overlap)
+#
+#         samples = tiled_scale(pixel_samples, lambda a: self.first_stage_model.encode(2. * a - 1.).sample() * self.scale_factor, tile_x, tile_y, overlap, upscale_amount = (1/8), out_channels=4, pbar=None)
+#         samples += tiled_scale(pixel_samples, lambda a: self.first_stage_model.encode(2. * a - 1.).sample() * self.scale_factor, tile_x * 2, tile_y // 2, overlap, upscale_amount = (1/8), out_channels=4, pbar=None)
+#         samples += tiled_scale(pixel_samples, lambda a: self.first_stage_model.encode(2. * a - 1.).sample() * self.scale_factor, tile_x // 2, tile_y * 2, overlap, upscale_amount = (1/8), out_channels=4, pbar=None)
+#         samples /= 3.0
+#         self.first_stage_model = self.first_stage_model.cpu()
+#         samples = samples.cpu()
+#         return samples
+#
+#
+#
+# class CLIP:
+#     def __init__(self, config={}, embedding_directory=None, no_init=False):
+#         if no_init:
+#             return
+#         self.target_clip = config["target"]
+#         if "params" in config:
+#             params = config["params"]
+#         else:
+#             params = {}
+#
+#         if self.target_clip == "ldm.modules.encoders.modules.FrozenOpenCLIPEmbedder":
+#             clip = SD2ClipModel
+#             tokenizer = SD2Tokenizer
+#         elif self.target_clip == "ldm.modules.encoders.modules.FrozenCLIPEmbedder":
+#             clip = SD1ClipModel
+#             tokenizer = SD1Tokenizer
+#
+#         self.cond_stage_model = clip(**(params))
+#         self.tokenizer = tokenizer(embedding_directory=embedding_directory)
+#         self.patcher = ModelPatcher(self.cond_stage_model)
+#         self.layer_idx = -1
+#
+#     def clone(self):
+#         n = CLIP(no_init=True)
+#         n.target_clip = self.target_clip
+#         n.patcher = self.patcher.clone()
+#         n.cond_stage_model = self.cond_stage_model
+#         n.tokenizer = self.tokenizer
+#         n.layer_idx = self.layer_idx
+#         return n
+#
+#     def load_from_state_dict(self, sd):
+#         self.cond_stage_model.transformer.load_state_dict(sd, strict=False)
+#
+#     def add_patches(self, patches, strength=1.0):
+#         return self.patcher.add_patches(patches, strength)
+#
+#     def clip_layer(self, layer_idx):
+#         self.layer_idx = layer_idx
+#
+#     def encode(self, text):
+#         self.cond_stage_model.clip_layer(self.layer_idx)
+#         tokens = self.tokenizer.tokenize_with_weights(text)
+#         try:
+#             self.patcher.patch_model()
+#             cond = self.cond_stage_model.encode_token_weights(tokens)
+#             self.patcher.unpatch_model()
+#         except Exception as e:
+#             self.patcher.unpatch_model()
+#             raise e
+#         return cond
+#
+#
+# import os
+#
+# from transformers import CLIPTokenizer, CLIPTextModel, CLIPTextConfig
+# import torch
+#
+# class ClipTokenWeightEncoderSD1:
+#     def encode_token_weights(self, token_weight_pairs):
+#         z_empty = self.encode(self.empty_tokens)
+#         output = []
+#         for x in token_weight_pairs:
+#             tokens = [list(map(lambda a: a[0], x))]
+#             z = self.encode(tokens)
+#             for i in range(len(z)):
+#                 for j in range(len(z[i])):
+#                     weight = x[j][1]
+#                     z[i][j] = (z[i][j] - z_empty[0][j]) * weight + z_empty[0][j]
+#             output += [z]
+#         if (len(output) == 0):
+#             return self.encode(self.empty_tokens)
+#         return torch.cat(output, dim=-2)
+#
+# class SD1ClipModel(torch.nn.Module, ClipTokenWeightEncoderSD1):
+#     """Uses the CLIP transformer encoder for text (from huggingface)"""
+#     LAYERS = [
+#         "last",
+#         "pooled",
+#         "hidden"
+#     ]
+#     def __init__(self, version="openai/clip-vit-large-patch14", device="cpu", max_length=77,
+#                  freeze=True, layer="last", layer_idx=None, textmodel_json_config=None, textmodel_path=None):  # clip-vit-base-patch32
+#         super().__init__()
+#         assert layer in self.LAYERS
+#         if textmodel_path is not None:
+#             self.transformer = CLIPTextModel.from_pretrained(textmodel_path)
+#         else:
+#             if textmodel_json_config is None:
+#                 textmodel_json_config = os.path.join("models/configs/sd1_clip_config.json")
+#             config = CLIPTextConfig.from_json_file(textmodel_json_config)
+#             self.transformer = CLIPTextModel(config)
+#
+#         self.device = device
+#         self.max_length = max_length
+#         if freeze:
+#             self.freeze()
+#         self.layer = layer
+#         self.layer_idx = None
+#         self.empty_tokens = [[49406] + [49407] * 76]
+#         if layer == "hidden":
+#             assert layer_idx is not None
+#             assert abs(layer_idx) <= 12
+#             self.clip_layer(layer_idx)
+#
+#     def freeze(self):
+#         self.transformer = self.transformer.eval()
+#         #self.train = disabled_train
+#         for param in self.parameters():
+#             param.requires_grad = False
+#
+#     def clip_layer(self, layer_idx):
+#         if abs(layer_idx) >= 12:
+#             self.layer = "last"
+#         else:
+#             self.layer = "hidden"
+#             self.layer_idx = layer_idx
+#
+#     def set_up_textual_embeddings(self, tokens, current_embeds):
+#         out_tokens = []
+#         next_new_token = token_dict_size = current_embeds.weight.shape[0]
+#         embedding_weights = []
+#
+#         for x in tokens:
+#             tokens_temp = []
+#             for y in x:
+#                 if isinstance(y, int):
+#                     tokens_temp += [y]
+#                 else:
+#                     embedding_weights += [y]
+#                     tokens_temp += [next_new_token]
+#                     next_new_token += 1
+#             out_tokens += [tokens_temp]
+#         if len(embedding_weights) > 0:
+#             new_embedding = torch.nn.Embedding(next_new_token, current_embeds.weight.shape[1])
+#             new_embedding.weight[:token_dict_size] = current_embeds.weight[:]
+#             n = token_dict_size
+#             for x in embedding_weights:
+#                 new_embedding.weight[n] = x
+#                 n += 1
+#             self.transformer.set_input_embeddings(new_embedding)
+#         return out_tokens
+#
+#     def forward(self, tokens):
+#         backup_embeds = self.transformer.get_input_embeddings()
+#         tokens = self.set_up_textual_embeddings(tokens, backup_embeds)
+#         tokens = torch.LongTensor(tokens).to(self.device)
+#         outputs = self.transformer(input_ids=tokens, output_hidden_states=self.layer=="hidden")
+#         self.transformer.set_input_embeddings(backup_embeds)
+#
+#         if self.layer == "last":
+#             z = outputs.last_hidden_state
+#         elif self.layer == "pooled":
+#             z = outputs.pooler_output[:, None, :]
+#         else:
+#             z = outputs.hidden_states[self.layer_idx]
+#             z = self.transformer.text_model.final_layer_norm(z)
+#
+#         return z
+#
+#     def encode(self, tokens):
+#         return self(tokens)
+#
+# def parse_parentheses(string):
+#     result = []
+#     current_item = ""
+#     nesting_level = 0
+#     for char in string:
+#         if char == "(":
+#             if nesting_level == 0:
+#                 if current_item:
+#                     result.append(current_item)
+#                     current_item = "("
+#                 else:
+#                     current_item = "("
+#             else:
+#                 current_item += char
+#             nesting_level += 1
+#         elif char == ")":
+#             nesting_level -= 1
+#             if nesting_level == 0:
+#                 result.append(current_item + ")")
+#                 current_item = ""
+#             else:
+#                 current_item += char
+#         else:
+#             current_item += char
+#     if current_item:
+#         result.append(current_item)
+#     return result
+#
+# def token_weights(string, current_weight):
+#     a = parse_parentheses(string)
+#     out = []
+#     for x in a:
+#         weight = current_weight
+#         if len(x) >= 2 and x[-1] == ')' and x[0] == '(':
+#             x = x[1:-1]
+#             xx = x.rfind(":")
+#             weight *= 1.1
+#             if xx > 0:
+#                 try:
+#                     weight = float(x[xx+1:])
+#                     x = x[:xx]
+#                 except:
+#                     pass
+#             out += token_weights(x, weight)
+#         else:
+#             out += [(x, current_weight)]
+#     return out
+#
+# def escape_important(text):
+#     text = text.replace("\\)", "\0\1")
+#     text = text.replace("\\(", "\0\2")
+#     return text
+#
+# def unescape_important(text):
+#     text = text.replace("\0\1", ")")
+#     text = text.replace("\0\2", "(")
+#     return text
+#
+# def load_embed(embedding_name, embedding_directory):
+#     embed_path = os.path.join(embedding_directory, embedding_name)
+#     if not os.path.isfile(embed_path):
+#         extensions = ['.safetensors', '.pt', '.bin']
+#         valid_file = None
+#         for x in extensions:
+#             t = embed_path + x
+#             if os.path.isfile(t):
+#                 valid_file = t
+#                 break
+#         if valid_file is None:
+#             return None
+#         else:
+#             embed_path = valid_file
+#
+#     if embed_path.lower().endswith(".safetensors"):
+#         import safetensors.torch
+#         embed = safetensors.torch.load_file(embed_path, device="cpu")
+#     else:
+#         if 'weights_only' in torch.load.__code__.co_varnames:
+#             embed = torch.load(embed_path, weights_only=True, map_location="cpu")
+#         else:
+#             embed = torch.load(embed_path, map_location="cpu")
+#     if 'string_to_param' in embed:
+#         values = embed['string_to_param'].values()
+#     else:
+#         values = embed.values()
+#     return next(iter(values))
+#
+# class SD1Tokenizer:
+#     def __init__(self, tokenizer_path=None, max_length=77, pad_with_end=True, embedding_directory=None):
+#         if tokenizer_path is None:
+#             tokenizer_path = os.path.join("models/configs/sd1_tokenizer")
+#         self.tokenizer = CLIPTokenizer.from_pretrained(tokenizer_path)
+#         self.max_length = max_length
+#         self.max_tokens_per_section = self.max_length - 2
+#
+#         empty = self.tokenizer('')["input_ids"]
+#         self.start_token = empty[0]
+#         self.end_token = empty[1]
+#         self.pad_with_end = pad_with_end
+#         vocab = self.tokenizer.get_vocab()
+#         self.inv_vocab = {v: k for k, v in vocab.items()}
+#         self.embedding_directory = gs.embeddings
+#         self.max_word_length = 8
+#
+#     def tokenize_with_weights(self, text):
+#         text = escape_important(text)
+#         parsed_weights = token_weights(text, 1.0)
+#
+#         tokens = []
+#         for t in parsed_weights:
+#             to_tokenize = unescape_important(t[0]).replace("\n", " ").split(' ')
+#             while len(to_tokenize) > 0:
+#                 word = to_tokenize.pop(0)
+#                 temp_tokens = []
+#                 embedding_identifier = "embedding:"
+#                 if word.startswith(embedding_identifier) and self.embedding_directory is not None:
+#                     embedding_name = word[len(embedding_identifier):].strip('\n')
+#
+#                     print("EMBED NAME", embedding_name)
+#
+#                     embed = load_embed(embedding_name, self.embedding_directory)
+#                     if embed is None:
+#                         stripped = embedding_name.strip(',')
+#                         if len(stripped) < len(embedding_name):
+#                             embed = load_embed(stripped, self.embedding_directory)
+#                             if embed is not None:
+#                                 to_tokenize.insert(0, embedding_name[len(stripped):])
+#
+#                     if embed is not None:
+#                         if len(embed.shape) == 1:
+#                             temp_tokens += [(embed, t[1])]
+#                         else:
+#                             for x in range(embed.shape[0]):
+#                                 temp_tokens += [(embed[x], t[1])]
+#                     else:
+#                         print("warning, embedding:{} does not exist, ignoring".format(embedding_name))
+#                 elif len(word) > 0:
+#                     tt = self.tokenizer(word)["input_ids"][1:-1]
+#                     for x in tt:
+#                         temp_tokens += [(x, t[1])]
+#                 tokens_left = self.max_tokens_per_section - (len(tokens) % self.max_tokens_per_section)
+#
+#                 #try not to split words in different sections
+#                 if tokens_left < len(temp_tokens) and len(temp_tokens) < (self.max_word_length):
+#                     for x in range(tokens_left):
+#                         tokens += [(self.end_token, 1.0)]
+#                 tokens += temp_tokens
+#
+#         out_tokens = []
+#         for x in range(0, len(tokens), self.max_tokens_per_section):
+#             o_token = [(self.start_token, 1.0)] + tokens[x:min(self.max_tokens_per_section + x, len(tokens))]
+#             o_token += [(self.end_token, 1.0)]
+#             if self.pad_with_end:
+#                 o_token +=[(self.end_token, 1.0)] * (self.max_length - len(o_token))
+#             else:
+#                 o_token +=[(0, 1.0)] * (self.max_length - len(o_token))
+#
+#             out_tokens += [o_token]
+#
+#         return out_tokens
+#
+#     def untokenize(self, token_weight_pair):
+#         return list(map(lambda a: (a, self.inv_vocab[a[0]]), token_weight_pair))
+#
+#
+# class SD2ClipModel(SD1ClipModel):
+#     def __init__(self, arch="ViT-H-14", device="cpu", max_length=77, freeze=True, layer="penultimate", layer_idx=None):
+#         textmodel_json_config = os.path.join("models/configs/sd2_clip_config.json")
+#         super().__init__(device=device, freeze=freeze, textmodel_json_config=textmodel_json_config)
+#         self.empty_tokens = [[49406] + [49407] + [0] * 75]
+#         if layer == "last":
+#             pass
+#         elif layer == "penultimate":
+#             layer_idx = -1
+#             self.clip_layer(layer_idx)
+#         elif self.layer == "hidden":
+#             assert layer_idx is not None
+#             assert abs(layer_idx) < 24
+#             self.clip_layer(layer_idx)
+#         else:
+#             raise NotImplementedError()
+#
+#     def clip_layer(self, layer_idx):
+#         if layer_idx < 0:
+#             layer_idx -= 1 #The real last layer of SD2.x clip is the penultimate one. The last one might contain garbage.
+#         if abs(layer_idx) >= 24:
+#             self.layer = "hidden"
+#             self.layer_idx = -2
+#         else:
+#             self.layer = "hidden"
+#             self.layer_idx = layer_idx
+#
+# class SD2Tokenizer(SD1Tokenizer):
+#     def __init__(self, tokenizer_path=None, embedding_directory=None):
+#         super().__init__(tokenizer_path, pad_with_end=False, embedding_directory=embedding_directory)
+#
+#
+# def load_torch_file(ckpt, safe_load=False):
+#     if ckpt.lower().endswith(".safetensors"):
+#         import safetensors.torch
+#         sd = safetensors.torch.load_file(ckpt, device="cpu")
+#     else:
+#         if safe_load:
+#             if not 'weights_only' in torch.load.__code__.co_varnames:
+#                 print("Warning torch.load doesn't support weights_only on this pytorch version, loading unsafely.")
+#                 safe_load = False
+#         if safe_load:
+#             pl_sd = torch.load(ckpt, map_location="cpu", weights_only=True)
+#         else:
+#             pl_sd = torch.load(ckpt, map_location="cpu")
+#         if "global_step" in pl_sd:
+#             print(f"Global Step: {pl_sd['global_step']}")
+#         if "state_dict" in pl_sd:
+#             sd = pl_sd["state_dict"]
+#         else:
+#             sd = pl_sd
+#     return sd
+#
+# def load_model_weights(model, sd, verbose=False, load_state_dict_to=[]):
+#     m, u = model.load_state_dict(sd, strict=False)
+#
+#     k = list(sd.keys())
+#     for x in k:
+#         # print(x)
+#         if x.startswith("cond_stage_model.transformer.") and not x.startswith("cond_stage_model.transformer.text_model."):
+#             y = x.replace("cond_stage_model.transformer.", "cond_stage_model.transformer.text_model.")
+#             sd[y] = sd.pop(x)
+#
+#     if 'cond_stage_model.transformer.text_model.embeddings.position_ids' in sd:
+#         ids = sd['cond_stage_model.transformer.text_model.embeddings.position_ids']
+#         if ids.dtype == torch.float32:
+#             sd['cond_stage_model.transformer.text_model.embeddings.position_ids'] = ids.round()
+#
+#     keys_to_replace = {
+#         "cond_stage_model.model.positional_embedding": "cond_stage_model.transformer.text_model.embeddings.position_embedding.weight",
+#         "cond_stage_model.model.token_embedding.weight": "cond_stage_model.transformer.text_model.embeddings.token_embedding.weight",
+#         "cond_stage_model.model.ln_final.weight": "cond_stage_model.transformer.text_model.final_layer_norm.weight",
+#         "cond_stage_model.model.ln_final.bias": "cond_stage_model.transformer.text_model.final_layer_norm.bias",
+#     }
+#
+#     for x in keys_to_replace:
+#         if x in sd:
+#             sd[keys_to_replace[x]] = sd.pop(x)
+#
+#     resblock_to_replace = {
+#         "ln_1": "layer_norm1",
+#         "ln_2": "layer_norm2",
+#         "mlp.c_fc": "mlp.fc1",
+#         "mlp.c_proj": "mlp.fc2",
+#         "attn.out_proj": "self_attn.out_proj",
+#     }
+#
+#     for resblock in range(24):
+#         for x in resblock_to_replace:
+#             for y in ["weight", "bias"]:
+#                 k = "cond_stage_model.model.transformer.resblocks.{}.{}.{}".format(resblock, x, y)
+#                 k_to = "cond_stage_model.transformer.text_model.encoder.layers.{}.{}.{}".format(resblock, resblock_to_replace[x], y)
+#                 if k in sd:
+#                     sd[k_to] = sd.pop(k)
+#
+#         for y in ["weight", "bias"]:
+#             k_from = "cond_stage_model.model.transformer.resblocks.{}.attn.in_proj_{}".format(resblock, y)
+#             if k_from in sd:
+#                 weights = sd.pop(k_from)
+#                 for x in range(3):
+#                     p = ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"]
+#                     k_to = "cond_stage_model.transformer.text_model.encoder.layers.{}.{}.{}".format(resblock, p[x], y)
+#                     sd[k_to] = weights[1024*x:1024*(x + 1)]
+#
+#     for x in load_state_dict_to:
+#         x.load_state_dict(sd, strict=False)
+#
+#     if len(m) > 0 and verbose:
+#         print("missing keys:")
+#         print(m)
+#     if len(u) > 0 and verbose:
+#         print("unexpected keys:")
+#         print(u)
+#
+#     model.eval()
+#     return model
+#
+#
+# def load_torch_file(ckpt, safe_load=False):
+#     if ckpt.lower().endswith(".safetensors"):
+#         import safetensors.torch
+#         sd = safetensors.torch.load_file(ckpt, device="cpu")
+#     else:
+#         if safe_load:
+#             if not 'weights_only' in torch.load.__code__.co_varnames:
+#                 print("Warning torch.load doesn't support weights_only on this pytorch version, loading unsafely.")
+#                 safe_load = False
+#         if safe_load:
+#             pl_sd = torch.load(ckpt, map_location="cpu", weights_only=True)
+#         else:
+#             pl_sd = torch.load(ckpt, map_location="cpu")
+#         if "global_step" in pl_sd:
+#             print(f"Global Step: {pl_sd['global_step']}")
+#         if "state_dict" in pl_sd:
+#             sd = pl_sd["state_dict"]
+#         else:
+#             sd = pl_sd
+#     return sd
+#
+#
+# def transformers_convert(sd, prefix_from, prefix_to, number):
+#     resblock_to_replace = {
+#         "ln_1": "layer_norm1",
+#         "ln_2": "layer_norm2",
+#         "mlp.c_fc": "mlp.fc1",
+#         "mlp.c_proj": "mlp.fc2",
+#         "attn.out_proj": "self_attn.out_proj",
+#     }
+#
+#     for resblock in range(number):
+#         for x in resblock_to_replace:
+#             for y in ["weight", "bias"]:
+#                 k = "{}.transformer.resblocks.{}.{}.{}".format(prefix_from, resblock, x, y)
+#                 k_to = "{}.encoder.layers.{}.{}.{}".format(prefix_to, resblock, resblock_to_replace[x], y)
+#                 if k in sd:
+#                     sd[k_to] = sd.pop(k)
+#
+#         for y in ["weight", "bias"]:
+#             k_from = "{}.transformer.resblocks.{}.attn.in_proj_{}".format(prefix_from, resblock, y)
+#             if k_from in sd:
+#                 weights = sd.pop(k_from)
+#                 shape_from = weights.shape[0] // 3
+#                 for x in range(3):
+#                     p = ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"]
+#                     k_to = "{}.encoder.layers.{}.{}.{}".format(prefix_to, resblock, p[x], y)
+#                     sd[k_to] = weights[shape_from * x:shape_from * (x + 1)]
+#     return sd
 
 
 def bislerp(samples, width, height):

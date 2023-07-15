@@ -3,12 +3,16 @@ import json
 import os
 import time
 
+import PIL.Image
+import numpy as np
+import torch
 from PIL.PngImagePlugin import PngInfo
+from PyQt6.QtGui import QGuiApplication, QImage
 from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
 from qtpy import QtWidgets, QtGui, QtCore
 
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, tensor2pil
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -18,14 +22,20 @@ from PIL import Image
 
 OP_NODE_IMG_PREVIEW = get_next_opcode()
 
+
+
+
+
 class ImagePreviewWidget(QDMNodeContentWidget):
     preview_signal = QtCore.Signal(object)
     def initUI(self):
 
         self.image = self.create_label("")
-        self.fps = self.create_spin_box(min_val=1, max_val=250, default_val=24, step_value=1, label_text="FPS")
-        self.checkbox = self.create_check_box("Autosave")
-        self.meta_checkbox = self.create_check_box("Embed Node graph in PNG")
+        self.fps = self.create_spin_box(min_val=1, max_val=250, default_val=24, step=1, label_text="FPS")
+        self.checkbox = QtWidgets.QCheckBox("Autosave")
+        self.meta_checkbox = QtWidgets.QCheckBox("Embed Node graph in PNG")
+        self.clipboard = QtWidgets.QCheckBox("Copy to Clipboard")
+        self.create_button_layout([self.checkbox, self.meta_checkbox, self.clipboard])
         self.button = QtWidgets.QPushButton("Save Image")
         self.next_button = QtWidgets.QPushButton("Show Next")
         self.create_button_layout([self.button, self.next_button])
@@ -65,7 +75,7 @@ class ImagePreviewNode(AiNode):
     op_code = OP_NODE_IMG_PREVIEW
     op_title = "Image Preview"
     content_label_objname = "image_output_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
     dims = (512,512)
 
     def __init__(self, scene):
@@ -77,8 +87,8 @@ class ImagePreviewNode(AiNode):
         self.grNode.icon = self.icon
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
-        self.grNode.height = 400
-        self.grNode.width = 320
+        self.grNode.height = 350
+        self.grNode.width = 400
         self.images = []
         self.index = 0
         self.content.preview_signal.connect(self.show_image)
@@ -119,11 +129,11 @@ class ImagePreviewNode(AiNode):
             if self.index >= length:
                 self.index = 0
             if length > 0:
-                pixmap = self.images[self.index]
+                pixmap = tensor_image_to_pixmap(self.images[self.index])
                 #pixmap = pil_image_to_pixmap(img)
                 self.resize(pixmap)
 
-                self.content.image.setPixmap(pixmap)
+                self.content.preview_signal.emit(pixmap)
                 self.setOutput(0, [pixmap])
                 self.index += 1
         else:
@@ -134,27 +144,40 @@ class ImagePreviewNode(AiNode):
         self.busy = True
         if len(self.getInputs(0)) > 0:
             images = self.getInputData(0)
+
+
             return images
 
     def show_image(self, image):
+
+        #pixmap = tensor_image_to_pixmap(image)
+
         self.content.image.setPixmap(image)
-        #self.resize()
+        self.resize(image)
 
 
     def onWorkerFinished(self, result):
         self.busy = False
         self.images = result
         if self.content.checkbox.isChecked() == True:
-            self.save_image(result[0])
+            if result:
+                self.save_image(result[0])
         if result is not None:
-            for image in result:
-                self.content.preview_signal.emit(image)
-                #time.sleep(0.1)
 
-        if result is not None:
-            self.resize(result[0])
-            #self.timer.start()
-        self.setOutput(0, self.images)
+            for item in result:
+
+                if not isinstance(item, QtGui.QPixmap):
+
+                    pixmap = tensor_image_to_pixmap(item)
+                else:
+                    pixmap = item
+                self.content.preview_signal.emit(pixmap)
+                self.resize(pixmap)
+                # for image in result:
+                #     self.content.preview_signal.emit(image)
+                    #time.sleep(0.1)
+
+        self.setOutput(0, result)
         self.markInvalid(False)
         self.markDirty(False)
         if gs.should_run:
@@ -167,13 +190,18 @@ class ImagePreviewNode(AiNode):
 
     def save_image(self, pixmap):
         try:
-            image = pixmap_to_pil_image(pixmap)
+            image = tensor2pil(pixmap)
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
             os.makedirs(os.path.join(gs.output, "stills"), exist_ok=True)
             filename = f"{gs.output}/stills/{timestamp}.png"
 
             meta_save = self.content.meta_checkbox.isChecked()
+
+            clipboard = self.content.clipboard.isChecked()
+
             if meta_save:
+
+                filename = f"{gs.output}/stills/{timestamp}_i.png"
 
                 metadata = PngInfo()
 
@@ -181,10 +209,15 @@ class ImagePreviewNode(AiNode):
 
                 metadata.add_text("graph", json.dumps(json_data))
 
-
                 image.save(filename, pnginfo=metadata, compress_level=4)
+
+
             else:
                 image.save(filename)
+            if clipboard:
+                print("Copied to clipboard")
+                clipboard = QGuiApplication.clipboard()
+                clipboard.setImage(QImage(filename))
 
             if gs.logging:
                 print(f"IMAGE PREVIEW NODE: File saved at {filename}")
@@ -193,14 +226,15 @@ class ImagePreviewNode(AiNode):
 
     def resize(self, pixmap):
         self.grNode.setToolTip("")
-        self.grNode.height = pixmap.size().height() + 300
-        self.grNode.width = pixmap.size().width() + 32
-        self.content.image.setMinimumHeight(pixmap.size().height())
-        self.content.image.setMinimumWidth(pixmap.size().width())
+        self.grNode.height = pixmap.size().height() + 255
+        self.grNode.width = pixmap.size().width() + 30
 
-        self.content.setMaximumHeight(pixmap.size().height() + 200)
-        self.content.setMaximumWidth(pixmap.size().width())
+        self.content.setGeometry(0, 25, pixmap.size().width(), pixmap.size().height() + 150)
 
+        # self.content.setMinimumHeight(pixmap.size().height())
+        # self.content.setMinimumWidth(pixmap.size().width())
+        # self.content.setMaximumHeight(pixmap.size().height() + 500)
+        # self.content.setMaximumWidth(pixmap.size().width())
         self.update_all_sockets()
         #self.content.setGeometry(0, 0, pixmap.size().width(),
         #                         pixmap.size().height())

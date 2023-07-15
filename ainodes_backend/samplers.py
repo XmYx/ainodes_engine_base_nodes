@@ -528,7 +528,7 @@ class KSampler:
 
 
 
-    def sample(self, noise, positive, negative, cfg, latent_image=None, start_step=None, last_step=None, force_full_denoise=False, denoise_mask=None, callback=None, model_key="sd"):
+    def sample(self, noise, positive, negative, cfg, latent_image=None, start_step=None, last_step=None, force_full_denoise=False, denoise_mask=None, callback=None):
         sigmas = self.sigmas
         sigma_min = self.sigma_min
 
@@ -586,7 +586,7 @@ class KSampler:
         else:
             max_denoise = True
 
-        with precision_scope(self.device):
+        with precision_scope(self.device.type):
             if self.sampler == "uni_pc":
                 samples = uni_pc.sample_unipc(self.model_wrap, noise, latent_image, sigmas, sampling_function=sampling_function, max_denoise=max_denoise, extra_args=extra_args, noise_mask=denoise_mask)
             elif self.sampler == "uni_pc_bh2":
@@ -599,7 +599,7 @@ class KSampler:
                 if denoise_mask is not None:
                     noise_mask = 1.0 - denoise_mask
 
-                sampler = DDIMSampler(self.model.model, device=self.device)
+                sampler = DDIMSampler(self.model.model, device=self.device.type)
                 sampler.make_schedule_timesteps(ddim_timesteps=timesteps, verbose=False)
                 z_enc = sampler.stochastic_encode(latent_image, torch.tensor([len(timesteps) - 1] * noise.shape[0]).to(self.device), noise=noise, max_denoise=max_denoise)
                 samples, _ = sampler.sample_custom(ddim_timesteps=timesteps,

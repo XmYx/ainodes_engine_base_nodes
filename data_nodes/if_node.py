@@ -35,7 +35,7 @@ class DataIfNode(AiNode):
     op_code = OP_NODE_DATA_IF
     op_title = "Data IF Node"
     content_label_objname = "data_if_node"
-    category = "WIP Experimental"
+    category = "aiNodes Base/WIP Experimental"
     #input_socket_name = ["EXEC"]
     #output_socket_name = ["EXEC", "MODEL"]
     def __init__(self, scene):

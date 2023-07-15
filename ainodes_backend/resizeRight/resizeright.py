@@ -1,6 +1,6 @@
 import warnings
 from math import ceil
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.resizeRight import interp_methods
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.resizeRight import interp_methods
 from fractions import Fraction
 
 

@@ -7,7 +7,7 @@ from qtpy import QtCore
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor
 
 #Function imports
 
@@ -31,7 +31,7 @@ class QRReaderNode(AiNode):
     op_code = OP_NODE_QRCODE_READER
     op_title = "QR Code Validator"
     content_label_objname = "qrcode_validator_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
     NodeContent_class = QRReaderWidget
     dim = (340, 260)
     output_data_ports = [0]
@@ -52,7 +52,7 @@ class QRReaderNode(AiNode):
         pixmaps = self.getInputData(0)
 
         for pixmap in pixmaps:
-            image = pixmap_to_pil_image(pixmap)
+            image = pixmap_to_tensor(pixmap)
             result = read_qr(image)
             self.content.label_signal.emit(result)
             print(result)

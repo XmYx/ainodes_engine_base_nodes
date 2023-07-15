@@ -1,7 +1,7 @@
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pil2tensor
 
 #Function imports
 import qrcode
@@ -28,7 +28,7 @@ class QRNode(AiNode):
     op_code = OP_NODE_QRCODE
     op_title = "QR Code Generator"
     content_label_objname = "qrcode_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
     NodeContent_class = QRWidget
     dim = (340, 260)
     output_data_ports = [0]
@@ -47,15 +47,15 @@ class QRNode(AiNode):
         border = self.content.qr_border.value()
         fit = self.content.qr_fit.isChecked()
         qr_image = create_qr_code(data, version, box, border, fit)
-        pixmap = pil_image_to_pixmap(qr_image)
-        return [[pixmap]]
+        tensor = [pil2tensor(qr_image)]
+        return [tensor]
 
 
 def create_qr_code(data, version, box, border, fit):
     # Create qr code instance
     qr = qrcode.QRCode(
         version=version,
-        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        error_correction=qrcode.constants.ERROR_CORRECT_Q,
         box_size=box,
         border=border,
     )
@@ -69,6 +69,8 @@ def create_qr_code(data, version, box, border, fit):
     img = qr.make_image(fill_color="black", back_color="white")
 
     # Resize the image to 512x512
-    resized_img = img.resize((512,512), Image.ANTIALIAS)
+    resized_img = img.resize((512,512), Image.ANTIALIAS).convert("RGBA")
+
+    resized_img.save("qr_test.png")
 
     return resized_img

@@ -1,3 +1,4 @@
+import contextlib
 import os
 
 import requests
@@ -17,7 +18,8 @@ from ainodes_frontend import singleton as gs
 from qtpy.QtWidgets import QDialog, QListWidget, QCheckBox, QDoubleSpinBox, QVBoxLayout, QDialogButtonBox, \
     QListWidgetItem, QHBoxLayout, QWidget
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.hash import sha256
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import get_torch_device
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.hash import sha256
 
 
 class EmbedDialog(QDialog):
@@ -111,10 +113,13 @@ class ConditioningNode(AiNode):
     op_code = OP_NODE_CONDITIONING
     op_title = "Conditioning"
     content_label_objname = "cond_node"
-    category = "Conditioning"
+    category = "aiNodes Base/Conditioning"
+
+    custom_input_socket_name = ["CLIP", "DATA", "EXEC"]
+
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[6,1], outputs=[6,3,1])
+        super().__init__(scene, inputs=[4,6,1], outputs=[6,3,1])
         self.content.eval_signal.connect(self.evalImplementation)
         # Create a worker object
     def initInnerClasses(self):
@@ -129,13 +134,16 @@ class ConditioningNode(AiNode):
         self.content.setMinimumWidth(320)
         self.content.button.clicked.connect(self.evalImplementation)
         self.content.set_embeds.clicked.connect(self.show_embeds)
-        self.input_socket_name = ["EXEC"]
-        self.output_socket_name = ["EXEC", "COND"]
         self.embed_dict = []
         self.apihandler = APIHandler()
         self.apihandler.response_received.connect(self.handle_response)
         self.string = ""
         self.clip_skip = self.content.skip.value()
+        self.device = gs.device
+        if self.device in [torch.device('mps'), torch.device('cpu')]:
+            self.context = contextlib.nullcontext()
+        else:
+            self.context = torch.autocast(gs.device.type)
 
 
     def show_embeds(self):
@@ -165,6 +173,8 @@ class ConditioningNode(AiNode):
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, index=0, prompt_override=None):
+        clip = self.getInputData(0)
+        assert clip is not None, "Please make sure to load a model, and connect it's clip output to the input"
         try:
             result = None
             data = None
@@ -179,9 +189,7 @@ class ConditioningNode(AiNode):
             string = "" if not self.content.embed_checkbox.isChecked() else string
 
             prompt = f"{prompt} {string}" if (self.content.embed_checkbox.isChecked and string != "") else prompt
-            if len(self.getInputs(0)) > 0:
-                data_node, index = self.getInput(0)
-                data = data_node.getOutput(index)
+            data = self.getInputData(1)
             if data:
                 if "prompt" in data:
                     prompt = data["prompt"]
@@ -193,12 +201,12 @@ class ConditioningNode(AiNode):
                 else:
                     if prompt_override is not None:
                         prompt = prompt_override
-                    result = [self.get_conditioning(prompt=prompt)]
+                    result = [self.get_conditioning(prompt=prompt, clip=clip)]
 
             else:
                 data = {}
                 data["prompt"] = prompt
-                result = [self.get_conditioning(prompt=prompt)]
+                result = self.get_conditioning(prompt=prompt, clip=clip)
             if gs.logging:
                 print(f"CONDITIONING NODE: Applying conditioning with prompt: {prompt}")
             return result, data
@@ -225,23 +233,31 @@ class ConditioningNode(AiNode):
                 string = f'{string} embedding:{item["embed"]["word"]}'
         self.string = string
 
-    def get_conditioning(self, prompt="", progress_callback=None):
+    def get_conditioning(self, prompt="", clip=None, progress_callback=None):
 
         """if gs.loaded_models["loaded"] == []:
             for node in self.scene.nodes:
                 if isinstance(node, TorchLoaderNode):
                     node.evalImplementation()
                     #print("Node found")"""
-        with torch.autocast("cuda"):
+
+
+
+        with self.context:
             with torch.no_grad():
                 clip_skip = self.content.skip.value()
-                if self.clip_skip != clip_skip or gs.models["clip"].layer_idx != clip_skip:
-                    gs.models["clip"].layer_idx = clip_skip
-                    gs.models["clip"].clip_layer(clip_skip)
+                if self.clip_skip != clip_skip or clip.layer_idx != clip_skip:
+                    clip.layer_idx = clip_skip
+                    clip.clip_layer(clip_skip)
                     self.clip_skip = clip_skip
-                c = gs.models["clip"].encode(prompt)
-                uc = {}
-                return [[c, uc]]
+
+                tokens = clip.tokenize(prompt)
+                cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+                return {"conds":[[cond, {"pooled_output": pooled}]]}
+
+                # c = clip.encode(prompt)
+                # uc = {}
+                # return {"conds":[[c, uc]]}
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):

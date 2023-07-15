@@ -7,7 +7,7 @@ from ..ainodes_backend.cnet_preprocessors import hed
 from ..ainodes_backend.cnet_preprocessors.mlsd import MLSDdetector
 from ..ainodes_backend.cnet_preprocessors.midas import MidasDetector
 from ..ainodes_backend.cnet_preprocessors import OpenposeDetector
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, tensor2pil, pil2tensor
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -125,7 +125,7 @@ class ImageOpNode(AiNode):
     op_code = OP_NODE_IMAGE_OPS
     op_title = "Image Operators"
     content_label_objname = "image_op_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
 
 
     def __init__(self, scene):
@@ -149,16 +149,16 @@ class ImageOpNode(AiNode):
     #@QtCore.Slot()
     def evalImplementation_thread(self):
         return_pixmap = None
-        return_pixmap_list = []
+        return_tensor_list = []
         if self.getInput(0) != None:
             node, index = self.getInput(0)
             if node != None:
-                pixmap_list = node.getOutput(index)
+                tensor_list = node.getOutput(index)
                 method = self.content.dropdown.currentText()
-                for pixmap in pixmap_list:
-                    return_pixmap = self.image_op(pixmap, method)
-                    return_pixmap_list.append(return_pixmap)
-        return return_pixmap_list
+                for tensor in tensor_list:
+                    return_tensor = self.image_op(tensor, method)
+                    return_tensor_list.append(return_tensor)
+        return return_tensor_list
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, pixmap_list):
@@ -173,8 +173,10 @@ class ImageOpNode(AiNode):
         self.markInvalid(False)
 
     def image_op(self, pixmap, method):
+        tensor = None
         # Convert the QPixmap object to a PIL Image object
-        image = pixmap_to_pil_image(pixmap)
+        image = tensor2pil(pixmap)
+        print(image)
         if method in image_ops_valid_methods:
             # Get the requested ImageEnhance method
             enhance_method = getattr(ImageEnhance, method, None)
@@ -330,11 +332,13 @@ class ImageOpNode(AiNode):
             #image = Image.fromarray(np_image)
 
         elif method == 'invert':
+            image = image.convert("RGB")
             image = ImageOps.invert(image)
         if image != None:
+            print(image)
             # Convert the PIL Image object to a QPixmap object
-            pixmap = pil_image_to_pixmap(image)
-        return pixmap
+            tensor = pil2tensor(image)
+        return tensor
 
 
 

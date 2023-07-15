@@ -63,7 +63,7 @@ class KSamplerNode(AiNode):
     op_code = OP_NODE_DEFORUM_LOSS
     op_title = "Deforum Aesthetic Functions"
     content_label_objname = "deforum_loss_node"
-    category = "Sampling"
+    category = "aiNodes Base/Sampling"
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[5,5,1], outputs=[1])
         self.content.button.clicked.connect(self.evalImplementation)

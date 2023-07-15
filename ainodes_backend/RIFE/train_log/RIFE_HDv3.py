@@ -6,7 +6,7 @@ import torch.optim as optim
 import itertools
 from ..warplayer import warp
 from torch.nn.parallel import DistributedDataParallel as DDP
-from .IFNet_HDv3 import *
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.RIFE.train_log.IFNet_HDv3 import IFNet
 import torch.nn.functional as F
 from ..loss import *
 

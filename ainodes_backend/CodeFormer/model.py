@@ -12,10 +12,10 @@ from torchvision.transforms.functional import normalize
 from basicsr.utils import imwrite, img2tensor, tensor2img
 from basicsr.utils.download_util import load_file_from_url
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.utils.face_restoration_helper import \
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.utils.face_restoration_helper import \
     FaceRestoreHelper
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.utils.misc import is_gray
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.CodeFormer.facelib.utils.misc import is_gray
 
 #from basicsr.utils.misc import gpu_is_available, get_device
 

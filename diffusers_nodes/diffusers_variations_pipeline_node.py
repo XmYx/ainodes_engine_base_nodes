@@ -5,12 +5,12 @@ import torch
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc, \
-    get_torch_device
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc, \
+    get_torch_device, pil2tensor, tensor2pil
 from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler, \
     StableDiffusionImageVariationPipeline
 
-from custom_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, \
+from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, \
     scheduler_type_values, SchedulerType, get_scheduler
 from ainodes_frontend import singleton as gs
 
@@ -22,7 +22,7 @@ class DiffusersVarPipeLineWidget(QDMNodeContentWidget):
     def initUI(self):
         self.scheduler_name = self.create_combo_box(scheduler_type_values, "Scheduler")
 
-        self.steps = self.create_spin_box("Steps", min_val=1, max_val=4096, default_val=25, step_value=1)
+        self.steps = self.create_spin_box("Steps", min_val=1, max_val=4096, default_val=25, step=1)
         self.scale = self.create_double_spin_box("Scale", min_val=0.01, max_val=25.00, default_val=7.5, step=0.01)
         self.eta = self.create_double_spin_box("Eta", min_val=0.00, max_val=1.00, default_val=1.0, step=0.01)
         self.seed = self.create_line_edit("Seed")
@@ -36,7 +36,7 @@ class DiffusersVarPipeLineNode(AiNode):
     op_code = OP_NODE_DIFF_VAR_PIPELINE
     op_title = "Diffusers - Variations"
     content_label_objname = "diffusers_variations_node"
-    category = "Diffusers"
+    category = "aiNodes Base/Diffusers"
     NodeContent_class = DiffusersVarPipeLineWidget
     dim = (340, 300)
     output_data_ports = [0,1]
@@ -48,7 +48,7 @@ class DiffusersVarPipeLineNode(AiNode):
 
     def evalImplementation_thread(self, index=0):
         images = self.getInputData(0)
-        image = pixmap_to_pil_image(images[0])
+        image = tensor2pil(images[0])
 
         pipe = self.getInputData(1)
 
@@ -89,7 +89,7 @@ class DiffusersVarPipeLineNode(AiNode):
                           eta=eta).images[0]
 
         torch_gc()
-        return [[pil_image_to_pixmap(image)], self.pipe]
+        return [[pil2tensor(image)], self.pipe]
 
 
     def remove(self):

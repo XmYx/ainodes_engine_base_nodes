@@ -7,7 +7,6 @@ from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
-from PyQt6.Qsci import QsciScintilla, QsciLexerPython, QsciAPIs
 
 from pyflakes.reporter import Reporter
 import ast
@@ -30,17 +29,32 @@ default_fn = """def customFunction(self):
     print("This is a susccesful test")
     return [None, None, None, None]"""
 
-class PythonLexer(QsciLexerPython):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setDefaultColor(QColor('white'))
-        self.setPaper(QColor("#d3d3d3"))
-class PythonCodeEditor(QsciScintilla):
+
+def get_lexer(parent=None):
+    from PyQt6.Qsci import QsciScintilla, QsciLexerPython, QsciAPIs
+
+
+    class PythonLexer(QsciLexerPython):
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self.setDefaultColor(QColor('white'))
+            self.setPaper(QColor("#d3d3d3"))
+
+    lexer = PythonLexer(parent)
+
+    return lexer
+
+def get_scintilla():
+    from PyQt6.Qsci import QsciScintilla, QsciLexerPython, QsciAPIs
+    return QsciScintilla
+
+class PythonCodeEditor(get_scintilla()):
     def __init__(self, parent=None):
         super().__init__(parent)
         # self.setAutoCompletionSource(QsciScintilla.AutoCompletionSource.AcsAll)
         # self.setAutoCompletionThreshold(1)
         #self.setAutoFillBackground(True)
+        from PyQt6.Qsci import QsciScintilla, QsciLexerPython, QsciAPIs
 
         self.setUtf8(True)
         self.setIndentationsUseTabs(False)
@@ -170,7 +184,7 @@ class VimNode(AiNode):
     op_code = OP_NODE_VIM
     op_title = "CodeEditor Node"
     content_label_objname = "code_editor_node"
-    category = "Functional"
+    category = "aiNodes Base/Functional"
     help_text = "Code Editor Node\n\n" \
 
     def __init__(self, scene):

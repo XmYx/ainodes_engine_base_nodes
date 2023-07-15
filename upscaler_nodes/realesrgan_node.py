@@ -21,7 +21,7 @@ from PIL import Image
 from qtpy import QtWidgets, QtGui, QtCore
 
 from ..ainodes_backend.model_loader import UpscalerLoader
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, tensor2pil, pil2tensor
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -84,7 +84,7 @@ class REALESRGANNode(AiNode):
     op_code = OP_NODE_RESRGAN
     op_title = "REALESRGan"
     content_label_objname = "realesrgan_node"
-    category = "Upscalers"
+    category = "aiNodes Base/Upscalers"
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])
@@ -124,12 +124,12 @@ class REALESRGANNode(AiNode):
         if images:
             for image in images:
 
-                img = pixmap_to_pil_image(image).convert("RGB")
+                img = tensor2pil(image).convert("RGB")
 
                 img = upscale_image(img, args)
                 if img != None:
 
-                    pixmap = pil_image_to_pixmap(img)
+                    pixmap = pil2tensor(img)
                     return_pixmaps.append(pixmap)
 
         return return_pixmaps

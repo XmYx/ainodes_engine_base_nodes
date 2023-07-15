@@ -90,9 +90,11 @@ def load_controlnet(ckpt_path, model=None):
     if use_fp16:
         control_model = control_model.half()
 
-    gs.models["controlnet"] = ControlNet(control_model)
-    del controlnet_data
-    del control_model
+    # gs.models["controlnet"] = ControlNet(control_model)
+    cnet_model = ControlNet(control_model, model)
+    return cnet_model
+    #del controlnet_data
+    #del control_model
 
 
 def load_controlnet_old(ckpt_path, model=None):
@@ -164,13 +166,13 @@ def load_controlnet_old(ckpt_path, model=None):
     #return control
 
 class ControlNet:
-    def __init__(self, control_model, device="cuda"):
+    def __init__(self, control_model, prev_control=None, device="cuda"):
         self.control_model = control_model
         self.cond_hint_original = None
         self.cond_hint = None
         self.strength = 1.0
-        self.device = device
-        self.previous_controlnet = None
+        self.device = gs.device.type
+        self.previous_controlnet = prev_control
 
     def get_control(self, x_noisy, t, cond_txt, batched_number):
         control_prev = None

@@ -5,7 +5,7 @@ from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
 from qtpy import QtWidgets, QtGui, QtCore
 
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -40,6 +40,7 @@ class ImageListWidget(QWidget):
         self.setLayout(layout)
 
     def load_images(self):
+        self.list_widget.clear()
         folder_path = QFileDialog.getExistingDirectory(self, "Select Folder")
         if folder_path:
             for file in os.listdir(folder_path):
@@ -48,7 +49,7 @@ class ImageListWidget(QWidget):
                     if not pixmap.isNull():
                         #pixmap = pixmap.scaled(256, 256, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                         item = QListWidgetItem()
-                        item.setIcon(pixmap)
+                        item.setIcon(QtGui.QIcon(pixmap))
                         item.setData(Qt.UserRole, pixmap)
                         self.list_widget.addItem(item)
 
@@ -85,7 +86,7 @@ class ImageListNode(AiNode):
     op_code = OP_NODE_IMG_LIST
     op_title = "Image List"
     content_label_objname = "image_list_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
 
 
     def __init__(self, scene):
@@ -123,13 +124,14 @@ class ImageListNode(AiNode):
     def evalImplementation_thread(self, index=0):
         self.select_next_item()
         pixmap = self.pixmap
-        print(pixmap)
         return pixmap
 
     def onWorkerFinished(self, result):
         self.busy = False
-        #super().onWorkerFinished(None)
-        self.setOutput(0, [result])
+
+        tensor = pixmap_to_tensor(result)
+
+        self.setOutput(0, [tensor])
         self.executeChild(2)
 
     def resize(self):

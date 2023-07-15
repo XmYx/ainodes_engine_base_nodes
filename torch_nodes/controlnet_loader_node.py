@@ -40,10 +40,13 @@ class ControlnetLoaderNode(AiNode):
     op_code = OP_NODE_CONTROLNET_LOADER
     op_title = "ControlNet Loader"
     content_label_objname = "controlnet_loader_node"
-    category = "Model Loading"
+    category = "aiNodes Base/Model Loading"
+
+    custom_input_socket_name = ["CNET", "EXEC"]
+    custom_output_socket_name = ["CNET", "EXEC"]
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[1], outputs=[1])
+        super().__init__(scene, inputs=[4,1], outputs=[4,1])
 
     def initInnerClasses(self):
         self.content = ControlnetLoaderWidget(self)
@@ -53,7 +56,7 @@ class ControlnetLoaderNode(AiNode):
 
         self.content.control_net_name.currentIndexChanged.connect(self.resize)
         self.grNode.width = 280
-        self.grNode.height = 100
+        self.grNode.height = 150
         self.content.setMinimumWidth(260)
         self.content.eval_signal.connect(self.evalImplementation)
 
@@ -70,18 +73,24 @@ class ControlnetLoaderNode(AiNode):
         self.update_all_sockets()
 
     def evalImplementation_thread(self, index=0):
+
         model_name = self.content.control_net_name.currentText()
-        if gs.models["loaded_controlnet"] != model_name:
-            self.markInvalid()
-            if model_name != "":
-                self.load_controlnet()
-                gs.models["loaded_controlnet"] = model_name
-                #pass
-                return self.value
-            else:
-                return self.value
-        else:
-            return self.value
+        prev_net = self.getInputData(0)
+        self.cnet = self.load_controlnet(prev_net)
+        return self.cnet
+
+
+        # if self.net != model_name:
+        #     self.markInvalid()
+        #     if model_name != "":
+        #         self.load_controlnet()
+        #         gs.models["loaded_controlnet"] = model_name
+        #         #pass
+        #         return self.value
+        #     else:
+        #         return self.value
+        # else:
+        #     return self.value
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
@@ -93,19 +102,19 @@ class ControlnetLoaderNode(AiNode):
         if len(self.getOutputs(0)) > 0:
             self.executeChild(output_index=0)
 
-    def load_controlnet(self):
+    def load_controlnet(self, prev_net=None):
         #if "controlnet" not in gs.models:
         controlnet_dir = gs.controlnet
         controlnet_path = os.path.join(controlnet_dir, self.content.control_net_name.currentText())
-        if "controlnet" in gs.models:
-            try:
-                gs.models["controlnet"].cpu()
-                del gs.models["controlnet"]
-                gs.models["controlnet"] = None
-            except:
-                pass
-        load_controlnet(controlnet_path)
-        return "controlnet"
+        # if "controlnet" in gs.models:
+        #     try:
+        #         gs.models["controlnet"].cpu()
+        #         del gs.models["controlnet"]
+        #         gs.models["controlnet"] = None
+        #     except:
+        #         pass
+        cnet = load_controlnet(controlnet_path, prev_net)
+        return cnet
 
 
 

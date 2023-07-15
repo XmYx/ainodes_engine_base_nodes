@@ -4,7 +4,7 @@ import secrets
 import numpy as np
 from einops import rearrange
 
-from ..ainodes_backend import common_ksampler, pil_image_to_pixmap
+from ..ainodes_backend import tensor_image_to_pixmap, get_torch_device, common_ksampler
 
 import torch
 from PIL import Image
@@ -61,9 +61,12 @@ class KSamplerNode(AiNode):
     op_code = OP_NODE_K_SAMPLER
     op_title = "K Sampler"
     content_label_objname = "K_sampling_node"
-    category = "Sampling"
+    category = "aiNodes Base/Sampling"
+
+    custom_input_socket_name = ["CONTROLNET", "VAE", "MODEL", "DATA", "LATENT", "NEG COND", "POS COND", "EXEC"]
+
     def __init__(self, scene, inputs=[], outputs=[]):
-        super().__init__(scene, inputs=[6,2,3,3,1], outputs=[5,2,1])
+        super().__init__(scene, inputs=[4,4,4,6,2,3,3,1], outputs=[5,2,1])
 
         # Create a worker object
     def initInnerClasses(self):
@@ -71,7 +74,7 @@ class KSamplerNode(AiNode):
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
-        self.grNode.height = 700
+        self.grNode.height = 750
         self.grNode.width = 256
         self.content.setMinimumWidth(250)
         self.content.setMinimumHeight(500)
@@ -82,24 +85,56 @@ class KSamplerNode(AiNode):
         self.progress_value = 0
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.button.clicked.connect(self.content.eval_signal)
-
-
+        self.device = get_torch_device()
+        self.latent_rgb_factors = torch.tensor([
+            #   R        G        B
+            [0.298, 0.207, 0.208],  # L1
+            [0.187, 0.286, 0.173],  # L2
+            [-0.158, 0.189, 0.264],  # L3
+            [-0.184, -0.271, -0.473],  # L4
+        ], dtype=torch.float, device=gs.device)
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
+        from ..ainodes_backend import tensor_image_to_pixmap, get_torch_device, common_ksampler
+
         #pass
         # Add a task to the task queue
-        cond_list = self.getInputData(3)
-        n_cond_list = self.getInputData(2)
+        cond_list = [self.getInputData(6)]
+        n_cond_list = [self.getInputData(5)]
+        print("C", cond_list, isinstance(cond_list, dict))
+        if isinstance(cond_list[0], dict):
+            cond_list = cond_list[0]["conds"]
+
+            print(len(cond_list))
+
+            if len(cond_list) == 1:
+                cond_list = [cond_list]
+
+        if isinstance(n_cond_list[0], dict):
+            n_cond_list = n_cond_list[0]["conds"]
+
+            if len(n_cond_list) == 1:
+                n_cond_list = [n_cond_list]
+
         self.steps = self.content.steps.value()
-        latent_list = self.getInputData(1)
-        data = self.getInputData(0)
+        latent_list = self.getInputData(4)
+        data = self.getInputData(3)
+        unet = self.getInputData(2)
+        vae = self.getInputData(1)
+        control_model = self.getInputData(0)
+        #unet.cuda()
+
+        assert unet is not None, "UNET NOT FOUND, MAKE SURE TO LOAD A MODEL AND CONNECT IT'S OUTPUTS"
+        assert vae is not None, "VAE NOT FOUND"
+        assert cond_list is not None, "POSITIVE CONDITIONING NOT FOUND, MAKE SURE TO ADD A CONDITIONING NODE"
+        assert n_cond_list is not None, "POSITIVE CONDITIONING NOT FOUND, MAKE SURE TO ADD A CONDITIONING NODE"
 
         if latent_list == None:
             latent_list = [torch.zeros([1, 4, 512 // 8, 512 // 8])]
 
 
-        return_pixmaps = []
+        return_latents = []
         return_samples = []
         try:
             x=0
@@ -135,7 +170,7 @@ class KSamplerNode(AiNode):
                     n_cond = n_cond_list[0]
                 for i in cond:
                     if 'control_hint' in i[1]:
-                        cond = self.apply_control_net(cond)
+                        cond = self.apply_control_net(cond, control_model)
 
                 self.denoise = self.content.denoise.value()
                 self.steps = self.content.steps.value()
@@ -168,87 +203,105 @@ class KSamplerNode(AiNode):
                         self.denoise = self.content.denoise.value()
                     else:
                         self.denoise = 1.0
-                sample = common_ksampler(device="cuda",
+                latent_dict = {}
+                latent_dict["samples"] = latent
+                sample = common_ksampler(model=unet,
                                          seed=self.seed,
                                          steps=self.steps,
-                                         start_step=self.start_step,
-                                         last_step=self.last_step,
                                          cfg=self.cfg,
                                          sampler_name=self.sampler_name,
                                          scheduler=self.scheduler,
                                          positive=cond,
                                          negative=n_cond,
-                                         latent=latent,
-                                         disable_noise=self.content.disable_noise.isChecked(),
-                                         force_full_denoise=self.content.force_denoise.isChecked(),
+                                         latent=latent_dict,
                                          denoise=self.denoise,
-                                         callback=self.callback,
-                                         noise_mask=noise_mask)
+                                         disable_noise=self.content.disable_noise.isChecked(),
+                                         start_step=self.start_step,
+                                         last_step=self.last_step,
+                                         force_full_denoise=self.content.force_denoise.isChecked())
+                # sample = common_ksampler(device=self.device,
+                #                          seed=self.seed,
+                #                          steps=self.steps,
+                #                          start_step=self.start_step,
+                #                          last_step=self.last_step,
+                #                          cfg=self.cfg,
+                #                          sampler_name=self.sampler_name,
+                #                          scheduler=self.scheduler,
+                #                          positive=cond,
+                #                          negative=n_cond,
+                #                          latent=latent,
+                #                          disable_noise=self.content.disable_noise.isChecked(),
+                #                          force_full_denoise=self.content.force_denoise.isChecked(),
+                #                          denoise=self.denoise,
+                #                          callback=self.callback,
+                #                          noise_mask=noise_mask,
+                #                          model=unet,
+                #                          control_model=control_model)
+                print("SAMPLE DONE", sample)
 
                 for c in cond:
                     if "control" in c[1]:
                         del c[1]["control"]
+                # from comfy.model_management import unload_model
+                # unload_model()
+                #
+                # cpu_s = sample[0]
+                x_sample = self.decode_sample(sample[0]["samples"], vae)
 
-                cpu_s = sample.cpu()
-                x_sample = self.decode_sample(sample)
+                #return_samples.append(cpu_s)
 
-                return_samples.append(cpu_s)
-
-                image = Image.fromarray(x_sample.astype(np.uint8))
-                pm = pil_image_to_pixmap(image)
-                return_pixmaps.append(pm)
-                if len(self.getOutputs(2)) > 0:
-                    nodes = self.getOutputs(0)
-                    for node in nodes:
-                        if isinstance(node, ImagePreviewNode):
-                            node.content.preview_signal.emit(pm)
+                #image = Image.fromarray(x_sample.astype(np.uint8))
+                #pm = tensor_image_to_pixmap(image)
+                return_latents.append(x_sample.detach())
+                if self.content.tensor_preview.isChecked():
+                    if len(self.getOutputs(2)) > 0:
+                        nodes = self.getOutputs(0)
+                        for node in nodes:
+                            if isinstance(node, ImagePreviewNode):
+                                node.content.preview_signal.emit(tensor_image_to_pixmap(x_sample))
 
 
                 x+=1
-            return [return_pixmaps, return_samples]
+            # unload_model()
+
+            return [return_latents, return_samples]
         except Exception as e:
             handle_ainodes_exception()
             return_pixmaps, return_samples = None, None
             print(e)
         return [return_pixmaps, return_samples]
-    def decode_sample(self, sample):
-        decoded = gs.models["vae"].decode_tiled(sample)
-        decoded_array = 255. * decoded[0].detach().numpy()
-        return decoded_array
+    def decode_sample(self, sample, vae):
+        decoded = vae.decode_tiled(sample)
+        #decoded = vae.decode(sample)
+        #decoded_array = 255. * decoded[0].detach().numpy()
+        return decoded
 
     def callback(self, tensors, *args, **kwargs):
-
-        i = tensors["i"]
-        self.content.progress_signal.emit(1)
-        if self.content.tensor_preview.isChecked():
-            if i < self.last_step - 2:
-                self.latent_rgb_factors = torch.tensor([
-                    #   R        G        B
-                    [0.298, 0.207, 0.208],  # L1
-                    [0.187, 0.286, 0.173],  # L2
-                    [-0.158, 0.189, 0.264],  # L3
-                    [-0.184, -0.271, -0.473],  # L4
-                ], dtype=torch.float, device='cuda')
-
-                latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
-                latent = (((latent + 1) / 2)
-                          .clamp(0, 1)  # change scale from -1..1 to 0..1
-                          .mul(0xFF)  # to 0..255
-                          .byte())
-                # Copying to cpu as numpy array
-                latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
-                img = Image.fromarray(latent)
-                img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
-                latent_pixmap = pil_image_to_pixmap(img)
-                #self.setOutput(0, [latent_pixmap])
-                if len(self.getOutputs(2)) > 0:
-                    nodes = self.getOutputs(0)
-                    for node in nodes:
-                        if isinstance(node, ImagePreviewNode):
-                            node.content.preview_signal.emit(latent_pixmap)
-                        if isinstance(node, VideoOutputNode):
-                            frame = np.array(img)
-                            node.content.video.add_frame(frame, dump=node.content.dump_at.value())
+        print(tensors)
+        # i = tensors["i"]
+        # self.content.progress_signal.emit(1)
+        # if self.content.tensor_preview.isChecked():
+        #     if i < self.last_step - 2:
+        #
+        #         latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
+        #         latent = (((latent + 1) / 2)
+        #                   .clamp(0, 1)  # change scale from -1..1 to 0..1
+        #                   .mul(0xFF)  # to 0..255
+        #                   .byte())
+        #         # Copying to cpu as numpy array
+        #         latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
+        #         img = Image.fromarray(latent)
+        #         img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
+        #         latent_pixmap = pil_image_to_pixmap(img)
+        #         #self.setOutput(0, [latent_pixmap])
+        #         if len(self.getOutputs(2)) > 0:
+        #             nodes = self.getOutputs(0)
+        #             for node in nodes:
+        #                 if isinstance(node, ImagePreviewNode):
+        #                     node.content.preview_signal.emit(latent_pixmap)
+        #                 if isinstance(node, VideoOutputNode):
+        #                     frame = np.array(img)
+        #                     node.content.video.add_frame(frame, dump=node.content.dump_at.value())
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result):
         self.busy = False
@@ -261,6 +314,8 @@ class KSamplerNode(AiNode):
         self.markInvalid(False)
         self.setOutput(0, result[0])
         self.setOutput(1, result[1])
+
+
         self.content.progress_signal.emit(100)
         if gs.should_run:
             if len(self.getOutputs(2)) > 0:
@@ -279,19 +334,28 @@ class KSamplerNode(AiNode):
             self.content.progress_bar.setValue(100)
     def onInputChanged(self, socket=None):
         pass
-    def apply_control_net(self, conditioning, progress_callback=None):
+    def apply_control_net(self, conditioning, c_net, progress_callback=None):
         cnet_string = 'controlnet'
+
+
         c = []
         for t in conditioning:
             n = [t[0], t[1].copy()]
-            c_net = gs.models[cnet_string]
+
+
+
+
+            #c_net.control_model.control_start = n[1]["control_start"]
+            #c_net.control_model.control_stop = n[1]["control_stop"]
+            #c_net.control_model.control_model_name = n[1]["control_model_name"]
             c_net.set_cond_hint(t[1]['control_hint'], t[1]['control_strength'])
             if 'control' in t[1]:
+                #print("AND SETTING UP MULTICONTROL")
                 c_net.set_previous_controlnet(t[1]['control'])
             n[1]['control'] = c_net
             n[1]['control'].control_model.cpu()
-            #del c_net
             c.append(n)
+        print(len(c))
         return c
 
 def get_fixed_seed(seed):

@@ -2,7 +2,8 @@ from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ainodes_frontend import singleton as gs
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, tensor2pil, \
+    pil2tensor
 
 OP_NODE_DIS = get_next_opcode()
 
@@ -17,7 +18,7 @@ class DISBGNode(AiNode):
     op_code = OP_NODE_DIS
     op_title = "Background Separation"
     content_label_objname = "image_disbg_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
 
     custom_output_socket_name = ["FG", "BG", "MASK", "EXEC"]
 
@@ -47,11 +48,11 @@ class DISBGNode(AiNode):
             print(type(pixmaps))
         if pixmaps is not None:
             for pixmap1 in pixmaps:
-                image = pixmap_to_pil_image(pixmap1)
+                image = tensor2pil(pixmap1)
                 img, bg, mask = self.model.inference(image)
-                fg_pixmap = pil_image_to_pixmap(img)
-                bg_pixmap = pil_image_to_pixmap(bg)
-                mask_pixmap = pil_image_to_pixmap(mask)
+                fg_pixmap = pil2tensor(img)
+                bg_pixmap = pil2tensor(bg)
+                mask_pixmap = pil2tensor(mask)
                 return([bg_pixmap, fg_pixmap, mask_pixmap])
 
     def onWorkerFinished(self, result):

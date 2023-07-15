@@ -3,8 +3,8 @@ from qtpy import QtWidgets, QtCore, QtGui
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap, \
-    pixmap_composite_method_list
+from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, \
+    pixmap_composite_method_list, tensor2pil, pil2tensor
 from ainodes_frontend import singleton as gs
 
 OP_NODE_IMAGE_BLEND = get_next_opcode()
@@ -33,7 +33,7 @@ class BlendNode(AiNode):
     op_code = OP_NODE_IMAGE_BLEND
     op_title = "Image Blend"
     content_label_objname = "image_blend_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
     help_text = "Image Blend / Composite node\n\n" \
                 ""
 
@@ -71,14 +71,14 @@ class BlendNode(AiNode):
                     print(f"BLEND NODE: Using both inputs with a blend value: {blend}")
             elif method == "composite":
                 # Create a new RGBA image with the same dimensions as the RGB image
-                image1 = pixmap_to_pil_image(pixmap1[0]).convert("RGBA")
-                image2 = pixmap_to_pil_image(pixmap2[0]).convert("RGBA")
+                image1 = tensor2pil(pixmap1[0]).convert("RGBA")
+                image2 = tensor2pil(pixmap2[0]).convert("RGBA")
 
                 result_image = Image.new("RGBA", image1.size, (0, 0, 0, 0))
 
                 # Use the mask image to composite the RGB image onto the result image
                 image = Image.composite(image1, result_image, image2)
-                value = pil_image_to_pixmap(image)
+                value = pil2tensor(image)
             elif method in pixmap_composite_method_list:
                 pixmap_1, pixmap_2 = None, None
                 pixmap_1 = pixmap1[0]
@@ -121,14 +121,14 @@ class BlendNode(AiNode):
         from PIL import Image
 
         # Convert the QPixmap object to a PIL Image object
-        image1 = pixmap_to_pil_image(pixmap1).convert("RGBA")
-        image2 = pixmap_to_pil_image(pixmap2).convert("RGBA")
+        image1 = pixmap_to_tensor(pixmap1).convert("RGBA")
+        image2 = pixmap_to_tensor(pixmap2).convert("RGBA")
 
         image = Image.blend(image1, image2, blend)
         #print(blend, image)
 
         # Convert the PIL Image object to a QPixmap object
-        pixmap = pil_image_to_pixmap(image)
+        pixmap = tensor_image_to_pixmap(image)
 
         return pixmap
 

@@ -1,7 +1,8 @@
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc, \
+    tensor2pil
 from diffusers import StableUnCLIPImg2ImgPipeline, UnCLIPImageVariationPipeline
 from diffusers.utils import load_image
 import torch
@@ -15,6 +16,7 @@ from PIL import Image
 OP_NODE_DIFF_CONTROLNET = get_next_opcode()
 
 controlnets_15 = {
+    "qrControl": "DionTimmer/controlnet_qrcode-control_v1p_sd15",
     "Inpaint": "lllyasviel/control_v11p_sd15_inpaint",
     "Ip2p": "lllyasviel/control_v11e_sd15_ip2p",
     "Tile": "lllyasviel/control_v11f1e_sd15_tile",
@@ -33,6 +35,7 @@ controlnets_15 = {
 }
 
 controlnets_21 = {
+    "qrControl": "DionTimmer/controlnet_qrcode-control_v11p_sd21",
     "Normalbae": "thibaud/controlnet-sd21-normalbae-diffusers",
     "Lineart": "thibaud/controlnet-sd21-lineart-diffusers",
     "Ade20k": "thibaud/controlnet-sd21-ade20k-diffusers",
@@ -79,7 +82,7 @@ class DiffusersControlNetNode(AiNode):
     op_code = OP_NODE_DIFF_CONTROLNET
     op_title = "Diffusers - ControlNet"
     content_label_objname = "diffusers_controlnet_node"
-    category = "Diffusers"
+    category = "aiNodes Base/Diffusers"
     NodeContent_class = DiffusersControlNetWidget
     dim = (340, 340)
     output_data_ports = [0]
@@ -102,7 +105,7 @@ class DiffusersControlNetNode(AiNode):
 
         data = self.getInputData(1)
 
-        image = pixmap_to_pil_image(images[0])
+        image = tensor2pil(images[0])
         scale = self.content.scale.value()
         start = self.content.start_value.value()
         stop = self.content.stop_value.value()
@@ -123,8 +126,6 @@ class DiffusersControlNetNode(AiNode):
                 data["control_diff"] = [to_insert]
         else:
             data = {"control_diff":[to_insert]}
-
-        print(data)
         return [data]
 
 

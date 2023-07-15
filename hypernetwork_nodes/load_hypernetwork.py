@@ -1,6 +1,6 @@
 import torch
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import load_torch_file
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import load_torch_file
 
 
 def load_hypernetwork_patch(path, strength):

@@ -6,7 +6,7 @@ from qtpy import QtGui, QtCore
 from qtpy.QtWidgets import QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFileDialog
 from qtpy.QtCore import Qt
 
-from ..ainodes_backend import pil_image_to_pixmap
+from ..ainodes_backend import tensor_image_to_pixmap, pil2tensor, pixmap_to_tensor
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
@@ -62,7 +62,7 @@ class VideoInputNode(AiNode):
     op_code = OP_NODE_VIDEO_INPUT
     op_title = "Video Input"
     content_label_objname = "video_input_node"
-    category = "Video"
+    category = "aiNodes Base/Video"
     input_socket_name = ["EXEC"]
     output_socket_name = ["EXEC", "IMAGE"]
 
@@ -89,7 +89,7 @@ class VideoInputNode(AiNode):
         skip = self.content.skip_frames.value()
         pixmap = self.content.video.get_frame(skip=skip)
         if pixmap != None:
-            self.setOutput(0, [pixmap])
+            self.setOutput(0, [pixmap_to_tensor(pixmap)])
             self.markDirty(False)
             self.markInvalid(False)
             self.content.label.setPixmap(pixmap)
@@ -135,7 +135,8 @@ class VideoPlayer:
         ret, frame = self.video_capture.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(frame)
-        pixmap = pil_image_to_pixmap(image)
+        pixmap = pil2tensor(image)
+        pixmap = tensor_image_to_pixmap(pixmap)
 
         # Return the pixmap if the read was successful
         if ret:

@@ -4,8 +4,8 @@ import os.path
 import numpy as np
 import torch
 
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.matte import MattingNetwork
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend.poormans_wget import poorman_wget
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.matte import MattingNetwork
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.poormans_wget import poorman_wget
 
 """try:
     # Try to run wget with the --version option

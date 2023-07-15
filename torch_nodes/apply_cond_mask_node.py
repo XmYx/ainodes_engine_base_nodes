@@ -6,7 +6,7 @@ from PIL import ImageOps
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_pil_image
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_tensor
 from ainodes_frontend import singleton as gs
 
 OP_NODE_COND_MASK = get_next_opcode()
@@ -21,7 +21,7 @@ class CondMaskNode(AiNode):
     op_code = OP_NODE_COND_MASK
     op_title = "Conditioning Mask"
     content_label_objname = "cond_apply_mask"
-    category = "Conditioning"
+    category = "aiNodes Base/Conditioning"
     NodeContent_class = CondMaskWidget
     #dim = (340, 160)
     output_data_ports = [0]
@@ -47,7 +47,7 @@ class CondMaskNode(AiNode):
         images = self.getInputData(2)
 
         if images:
-            i = pixmap_to_pil_image(images[0])
+            i = pixmap_to_tensor(images[0])
             i = i.resize((i.size[0] // 8, i.size[1] // 8), resample=PIL.Image.Resampling.LANCZOS)
             i = ImageOps.exif_transpose(i)
 

@@ -1,7 +1,7 @@
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from custom_nodes.ainodes_engine_base_nodes.ainodes_backend import pil_image_to_pixmap, pixmap_to_pil_image, torch_gc
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc
 from diffusers import StableUnCLIPImg2ImgPipeline, UnCLIPImageVariationPipeline
 from diffusers.utils import load_image
 import torch
@@ -27,7 +27,7 @@ class DiffusersKarloUnclipNode(AiNode):
     op_code = OP_NODE_DIFF_KARLO_UNCLIP
     op_title = "Diffusers - Karlo UnClip Node"
     content_label_objname = "diffusers_karlo_unclip_node"
-    category = "Diffusers"
+    category = "aiNodes Base/Diffusers"
     NodeContent_class = DiffusersKarloUnclipWidget
     dim = (340, 260)
     output_data_ports = [0]
@@ -42,7 +42,7 @@ class DiffusersKarloUnclipNode(AiNode):
         images = self.getInputData(0)
         return_pixmaps = []
         for image in images:
-            pil_image = pixmap_to_pil_image(image)
+            pil_image = pixmap_to_tensor(image)
             if not self.pipe:
                 self.pipe = UnCLIPImageVariationPipeline.from_pretrained("fusing/karlo-image-variations-diffusers")
                 self.pipe = self.pipe.to('cuda')
@@ -50,7 +50,7 @@ class DiffusersKarloUnclipNode(AiNode):
 
 
             image = self.pipe(pil_image, decoder_num_inference_steps=30, super_res_num_inference_steps=25, generator=generator).images[0]
-            return_pixmaps.append(pil_image_to_pixmap(image))
+            return_pixmaps.append(tensor_image_to_pixmap(image))
         return [return_pixmaps]
 
     def remove(self):

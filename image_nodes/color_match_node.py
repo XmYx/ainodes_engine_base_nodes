@@ -1,4 +1,6 @@
 from qtpy import QtCore, QtGui
+
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor2pil, pil2tensor
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -17,7 +19,7 @@ class ColorMatch(AiNode):
     op_code = OP_NODE_COLORMATCH
     op_title = "Color Match"
     content_label_objname = "colormatch_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
     help_text = "Deforum ColorMatch Node\n\n" \
                 "" \
                 "Please refer to Deforum guide"
@@ -41,7 +43,7 @@ class ColorMatch(AiNode):
     def evalImplementation_thread(self, index=0):
 
         if self.getInput(0) != None and self.getInput(1) != None:
-            from ..ainodes_backend import pixmap_to_pil_image, pil_image_to_pixmap
+            from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap
             from PIL import Image
             import numpy as np
             node, index = self.getInput(0)
@@ -49,8 +51,8 @@ class ColorMatch(AiNode):
             node, index = self.getInput(1)
             pixmap2 = node.getOutput(index)[0]
 
-            pil_image_1 = pixmap_to_pil_image(pixmap1).convert('RGB')
-            pil_image_2 = pixmap_to_pil_image(pixmap2).convert('RGB')
+            pil_image_1 = tensor2pil(pixmap1).convert('RGB')
+            pil_image_2 = tensor2pil(pixmap2).convert('RGB')
 
             np_image_1 = np.array(pil_image_1)
             np_image_2 = np.array(pil_image_2)
@@ -58,7 +60,7 @@ class ColorMatch(AiNode):
             matched_image = maintain_colors(np_image_2, np_image_1, 'LAB')
 
             pil_image = Image.fromarray(matched_image)
-            pixmap = pil_image_to_pixmap(pil_image)
+            pixmap = pil2tensor(pil_image)
 
 
             return pixmap

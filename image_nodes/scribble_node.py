@@ -2,6 +2,7 @@ from qtpy.QtWidgets import QLabel
 from qtpy.QtCore import Qt
 from qtpy import QtWidgets, QtGui, QtCore
 
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pixmap_to_tensor
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -151,7 +152,7 @@ class ScribbleNode(AiNode):
     op_code = OP_NODE_IMG_SCRIBBLE
     op_title = "Scribble"
     content_label_objname = "image_scribble_node"
-    category = "Image"
+    category = "aiNodes Base/Image"
 
 
     def __init__(self, scene):
@@ -191,7 +192,7 @@ class ScribbleNode(AiNode):
         pass
         self.markDirty(False)
         self.markInvalid(False)
-        self.setOutput(0, [pixmap])
+        self.setOutput(0, [pixmap_to_tensor(pixmap)])
         self.executeChild(2)
     def switch_color(self):
         if self.color == Qt.black:
