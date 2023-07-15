@@ -28,7 +28,7 @@ class KandinskyCondBlendNode(AiNode):
     content_label_objname = "kandinsky_cond_interp_node"
     category = "aiNodes Base/Kandinsky"
     NodeContent_class = KandinskyCondInterpWidget
-    dim = (340, 500)
+    dim = (340, 180)
     output_data_ports = [0]
     exec_port = 1
 

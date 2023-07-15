@@ -35,7 +35,7 @@ class KandinskySamplerNode(AiNode):
     content_label_objname = "kandinsky_sampler_node"
     category = "aiNodes Base/Kandinsky"
     NodeContent_class = KandinskySamplerWidget
-    dim = (340, 400)
+    dim = (340, 600)
     output_data_ports = [0]
     exec_port = 1
 
