@@ -82,6 +82,7 @@ class KSamplerNode(AiNode):
         self.content.fix_seed_button.clicked.connect(self.setSeed)
         self.content.seed_signal.connect(self.setSeed)
         self.content.progress_signal.connect(self.setProgress)
+        self.single_step = 1
         self.progress_value = 0
         self.content.eval_signal.connect(self.evalImplementation)
         self.content.button.clicked.connect(self.content.eval_signal)

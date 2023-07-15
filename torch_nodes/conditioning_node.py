@@ -201,7 +201,7 @@ class ConditioningNode(AiNode):
                 else:
                     if prompt_override is not None:
                         prompt = prompt_override
-                    result = [self.get_conditioning(prompt=prompt, clip=clip)]
+                    result = self.get_conditioning(prompt=prompt, clip=clip)
 
             else:
                 data = {}
