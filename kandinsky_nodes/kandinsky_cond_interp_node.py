@@ -112,7 +112,7 @@ class KandinskyCondImageNode(AiNode):
 
     def evalImplementation_thread(self, index=0):
         image = self.getInputData(1)
-        image = tensor2pil(image)
+        image = tensor2pil(image[0])
         weight = self.content.weight.value()
         data = self.getInputData(0)
         data_chunk = {"image":image,

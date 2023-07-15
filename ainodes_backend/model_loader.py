@@ -64,7 +64,27 @@ class UpscalerLoader(torch.nn.Module):
             self.loaded_model = name
 
         return self.loaded_model
+def encode_tiled_(self, in_samples, tile_x=512, tile_y=512, overlap=64):
+    from comfy import utils
+    pixel_samples = in_samples.clone()
+    steps = pixel_samples.shape[0] * utils.get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2],
+                                                                 tile_x, tile_y, overlap)
+    steps += pixel_samples.shape[0] * utils.get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2],
+                                                                  tile_x // 2, tile_y * 2, overlap)
+    steps += pixel_samples.shape[0] * utils.get_tiled_scale_steps(pixel_samples.shape[3], pixel_samples.shape[2],
+                                                                  tile_x * 2, tile_y // 2, overlap)
+    # pbar = utils.ProgressBar(steps)
 
+    encode_fn = lambda a: self.first_stage_model.encode(
+        2. * a.to(self.vae_dtype).to(self.device) - 1.).sample().float()
+    samples = utils.tiled_scale(pixel_samples, encode_fn, tile_x, tile_y, overlap, upscale_amount=(1 / 8),
+                                out_channels=4, pbar=None).clone()
+    samples = samples + utils.tiled_scale(pixel_samples, encode_fn, tile_x * 2, tile_y // 2, overlap,
+                                          upscale_amount=(1 / 8), out_channels=4, pbar=None).clone()
+    samples = samples + utils.tiled_scale(pixel_samples, encode_fn, tile_x // 2, tile_y * 2, overlap,
+                                          upscale_amount=(1 / 8), out_channels=4, pbar=None).clone()
+    samples = samples / 3.0
+    return samples
 class ModelLoader(torch.nn.Module):
     """
     Torch SD Model Loader class
@@ -127,9 +147,10 @@ class ModelLoader(torch.nn.Module):
         left_over = sd.keys()
         if len(left_over) > 0:
             print("left over keys:", left_over)
-        if style is not "None":
+        print("style:", style)
+        if style is not None:
             apply_optimizations(style)
-
+        vae.encode_tiled_ = encode_tiled_
         return ModelPatcher(model, load_device=model_management.get_torch_device(), offload_device=offload_device), clip, vae, clipvision
 
     def load_model(self, file=None, config_name=None, inpaint=False, verbose=False, style="sdp"):

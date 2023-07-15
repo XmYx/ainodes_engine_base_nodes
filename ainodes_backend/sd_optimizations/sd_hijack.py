@@ -52,6 +52,8 @@ def apply_optimizations(style=""):
 
     if style in valid_optimizations:
         hijack_style = style
+    else:
+        return
     if style == "":
         hijack_style = "sdp"
     ldm.modules.diffusionmodules.model.nonlinearity = silu
