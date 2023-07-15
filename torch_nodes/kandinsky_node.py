@@ -83,7 +83,7 @@ class KandinskyNode(AiNode):
         self.grNode.icon = self.icon
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
-        self.grNode.height = 750
+        self.grNode.height = 850
         self.grNode.width = 256
         self.content.setMinimumWidth(256)
         self.content.setMinimumHeight(256)
