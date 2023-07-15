@@ -62,11 +62,7 @@ class LatentNode(AiNode):
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
-
         vae = self.getInputData(0)
-
-
-
         samples = []
         if self.getInput(1) != None:
             try:
@@ -85,8 +81,8 @@ class LatentNode(AiNode):
                 samples = []
                 assert vae is not None, "No VAE found for encoding your image, please make sure to load and connect one."
                 vae.first_stage_model.cuda()
-                for pixmap in pixmap_list:
-                    image = pixmap_to_tensor(pixmap)
+                for image in pixmap_list:
+                    #image = pixmap_to_tensor(pixmap)
 
                     #print("image", image)
 
@@ -97,12 +93,12 @@ class LatentNode(AiNode):
                     image = repeat(image, '1 ... -> b ...', b=1)"""
 
 
-                    image = image.convert("RGB")
-                    image = np.array(image).astype(np.float32) / 255.0
-                    image = image[None] #.transpose(0, 3, 1, 2)
-                    image = torch.from_numpy(image)
-                    image = image.detach().cpu()
-                    torch_gc()
+                    # image = image.convert("RGB")
+                    # image = np.array(image).astype(np.float32) / 255.0
+                    # image = image[None] #.transpose(0, 3, 1, 2)
+                    # image = torch.from_numpy(image)
+                    # image = image.detach().cpu()
+                    # torch_gc()
 
                     latent = vae.encode(image)
                     latent = latent.to("cpu")

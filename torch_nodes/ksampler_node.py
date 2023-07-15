@@ -4,7 +4,7 @@ import secrets
 import numpy as np
 from einops import rearrange
 
-from ..ainodes_backend import tensor_image_to_pixmap, get_torch_device
+from ..ainodes_backend import tensor_image_to_pixmap, get_torch_device, common_ksampler
 
 import torch
 from PIL import Image
@@ -96,7 +96,7 @@ class KSamplerNode(AiNode):
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
-        from src.ComfyUI.nodes import common_ksampler
+        from ..ainodes_backend import tensor_image_to_pixmap, get_torch_device, common_ksampler
 
         #pass
         # Add a task to the task queue
@@ -123,7 +123,7 @@ class KSamplerNode(AiNode):
         unet = self.getInputData(2)
         vae = self.getInputData(1)
         control_model = self.getInputData(0)
-
+        #unet.cuda()
 
         assert unet is not None, "UNET NOT FOUND, MAKE SURE TO LOAD A MODEL AND CONNECT IT'S OUTPUTS"
         assert vae is not None, "VAE NOT FOUND"
@@ -219,7 +219,6 @@ class KSamplerNode(AiNode):
                                          start_step=self.start_step,
                                          last_step=self.last_step,
                                          force_full_denoise=self.content.force_denoise.isChecked())
-
                 # sample = common_ksampler(device=self.device,
                 #                          seed=self.seed,
                 #                          steps=self.steps,
@@ -243,8 +242,10 @@ class KSamplerNode(AiNode):
                 for c in cond:
                     if "control" in c[1]:
                         del c[1]["control"]
-
-                cpu_s = sample[0]
+                # from comfy.model_management import unload_model
+                # unload_model()
+                #
+                # cpu_s = sample[0]
                 x_sample = self.decode_sample(sample[0]["samples"], vae)
 
                 #return_samples.append(cpu_s)
@@ -261,6 +262,8 @@ class KSamplerNode(AiNode):
 
 
                 x+=1
+            # unload_model()
+
             return [return_latents, return_samples]
         except Exception as e:
             handle_ainodes_exception()
@@ -268,7 +271,6 @@ class KSamplerNode(AiNode):
             print(e)
         return [return_pixmaps, return_samples]
     def decode_sample(self, sample, vae):
-
         decoded = vae.decode_tiled(sample)
         #decoded = vae.decode(sample)
         #decoded_array = 255. * decoded[0].detach().numpy()
