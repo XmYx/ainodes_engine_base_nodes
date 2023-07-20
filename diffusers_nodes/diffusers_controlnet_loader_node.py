@@ -16,7 +16,8 @@ from PIL import Image
 OP_NODE_DIFF_CONTROLNET = get_next_opcode()
 
 controlnets_15 = {
-    "qrControl": "DionTimmer/controlnet_qrcode-control_v1p_sd15",
+    "qrControl_monstel-labs": "monster-labs/control_v1p_sd15_qrcode_monster",
+    "qrControl_Dion": "DionTimmer/controlnet_qrcode-control_v1p_sd15",
     "Inpaint": "lllyasviel/control_v11p_sd15_inpaint",
     "Ip2p": "lllyasviel/control_v11e_sd15_ip2p",
     "Tile": "lllyasviel/control_v11f1e_sd15_tile",
