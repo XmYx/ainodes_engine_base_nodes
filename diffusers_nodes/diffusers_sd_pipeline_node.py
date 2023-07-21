@@ -87,7 +87,9 @@ class DiffusersPipeLineNode(AiNode):
         device = get_torch_device()
         model_key = self.content.models.currentIndex()
         model_name = diffusers_indexed[model_key]
-
+        starts = []
+        stops = []
+        scales = []
         if data:
             if "control_diff" in data:
                 control_params = []
@@ -107,10 +109,13 @@ class DiffusersPipeLineNode(AiNode):
                         cnet = ControlNetModel.from_pretrained(control["name"], torch_dtype=torch.float16).to(get_torch_device())
                     else:
                         cnet = self.pipe.controlnet.nets[x]
-                    cnet.start_control = control["start"]
-                    cnet.stop_control = control["stop"]
+                    starts.append(control["start"])
+                    stops.append(control["stop"])
+                    scales.append(control["scale"])
+                    # cnet.start_control = control["start"]
+                    # cnet.stop_control = control["stop"]
                     control_images.append(control["image"])
-                    cnet_scales.append(control["scale"])
+                    cnet_scales.append(float(control["scale"]))
                     if reload:
                         controlnets.append(cnet)
 
@@ -118,14 +123,16 @@ class DiffusersPipeLineNode(AiNode):
                 self.control_params = control_params
 
 
-        do_hijack = True
+        do_hijack = False
         if len(controlnets) > 0:
             diffusion_class = StableDiffusionControlNetPipeline
-            do_hijack = True
+            do_hijack = False
         else:
             diffusion_class = StableDiffusionPipeline
 
         if self.content.reload.isChecked() or self.pipe == None or reload:
+            if len(controlnets) == 1:
+                controlnets = controlnets[0]
             self.pipe = diffusion_class.from_pretrained(
                 model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None
             ).to(device)
@@ -159,6 +166,14 @@ class DiffusersPipeLineNode(AiNode):
         generator = torch.Generator(device).manual_seed(seed)
         latents = None
         if isinstance(self.pipe, StableDiffusionControlNetPipeline):
+
+            print(cnet_scales, starts, stops)
+            if len(cnet_scales) == 1 or len(starts) == 1 or len(stops) == 1:
+                cnet_scales = cnet_scales[0]
+                starts = starts[0]
+                stops = stops[0]
+
+
             image = self.pipe(prompt = prompt,
                         image = control_images,
                         height = height,
@@ -170,7 +185,9 @@ class DiffusersPipeLineNode(AiNode):
                         generator = generator,
                         latents = latents,
                         controlnet_conditioning_scale = cnet_scales,
-                        guess_mode = False).images[0]
+                        guess_mode = False,
+                        control_guidance_start = starts,
+                        control_guidance_end = stops).images[0]
         else:
             image = self.pipe(prompt = prompt,
                         height = height,

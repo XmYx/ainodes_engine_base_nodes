@@ -16,7 +16,7 @@ from PIL import Image
 OP_NODE_DIFF_CONTROLNET = get_next_opcode()
 
 controlnets_15 = {
-    "qrControl_monstel-labs": "monster-labs/control_v1p_sd15_qrcode_monster",
+        "qrControl_monstel-labs": "monster-labs/control_v1p_sd15_qrcode_monster",
     "qrControl_Dion": "DionTimmer/controlnet_qrcode-control_v1p_sd15",
     "Inpaint": "lllyasviel/control_v11p_sd15_inpaint",
     "Ip2p": "lllyasviel/control_v11e_sd15_ip2p",
@@ -58,8 +58,8 @@ class DiffusersControlNetWidget(QDMNodeContentWidget):
 
         self.controlnet_name = self.create_combo_box(self.get_control_list(), "ControlNet")
         self.scale = self.create_double_spin_box(label_text="Control Strength", min_val=0.0, max_val=10.0, default_val=1.0, step=0.01)
-        self.start_value = self.create_spin_box("Start", min_val=0, max_val=100, default_val=0)
-        self.stop_value = self.create_spin_box("Stop", min_val=0, max_val=100, default_val=100)
+        self.start_value = self.create_double_spin_box("Start", min_val=0, max_val=1.0, default_val=0.0)
+        self.stop_value = self.create_double_spin_box("Stop", min_val=0, max_val=1.0, default_val=1.0)
         self.version_select.currentIndexChanged.connect(self.update_combo_box)
 
         self.create_main_layout(grid=1)
