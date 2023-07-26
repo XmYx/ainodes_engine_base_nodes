@@ -59,20 +59,20 @@ class DiffBaseXLNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[4,1], outputs=[4,5,2,1])
-        self.path = "stabilityai/stable-diffusion-xl-base-0.9"
+        self.path = "stabilityai/stable-diffusion-xl-base-1.0"
         self.pipe = None
     def evalImplementation_thread(self, index=0):
         tensor = None
         return_latent = None
         token = self.content.token.text()
 
-        assert token != "", "Token must be a valid HF Token string"
+        #assert token != "", "Token must be a valid HF Token string"
         #subprocess.call(["pip", "install", "git+https://github.com/patrickvonplaten/invisible-watermark.git@remove_onnxruntime_depedency"])
 
         if not self.pipe:
             self.pipe = self.getInputData(0)
             if not self.pipe:
-                self.pipe = StableDiffusionXLPipeline.from_pretrained(self.path, torch_dtype=torch.float16, safety_checker=None, requires_safety_checker=False, use_auth_token=token)
+                self.pipe = StableDiffusionXLPipeline.from_pretrained(self.path, torch_dtype=torch.float16, safety_checker=None, requires_safety_checker=False)
 
         self.pipe.to("cuda")
         self.pipe.watermark.apply_watermark = dont_apply_watermark

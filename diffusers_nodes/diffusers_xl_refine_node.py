@@ -52,7 +52,7 @@ class DiffRefineXLNode(AiNode):
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[4,5,2,1], outputs=[4,5,1])
-        self.path = "stabilityai/stable-diffusion-xl-refiner-0.9"
+        self.path = "stabilityai/stable-diffusion-xl-refiner-1.0"
         self.pipe = None
     def evalImplementation_thread(self, index=0):
 
@@ -69,12 +69,12 @@ class DiffRefineXLNode(AiNode):
         latent = self.getInputData(2)
         token = self.content.token.text()
 
-        assert token != "", "Token must be a valid HF Token string"
+        #assert token != "", "Token must be a valid HF Token string"
 
         if not self.pipe:
             self.pipe = self.getInputData(0)
             if not self.pipe:
-                self.pipe = DiffusionPipeline.from_pretrained(self.path, torch_dtype=torch.float16, safety_checker=None, requires_safety_checker=False, use_auth_token=token)
+                self.pipe = DiffusionPipeline.from_pretrained(self.path, torch_dtype=torch.float16, safety_checker=None, requires_safety_checker=False)
         self.pipe.watermark.apply_watermark = dont_apply_watermark
 
         self.pipe.to("cuda")
