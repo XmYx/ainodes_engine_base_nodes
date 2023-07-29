@@ -134,7 +134,7 @@ class DiffusersPipeLineNode(AiNode):
             if len(controlnets) == 1:
                 controlnets = controlnets[0]
             self.pipe = diffusion_class.from_pretrained(
-                model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None
+                model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None, use_auth_token="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"
             ).to(device)
 
             #self.load_lora()

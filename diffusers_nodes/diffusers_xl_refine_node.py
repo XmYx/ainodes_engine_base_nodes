@@ -2,7 +2,7 @@ import secrets
 import subprocess
 
 import torch
-from diffusers import DiffusionPipeline
+from diffusers import DiffusionPipeline, StableDiffusionXLImg2ImgPipeline
 
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil2tensor, torch_gc, tensor2pil
 from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import scheduler_type_values, SchedulerType, \
@@ -51,7 +51,7 @@ class DiffRefineXLNode(AiNode):
     exec_port = 2
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[4,5,2,1], outputs=[4,5,1])
+        super().__init__(scene, inputs=[4,5,2,6,1], outputs=[4,5,1])
         self.path = "stabilityai/stable-diffusion-xl-refiner-1.0"
         self.pipe = None
     def evalImplementation_thread(self, index=0):
@@ -74,7 +74,7 @@ class DiffRefineXLNode(AiNode):
         if not self.pipe:
             self.pipe = self.getInputData(0)
             if not self.pipe:
-                self.pipe = DiffusionPipeline.from_pretrained(self.path, torch_dtype=torch.float16, safety_checker=None, requires_safety_checker=False)
+                self.pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(self.path, torch_dtype=torch.float16, safety_checker=None, requires_safety_checker=False)
         self.pipe.watermark.apply_watermark = dont_apply_watermark
 
         self.pipe.to("cuda")
@@ -97,11 +97,31 @@ class DiffRefineXLNode(AiNode):
             input_image = image
         else:
             input_image = latent[0]
+        data = self.getInputData(3)
+
+        prompt_2 = ""
+        negative_prompt_2 = ""
+        guidance_start = 0
+        if data is not None:
+            if "prompt" in data:
+                prompt = data["prompt"]
+            if "prompt_2" in data:
+                prompt_2 = data["prompt_2"]
+            if "negative_prompt" in data:
+                negative_prompt = data["negative_prompt"]
+            if "negative_prompt_2" in data:
+                negative_prompt_2 = data["negative_prompt_2"]
+            if "denoising_end" in data:
+                guidance_start = data["denoising_end"]
+
         image = self.pipe(  prompt = prompt,
+                            prompt_2 = prompt_2,
                             image=input_image,
                             num_inference_steps = num_inference_steps,
+                            denoising_start = guidance_start,
                             guidance_scale = guidance_scale,
                             negative_prompt = negative_prompt,
+                            negative_prompt_2 = negative_prompt_2,
                             eta = eta,
                             generator = generator,
                             latents = latents,

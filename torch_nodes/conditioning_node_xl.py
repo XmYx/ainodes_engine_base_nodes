@@ -96,8 +96,8 @@ class ConditioningXLWidget(QDMNodeContentWidget):
 
         self.width_val = self.create_spin_box("Height", min_val=256, max_val=4096, default_val=1024)
         self.height_val = self.create_spin_box("Height", min_val=256, max_val=4096, default_val=1024)
-        self.crop_w = self.create_spin_box("Crop Width", min_val=256, max_val=4096, default_val=0)
-        self.crop_h = self.create_spin_box("Crop Height", min_val=256, max_val=4096, default_val=0)
+        self.crop_w = self.create_spin_box("Crop Width", min_val=0, max_val=4096, default_val=0)
+        self.crop_h = self.create_spin_box("Crop Height", min_val=0, max_val=4096, default_val=0)
         self.target_width = self.create_spin_box("Target Width", min_val=256, max_val=4096, default_val=1024)
         self.target_height = self.create_spin_box("Target Height", min_val=256, max_val=4096, default_val=1024)
 
@@ -192,6 +192,8 @@ class ConditioningXLNode(AiNode):
 
         width = self.content.width_val.value()
         height = self.content.height_val.value()
+        crop_h = self.content.crop_h.value()
+        crop_w = self.content.crop_w.value()
 
 
         try:
@@ -226,7 +228,13 @@ class ConditioningXLNode(AiNode):
             else:
                 data = {}
                 data["prompt_l"] = prompt_l
-                result = self.get_conditioning(text_l=prompt_l, text_g=prompt_g, width=width, height=height, clip=clip)
+                result = self.get_conditioning(text_l=prompt_l,
+                                               text_g=prompt_g,
+                                               width=width,
+                                               height=height,
+                                               clip=clip,
+                                               crop_h=crop_h,
+                                               crop_w=crop_w)
                 print(result)
             if gs.logging:
                 print(f"CONDITIONING NODE: Applying conditioning with prompt: {prompt_l}")
