@@ -11,6 +11,9 @@ from diffusers.models.controlnet import ControlNetOutput
 
 diffusers_models = [
 
+    {"name": "segmind_tiny", "repo": "segmind/tiny-sd"},
+    {"name": "segmind_base", "repo": "segmind/small-sd"},
+    {"name": "segmind_tiny_portrait", "repo": "segmind/portrait-finetuned"},
     {"name": "stable-diffusion-v1-5", "repo": "runwayml/stable-diffusion-v1-5"},
     {"name": "revAnimated", "repo": "danbrown/RevAnimated-v1-2-2"},
     {"name": "Realistic_Vision_V1.4", "repo": "SG161222/Realistic_Vision_V1.4"},
