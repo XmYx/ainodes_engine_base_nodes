@@ -48,7 +48,7 @@ transformers>=4.29.2
 PyQt6-QScintilla
 pyflakes
 git+https://github.com/ShieldMnt/invisible-watermark.git
-diffusers
+diffusers==0.19.2
 pillow==9.5.0
 qrcode==7.4.2
-protobuf==3.20.3
+#protobuf==3.20.3
