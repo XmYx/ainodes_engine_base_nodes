@@ -6,8 +6,6 @@ import pyqtgraph as pg
 
 import numpy as np
 from PyQt6.QtWidgets import QHBoxLayout
-from audiocraft.modules.conditioners import ConditioningAttributes
-from audiocraft.utils.autocast import TorchAutocast
 from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtMultimedia import QAudioOutput
@@ -20,10 +18,10 @@ from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 import torch
-from audiocraft.data.audio import audio_write
 import typing as tp
 
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
+#from audiocraft.utils.autocast import TorchAutocast
 
 #MANDATORY
 OP_NODE_AUDIOCRAFT = get_next_opcode()
@@ -196,8 +194,8 @@ class AudioCraftNode(AiNode):
 
 
     def predict(self, text, melody, duration, topk, topp, temperature, cfg_coef):
+        from audiocraft.data.audio import audio_write
 
-    
         self.model.set_generation_params(
             use_sampling=True,
             top_k=topk,
@@ -239,7 +237,7 @@ class AudioCraftNode(AiNode):
         self.content.progress_signal.emit(int((100 / j) * i))
 
 
-    def generate_tokens(self, attributes: tp.List[ConditioningAttributes],
+    def generate_tokens(self, attributes,
                          prompt_tokens: tp.Optional[torch.Tensor], progress: bool = False) -> torch.Tensor:
         """Generate discrete audio tokens given audio prompt and/or conditions.
 
