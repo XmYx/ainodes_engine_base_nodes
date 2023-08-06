@@ -75,7 +75,7 @@ class DiffBaseXLNode(AiNode):
             self.pipe = self.getInputData(0)
             if not self.pipe:
                 self.pipe = StableDiffusionXLPipeline.from_pretrained(self.path, torch_dtype=torch.float16, safety_checker=None, requires_safety_checker=False)
-
+                self.pipe.disable_attention_slicing()
         self.pipe.to("cuda")
         self.pipe.watermark.apply_watermark = dont_apply_watermark
         prompt = self.content.prompt.toPlainText()
