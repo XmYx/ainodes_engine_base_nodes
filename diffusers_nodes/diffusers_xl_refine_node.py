@@ -83,7 +83,7 @@ class DiffRefineXLNode(AiNode):
         #self.pipe.to("cuda")
         gpu_id = self.content.gpu_id.currentText()
         from ainodes_frontend import singleton as gs
-        self.pipe.to(f"{gs.device}:{gpu_id}")
+        self.pipe.to(f"{gs.device.type}:{gpu_id}")
 
         prompt = self.content.prompt.toPlainText()
         score = self.content.score.value()

@@ -79,7 +79,7 @@ class DiffBaseXLNode(AiNode):
         pipe = self.getInputData(0)
         gpu_id = self.content.gpu_id.currentText()
         from ainodes_frontend import singleton as gs
-        pipe.to(f"{gs.device}:{gpu_id}")
+        pipe.to(f"{gs.device.type}:{gpu_id}")
         pipe.watermark.apply_watermark = dont_apply_watermark
         prompt = self.content.prompt.toPlainText()
         prompt_2 = self.content.prompt_2.toPlainText()
