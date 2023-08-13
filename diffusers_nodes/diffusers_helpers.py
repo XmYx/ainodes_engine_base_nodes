@@ -11,6 +11,8 @@ from diffusers.models.controlnet import ControlNetOutput
 
 diffusers_models = [
 
+    {"name": "XL BASE", "repo": "stabilityai/stable-diffusion-xl-base-1.0"},
+    {"name": "XL REFINER", "repo": "stabilityai/stable-diffusion-xl-refiner-1.0"},
     {"name": "segmind_tiny", "repo": "segmind/tiny-sd"},
     {"name": "segmind_tiny-mxfinetune", "repo": "segmind/tiny-sd-mxfinetune"},
     {"name": "segmind_base", "repo": "segmind/small-sd"},
@@ -169,5 +171,21 @@ def get_scheduler(pipe, scheduler: SchedulerType):
 
     return pipe
 
+def get_scheduler_class(scheduler: SchedulerType):
+    scheduler_mapping = {
+        SchedulerType.DDIM: DDIMScheduler,
+        SchedulerType.HEUN: HeunDiscreteScheduler,
+        SchedulerType.DPM_DISCRETE: KDPM2DiscreteScheduler,
+        SchedulerType.DPM_ANCESTRAL: KDPM2AncestralDiscreteScheduler,
+        SchedulerType.LMS: LMSDiscreteScheduler,
+        SchedulerType.PNDM: PNDMScheduler,
+        SchedulerType.EULER: EulerDiscreteScheduler,
+        SchedulerType.EULER_A: EulerAncestralDiscreteScheduler,
+        SchedulerType.DPMPP_SDE_ANCESTRAL: DPMSolverSinglestepScheduler,
+        SchedulerType.DPMPP_2M: DPMSolverMultistepScheduler
+    }
+
+    new_scheduler = scheduler_mapping[scheduler]
+    return new_scheduler
 
 
