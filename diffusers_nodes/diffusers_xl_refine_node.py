@@ -49,6 +49,7 @@ class DiffRefineXLNode(AiNode):
     dim = (340, 800)
     output_data_ports = [0, 1]
     exec_port = 2
+    use_gpu = True
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[4,5,2,6,1], outputs=[4,5,1])
@@ -79,7 +80,10 @@ class DiffRefineXLNode(AiNode):
 
         self.pipe.watermark.apply_watermark = dont_apply_watermark
 
-        self.pipe.to("cuda")
+        #self.pipe.to("cuda")
+        gpu_id = self.content.gpu_id.currentText()
+        from ainodes_frontend import singleton as gs
+        self.pipe.to(f"{gs.device}:{gpu_id}")
 
         prompt = self.content.prompt.toPlainText()
         score = self.content.score.value()
