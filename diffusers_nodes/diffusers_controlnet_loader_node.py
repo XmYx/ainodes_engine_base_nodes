@@ -50,11 +50,22 @@ controlnets_21 = {
     "Canny": "thibaud/controlnet-sd21-canny-diffusers",
 }
 
+controlnets_xl = {
+
+    "Canny":"diffusers/controlnet-canny-sdxl-1.0",
+    "SoftEdge":"SargeZT/sdxl-controlnet-softedge",
+    "Depth":"SargeZT/controlnet-v1e-sdxl-depth",
+    "Depth_Zeed":"SargeZT/controlnet-sd-xl-1.0-depth-zeed",
+    "Depth_faid-vidit":"SargeZT/controlnet-sd-xl-1.0-depth-faid-vidit",
+    "Depth_vidit":"SargeZT/controlnet-sd-xl-1.0-depth-vidit",
+
+}
+
 #NODE WIDGET
 class DiffusersControlNetWidget(QDMNodeContentWidget):
     def initUI(self):
 
-        self.version_select = self.create_combo_box(["1.5", "2.0/2.1"], "Version")
+        self.version_select = self.create_combo_box(["1.5", "2.0/2.1", "XL"], "Version")
 
         self.controlnet_name = self.create_combo_box(self.get_control_list(), "ControlNet")
         self.scale = self.create_double_spin_box(label_text="Control Strength", min_val=0.0, max_val=10.0, default_val=1.0, step=0.01)
@@ -72,8 +83,10 @@ class DiffusersControlNetWidget(QDMNodeContentWidget):
         ver = self.version_select.currentText()
         if ver == "1.5":
             return [str(key) for key, value in controlnets_15.items()]
-        else:
+        elif "2.0" in ver:
             return [str(key) for key, value in controlnets_21.items()]
+        else:
+            return [str(key) for key, value in controlnets_xl.items()]
 
 #NODE CLASS
 @register_node(OP_NODE_DIFF_CONTROLNET)
@@ -97,7 +110,9 @@ class DiffusersControlNetNode(AiNode):
 
         controlnet_name = self.content.controlnet_name.currentText()
         ver = self.content.version_select.currentText()
+
         controlnet_dict = controlnets_15 if ver == "1.5" else controlnets_21
+        controlnet_dict = controlnet_dict if "xl" not in ver else controlnets_xl
 
         controlnet_repo = controlnet_dict[controlnet_name]
 

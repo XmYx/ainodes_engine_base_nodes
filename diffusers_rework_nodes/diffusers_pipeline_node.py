@@ -7,12 +7,16 @@ from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 
 OP_NODE_DIFF_SDPIPE = get_next_opcode()
-from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline, StableDiffusionImg2ImgPipeline, StableDiffusionControlNetPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionControlNetImg2ImgPipeline
+from diffusers import (StableDiffusionPipeline, StableDiffusionXLPipeline,
+                       StableDiffusionImg2ImgPipeline, StableDiffusionControlNetPipeline,
+                       StableDiffusionXLImg2ImgPipeline, StableDiffusionControlNetImg2ImgPipeline,
+                       StableDiffusionXLControlNetPipeline)
 
 pipes = {"txt2img":StableDiffusionPipeline,
          "img2img":StableDiffusionImg2ImgPipeline,
          "txt2img_xl":StableDiffusionXLPipeline,
-         "img2img_xl":StableDiffusionXLImg2ImgPipeline}
+         "img2img_xl":StableDiffusionXLImg2ImgPipeline,
+         "txt2img_xl_cnet":StableDiffusionXLControlNetPipeline}
 
 class DiffSDPipelineWidget(QDMNodeContentWidget):
     def initUI(self):
@@ -21,7 +25,7 @@ class DiffSDPipelineWidget(QDMNodeContentWidget):
         self.create_combo_box(scheduler_type_values, "Scheduler", spawn="schedulers")
         self.create_check_box("XL", spawn="xl")
         self.create_check_box("TinyVAE", spawn="tinyvae")
-        self.create_combo_box(["txt2img", "img2img", "txt2img_cnet", "img2img_cnet"], "pipeline", spawn="pipe_select")
+        self.create_combo_box(["txt2img", "img2img", "txt2img_cnet", "img2img_cnet", "txt2img_xl", "txt2img_xl_cnet", "img2img_xl"], "pipeline", spawn="pipe_select")
         self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_DIFF_SDPIPE)

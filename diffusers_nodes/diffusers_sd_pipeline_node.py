@@ -10,19 +10,20 @@ from diffusers.models.controlnet import ControlNetOutput
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc, \
-    get_torch_device, pil2tensor
-
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc, get_torch_device, pil2tensor
+from ainodes_frontend import singleton as gs
+import os
 
 #from .diffusers_restart_pipeline import StableDiffusionPipeline
 
 #diffusers.StableDiffusionPipeline = StableDiffusionPipeline
 
-from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler, \
-    StableDiffusionControlNetImg2ImgPipeline, DDIMScheduler, StableDiffusionPipeline
+from diffusers import (StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler,
+                       StableDiffusionControlNetImg2ImgPipeline, DDIMScheduler, StableDiffusionPipeline, AutoencoderKL)
 from diffusers.models.attention_processor import AttnProcessor2_0
-from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import multiForward, diffusers_models, \
-    diffusers_indexed, scheduler_type_values, get_scheduler, SchedulerType
+from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import (multiForward, diffusers_models,
+                                                                                  diffusers_indexed, scheduler_type_values,
+                                                                                  get_scheduler, SchedulerType)
 
 #MANDATORY
 OP_NODE_DIFF_PIPELINE = get_next_opcode()
@@ -31,7 +32,18 @@ OP_NODE_DIFF_PIPELINE = get_next_opcode()
 class DiffusersPipeLineWidget(QDMNodeContentWidget):
     def initUI(self):
         self.models = self.create_combo_box([item["name"] for item in diffusers_models], "Model")
+
+        lora_folder = gs.loras
+        lora_files = [f for f in os.listdir(lora_folder) if f.endswith(('.safetensors', '.ckpt', '.pt', '.bin', '.pth'))]
+        if lora_files == []:
+            self.dropdown.addItem("Please place a lora in models/loras")
+            print(f"LORA LOADER NODE: No model file found at {os.getcwd()}/models/loras,")
+            print(f"LORA LOADER NODE: please download your favorite ckpt before Evaluating this node.")
+        self.dropdown = self.create_combo_box(lora_files, "Lora")
+        self.use_test = self.create_check_box("use_test_model")
+
         self.reload = self.create_check_box("Reload")
+        self.load_lora = self.create_check_box("Load LORA")
         self.scheduler_name = self.create_combo_box(scheduler_type_values, "Scheduler")
         self.prompt = self.create_text_edit("Prompt")
         self.n_prompt = self.create_text_edit("Negative Prompt")
@@ -54,11 +66,11 @@ class DiffusersPipeLineNode(AiNode):
     category = "aiNodes Base/Diffusers"
     NodeContent_class = DiffusersPipeLineWidget
     dim = (340, 700)
-    output_data_ports = [0]
-    exec_port = 1
+    output_data_ports = [0, 1]
+    exec_port = 2
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[6,5,1], outputs=[5,1])
+        super().__init__(scene, inputs=[6,5,1], outputs=[5,6,1])
         self.content.setMinimumHeight(600)
 
         self.content.setMaximumHeight(600)
@@ -90,7 +102,35 @@ class DiffusersPipeLineNode(AiNode):
         starts = []
         stops = []
         scales = []
+
+        prompt = self.content.prompt.toPlainText()
+        height = self.content.height_val.value()
+        width = self.content.width_val.value()
+        num_inference_steps = self.content.steps.value()
+        guidance_scale = self.content.scale.value()
+        negative_prompt = self.content.n_prompt.toPlainText()
+        eta = self.content.eta.value()
+        seed = secrets.randbelow(9999999999) if self.content.seed.text() == "" else int(self.content.seed.text())
+
+
+
         if data:
+
+            if "prompt" in data:
+                prompt = data["prompt"]
+            if "n_prompt" in data:
+                negative_prompt = data["n_prompt"]
+            if "guidance_scale" in data:
+                guidance_scale = data["guidance_scale"]
+            if "seed" in data:
+                seed = data["seed"]
+            if "steps" in data:
+                num_inference_steps = data["steps"]
+            if "width" in data:
+                width = data["width"]
+            if "height" in data:
+                height = data["height"]
+
             if "control_diff" in data:
                 control_params = []
                 x = 0
@@ -121,6 +161,8 @@ class DiffusersPipeLineNode(AiNode):
 
                     x += 1
                 self.control_params = control_params
+        generator = torch.Generator(device).manual_seed(seed)
+        latents = None
 
 
         do_hijack = False
@@ -133,9 +175,11 @@ class DiffusersPipeLineNode(AiNode):
         if self.content.reload.isChecked() or self.pipe == None or reload:
             if len(controlnets) == 1:
                 controlnets = controlnets[0]
+            local_test = self.content.use_test.isChecked()
+            if local_test:
+                model_name = "C:/Users/mix/Documents/GitHub/ainodes-engine/src/sd-scripts/segmind/resume"
             self.pipe = diffusion_class.from_pretrained(
-                model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None, use_auth_token="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"
-            ).to(device)
+                model_name, controlnet=controlnets, torch_dtype=torch.float16, safety_checker=None, local_files_only=local_test).to(device)
 
             #self.load_lora()
 
@@ -155,16 +199,8 @@ class DiffusersPipeLineNode(AiNode):
         # self.pipe.scheduler = DDIMScheduler.from_config(self.pipe.scheduler.config)
         # self.pipe.scheduler.use_sigma = True
 
-        prompt = self.content.prompt.toPlainText()
-        height = self.content.height_val.value()
-        width = self.content.width_val.value()
-        num_inference_steps = self.content.steps.value()
-        guidance_scale = self.content.scale.value()
-        negative_prompt = self.content.n_prompt.toPlainText()
-        eta = self.content.eta.value()
-        seed = secrets.randbelow(9999999999) if self.content.seed.text() == "" else int(self.content.seed.text())
-        generator = torch.Generator(device).manual_seed(seed)
-        latents = None
+
+
         if isinstance(self.pipe, StableDiffusionControlNetPipeline):
 
             print(cnet_scales, starts, stops)
@@ -189,6 +225,11 @@ class DiffusersPipeLineNode(AiNode):
                         control_guidance_start = starts,
                         control_guidance_end = stops).images[0]
         else:
+            if self.content.load_lora.isChecked():
+                print("loading lora")
+
+                self.pipe.load_lora_weights("models/loras", weight_name=self.content.dropdown.currentText())
+
             image = self.pipe(prompt = prompt,
                         height = height,
                         width = width,
@@ -200,7 +241,18 @@ class DiffusersPipeLineNode(AiNode):
                         latents = latents).images[0]
 
         torch_gc()
-        return [[pil2tensor(image)]]
+
+        data = {
+            "prompt":prompt,
+            "n_prompt":negative_prompt,
+            "steps":num_inference_steps,
+            "seed":seed,
+            "guidance_scale":guidance_scale,
+            "width":width,
+            "height":height
+        }
+
+        return [[pil2tensor(image)], data]
 
     def load_lora(self):
         from .diffusers_lora_loader import install_lora_hook
