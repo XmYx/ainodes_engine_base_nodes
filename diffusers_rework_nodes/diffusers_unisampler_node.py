@@ -93,7 +93,11 @@ class DiffSamplerDataNode(AiNode):
         negative_prompt_2 = self.content.n_prompt_2.toPlainText()
         negative_prompt_2 = negative_prompt if negative_prompt_2 == "" else negative_prompt_2
         crops_coords_top_left = (self.content.top_crop.value(), self.content.left_crop.value())
-        data = self.getInputData(1)
+        image = None
+        data = self.getInputData(2)
+        cnet_scale = None
+        start = None
+        stop = None
         if data is not None:
             if "prompt" in data:
                 prompt = data["prompt"]
@@ -103,7 +107,12 @@ class DiffSamplerDataNode(AiNode):
                 negative_prompt = data["negative_prompt"]
             if "negative_prompt_2" in data:
                 negative_prompt_2 = data["negative_prompt_2"]
-
+            if "image" in data:
+                image = data["image"]
+            if "controlnet_conditioning_scale" in data:
+                cnet_scale = data["controlnet_conditioning_scale"]
+                start = data["control_guidance_start"]
+                stop = data["control_guidance_end"]
         eta = self.content.eta.value()
         seed = secrets.randbelow(9999999999) if self.content.seed.text() == "" else int(self.content.seed.text())
         scheduler_name = self.content.scheduler_name.currentText()
@@ -139,6 +148,10 @@ class DiffSamplerDataNode(AiNode):
             "width":width,
             "guidance_scale":guidance_scale,
             "crops_coords_top_left":crops_coords_top_left,
+            "image":image,
+            "controlnet_conditioning_scale":cnet_scale,
+            "control_guidance_start":start,
+            "control_guidance_end":stop
         }
 
         return [data]
@@ -251,10 +264,10 @@ class DiffSamplerNode(AiNode):
 
         if isinstance(pipe, StableDiffusionXLControlNetPipeline):
             args["image"] = data["image"]
-            args["controlnet_conditioning_scale"] = data["controlnet_conditioning_scale"]
+            args["controlnet_conditioning_scale"] = data["controlnet_conditioning_scale"][0]
             args["guess_mode"] = False
-            args["control_guidance_start"] = data["control_guidance_start"]
-            args["control_guidance_end"] = data["control_guidance_end"]
+            args["control_guidance_start"] = data["control_guidance_start"][0]
+            args["control_guidance_end"] = data["control_guidance_end"][0]
 
         image = pipe(**args).images[0]
 
