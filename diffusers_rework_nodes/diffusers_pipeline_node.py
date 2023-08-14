@@ -39,9 +39,9 @@ class DiffSDPipelineNode(AiNode):
     NodeContent_class = DiffSDPipelineWidget
     dim = (340, 460)
     output_data_ports = [0]
-    custom_input_socket_name = ["VAE", "TOKENIZER 2", "TOKENIZER", "TEXT ENCODER 2", "TEXT ENCODER", "UNET", "EXEC"]
+    custom_input_socket_name = ["VAE", "TOKENIZER 2", "TOKENIZER", "TEXT ENCODER 2", "TEXT ENCODER", "UNET", "CONTROLNET", "EXEC"]
     def __init__(self, scene):
-        super().__init__(scene, inputs=[4,4,4,4,4,4,1], outputs=[4,1])
+        super().__init__(scene, inputs=[4,4,4,4,4,4,4,1], outputs=[4,1])
         self.pipe = None
     def evalImplementation_thread(self, index=0):
 
@@ -51,6 +51,7 @@ class DiffSDPipelineNode(AiNode):
         text_encoder_2 = self.getInputData(3)
         text_encoder = self.getInputData(4)
         unet = self.getInputData(5)
+        cnets = self.getInputData(6)
 
         isxl = self.content.xl.isChecked()
 
@@ -80,21 +81,17 @@ class DiffSDPipelineNode(AiNode):
             args["feature_extractor"] = None
             args["requires_safety_checker"] = False
 
+        if isinstance(pipe_class, StableDiffusionXLControlNetPipeline):
+            args["controlnet"] = cnets[0]
+
         self.pipe = pipe_class.from_pretrained(model_name, **args)
-        try:
-            self.pipe.enable_vae_tiling()
-        except:
-            pass
+
         tinyvae = self.content.tinyvae.isChecked()
 
         if tinyvae:
             tiny_model = "madebyollin/taesd" if not isxl else "madebyollin/taesdxl"
-
-            print(tinyvae, tiny_model)
-
             from diffusers import AutoencoderTiny
             self.pipe.vae = AutoencoderTiny.from_pretrained(tiny_model, torch_dtype=torch.float16)
-
         return [self.pipe]
     def remove(self):
         try:

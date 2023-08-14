@@ -21,6 +21,10 @@ def dont_apply_watermark(images: torch.FloatTensor):
 
 class DiffUniSamplerWidget(QDMNodeContentWidget):
     def initUI(self):
+        self.create_check_box("Keep in VRAM", spawn="keepinvram")
+        self.create_check_box("Tiled VAE", spawn="tiledvae")
+        self.create_check_box("Attention Slicing", spawn="attentionslicing")
+        self.create_check_box("Sequential Offload", spawn="modeloffload")
         self.create_main_layout(grid=1)
 
 class DiffUniSamplerDataWidget(QDMNodeContentWidget):
@@ -162,16 +166,58 @@ class DiffSamplerNode(AiNode):
     def evalImplementation_thread(self, index=0):
 
         pipe = self.getInputData(0)
-        data = self.getInputData(1)
-
-
-        print("pipe device", pipe.device)
+        data = self.getInputData(2)
 
         gpu_id = self.content.gpu_id.currentText()
         from ainodes_frontend import singleton as gs
-        pipe.to(f"{gs.device.type}:{gpu_id}")
+        keepinvram = self.content.keepinvram.isChecked()
+        tiledvae = self.content.tiledvae.isChecked()
+        attentionslicing = self.content.attentionslicing.isChecked()
+        modeloffload = self.content.modeloffload.isChecked()
 
-        print("pipe device", pipe.device)
+        if tiledvae:
+            try:
+                pipe.enable_vae_slicing()
+                pipe.enable_vae_tiling()
+            except:
+                pass
+        else:
+            try:
+                pipe.disable_vae_slicing()
+                pipe.disable_vae_tiling()
+            except:
+                pass
+
+        if attentionslicing:
+            try:
+                pipe.enable_attention_slicing()
+            except:
+                pass
+        else:
+            try:
+                pipe.disable_attention_slicing()
+            except:
+                pass
+
+        if modeloffload:
+            try:
+                pipe.enable_model_cpu_offload()
+            except:
+                pass
+        else:
+            try:
+                pipe.disable_model_cpu_offload()
+            except:
+                pass
+
+
+
+        target_device = f"{gs.device.type}:{gpu_id}"
+
+        if pipe.device != target_device and not modeloffload:
+            pipe.to(f"{gs.device.type}:{gpu_id}")
+
+        generator = torch.Generator(target_device).manual_seed(data["seed"])
 
         args = {
             "prompt": data["prompt"],
@@ -179,6 +225,7 @@ class DiffSamplerNode(AiNode):
             "num_inference_steps": data["num_inference_steps"],
             "eta": data["eta"],
             "guidance_scale": data["guidance_scale"],
+            "generator":generator
         }
 
         if isinstance(pipe, StableDiffusionImg2ImgPipeline) or isinstance(pipe, StableDiffusionXLImg2ImgPipeline):
@@ -198,9 +245,17 @@ class DiffSamplerNode(AiNode):
             args["negative_aesthetic_score"] = data["negative_aesthetic_score"]
             args["denoising_start"] = data["denoising_start"]
 
+        if isinstance(pipe, StableDiffusionXLControlNetPipeline):
+            args["image"] = tensor2pil(data["image"][0])
+            args["controlnet_conditioning_scale"] = data["controlnet_conditioning_scale"]
+            args["guess_mode"] = False
+            args["control_guidance_start"] = data["control_guidance_start"]
+            args["control_guidance_end"] = data["control_guidance_end"]
 
         image = pipe(**args).images[0]
 
+        if not keepinvram:
+            pipe.to("cpu")
 
         return [[pil2tensor(image)]]
     def remove(self):
