@@ -233,7 +233,7 @@ class DiffSamplerNode(AiNode):
         }
 
         if isinstance(pipe, StableDiffusionImg2ImgPipeline) or isinstance(pipe, StableDiffusionXLImg2ImgPipeline):
-            args["image"] = tensor2pil(data["image"])
+            args["image"] =data["image"]
             args["strength"] = data["strength"]
 
         if isinstance(pipe, StableDiffusionXLImg2ImgPipeline) or isinstance(pipe, StableDiffusionXLPipeline):
