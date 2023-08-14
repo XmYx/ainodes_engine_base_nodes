@@ -219,7 +219,7 @@ class DiffSamplerNode(AiNode):
 
         seed = int(data["seed"])
 
-        print("seed", seed)
+        print("data", data)
 
         generator = torch.Generator(target_device).manual_seed(seed)
 
@@ -250,7 +250,7 @@ class DiffSamplerNode(AiNode):
             args["denoising_start"] = data["denoising_start"]
 
         if isinstance(pipe, StableDiffusionXLControlNetPipeline):
-            args["image"] = tensor2pil(data["image"][0])
+            args["image"] = data["image"]
             args["controlnet_conditioning_scale"] = data["controlnet_conditioning_scale"]
             args["guess_mode"] = False
             args["control_guidance_start"] = data["control_guidance_start"]
