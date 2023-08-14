@@ -16,7 +16,7 @@ pipes = {"txt2img":StableDiffusionPipeline,
          "img2img":StableDiffusionImg2ImgPipeline,
          "txt2img_xl":StableDiffusionXLPipeline,
          "img2img_xl":StableDiffusionXLImg2ImgPipeline,
-         "txt2img_xl_cnet":StableDiffusionXLControlNetPipeline}
+         "txt2img_cnet_xl":StableDiffusionXLControlNetPipeline}
 
 class DiffSDPipelineWidget(QDMNodeContentWidget):
     def initUI(self):
@@ -81,8 +81,8 @@ class DiffSDPipelineNode(AiNode):
             args["feature_extractor"] = None
             args["requires_safety_checker"] = False
 
-        if isinstance(pipe_class, StableDiffusionXLControlNetPipeline):
-            args["controlnet"] = cnets[0]
+        if "cnet" in pipe_select:
+            args["controlnet"] = cnets["controlnets"][0]
 
         self.pipe = pipe_class.from_pretrained(model_name, **args)
 

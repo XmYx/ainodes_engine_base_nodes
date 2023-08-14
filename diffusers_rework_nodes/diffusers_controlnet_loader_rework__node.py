@@ -98,9 +98,10 @@ class DiffusersControlNetNode(AiNode):
     dim = (340, 340)
     output_data_ports = [0]
     exec_port = 1
+    custom_output_socket_name = ["CONTROLNET", "EXEC"]
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[6,1], outputs=[6,1])
+        super().__init__(scene, inputs=[6,1], outputs=[4,1])
 
     #MAIN NODE FUNCTION
     def evalImplementation_thread(self, index=0):
@@ -108,8 +109,9 @@ class DiffusersControlNetNode(AiNode):
         controlnet_name = self.content.controlnet_name.currentText()
         ver = self.content.version_select.currentText()
 
+
         controlnet_dict = controlnets_15 if ver == "1.5" else controlnets_21
-        controlnet_dict = controlnet_dict if "xl" not in ver else controlnets_xl
+        controlnet_dict = controlnet_dict if "XL" not in ver else controlnets_xl
 
         controlnet_repo = controlnet_dict[controlnet_name]
 

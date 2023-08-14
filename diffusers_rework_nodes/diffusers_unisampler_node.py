@@ -166,7 +166,7 @@ class DiffSamplerNode(AiNode):
     def evalImplementation_thread(self, index=0):
 
         pipe = self.getInputData(0)
-        data = self.getInputData(2)
+        data = self.getInputData(1)
 
         gpu_id = self.content.gpu_id.currentText()
         from ainodes_frontend import singleton as gs
@@ -217,7 +217,11 @@ class DiffSamplerNode(AiNode):
         if pipe.device != target_device and not modeloffload:
             pipe.to(f"{gs.device.type}:{gpu_id}")
 
-        generator = torch.Generator(target_device).manual_seed(data["seed"])
+        seed = int(data["seed"])
+
+        print("seed", seed)
+
+        generator = torch.Generator(target_device).manual_seed(seed)
 
         args = {
             "prompt": data["prompt"],

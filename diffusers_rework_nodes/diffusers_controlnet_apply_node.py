@@ -56,8 +56,11 @@ class DiffusersControlNetApplyNode(AiNode):
         stop = self.content.stop_value.value()
 
         if data is not None:
-            if isinstance(data["image"], list):
-                data["image"].append(image)
+            if "image" in data:
+                if isinstance(data["image"], list):
+                    data["image"].append(image)
+                else:
+                    data["image"] = [image]
             else:
                 data["image"] = [image]
             data["controlnet_conditioning_scale"].append(scale)
