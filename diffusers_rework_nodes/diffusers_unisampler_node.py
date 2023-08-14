@@ -93,7 +93,9 @@ class DiffSamplerDataNode(AiNode):
         negative_prompt_2 = self.content.n_prompt_2.toPlainText()
         negative_prompt_2 = negative_prompt if negative_prompt_2 == "" else negative_prompt_2
         crops_coords_top_left = (self.content.top_crop.value(), self.content.left_crop.value())
-        image = None
+        image = self.getInputData(0)
+        if image is not None:
+            image = tensor2pil(image[0])
         data = self.getInputData(2)
         cnet_scale = None
         start = None
@@ -141,8 +143,8 @@ class DiffSamplerDataNode(AiNode):
             "original_size":original_size,
             "target_size":target_size,
             "return_type":return_type,
-            "score":score,
-            "n_score":n_score,
+            "aesthetic_score":score,
+            "negative_aesthetic_score":n_score,
             "strength":strength,
             "height":height,
             "width":width,
