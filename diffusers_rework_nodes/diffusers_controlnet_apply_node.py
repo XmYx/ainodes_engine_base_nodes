@@ -20,7 +20,7 @@ OP_NODE_DIFF_CONTROLNET_APPLY = get_next_opcode()
 class DiffusersControlNetApplyWidget(QDMNodeContentWidget):
     def initUI(self):
 
-        self.scale = self.create_double_spin_box(label_text="Control Strength", min_val=0.0, max_val=10.0, default_val=1.0, step=0.01)
+        self.scale_value = self.create_double_spin_box(label_text="Control Strength", min_val=0.0, max_val=10.0, default_val=1.0, step=0.01)
         self.start_value = self.create_double_spin_box("Start", min_val=0, max_val=1.0, default_val=0.0)
         self.stop_value = self.create_double_spin_box("Stop", min_val=0, max_val=1.0, default_val=1.0)
 
@@ -48,10 +48,13 @@ class DiffusersControlNetApplyNode(AiNode):
     def evalImplementation_thread(self, index=0):
 
 
-        images = self.getInputData(0)
+        image = self.getInputData(0)
+        print(type(image))
+
         data = self.getInputData(1)
-        image = tensor2pil(images[0])
-        scale = self.content.scale.value()
+        print("data", data)
+        image = tensor2pil(image[0])
+        scale = self.content.scale_value.value()
         start = self.content.start_value.value()
         stop = self.content.stop_value.value()
 
@@ -63,10 +66,16 @@ class DiffusersControlNetApplyNode(AiNode):
                     data["image"] = [image]
             else:
                 data["image"] = [image]
-            data["controlnet_conditioning_scale"].append(scale)
-            data["guess_mode"].append(False)
-            data["control_guidance_start"].append(start)
-            data["control_guidance_end"].append(stop)
+            if "controlnet_conditioning_scale" in data:
+                data["controlnet_conditioning_scale"].append(scale)
+                data["guess_mode"].append(False)
+                data["control_guidance_start"].append(start)
+                data["control_guidance_end"].append(stop)
+            else:
+                data["controlnet_conditioning_scale"] = [scale]
+                data["guess_mode"] = [False]
+                data["control_guidance_start"] = [start]
+                data["control_guidance_end"] = [stop]
         else:
             data = {
                 "image":[image],
