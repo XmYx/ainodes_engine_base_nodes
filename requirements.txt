@@ -1,19 +1,17 @@
 opencv-contrib-python==4.7.0.72
 scikit-image>=0.19
 ffmpeg-python==0.1.7
-tensorboard==2.8.0
+tensorboard==2.9.1
 --extra-index-url https://download.pytorch.org/whl/cu118
 torch==2.0.1+cu118
 torchvision==0.15.2+cu118
 openai==0.27.6
 git+https://github.com/XmYx/Kandinsky-2.git
 git+https://github.com/openai/CLIP.git
-tensorflow==2.8.4
+tensorflow==2.9.3
 tb_nightly==2.12.0a20230126
-#transformers==4.27.0
-#diffusers[torch]>=0.16.1
+transformers==4.31.0
 imageio[ffmpeg]
-##diffusers==0.14.0
 einops==0.6.0
 omegaconf==2.3.0
 accelerate==0.20.3
@@ -48,7 +46,7 @@ transformers>=4.29.2
 PyQt6-QScintilla
 pyflakes
 git+https://github.com/ShieldMnt/invisible-watermark.git
-diffusers==0.19.2
+git+https://github.com/huggingface/diffusers.git
 pillow==9.5.0
 qrcode==7.4.2
 #protobuf==3.20.3

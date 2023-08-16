@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from torch import optim, autocast
 from torch.nn.functional import silu
-from transformers import CLIPModel, CLIPTokenizer, CLIPTextModel, CLIPProcessor
+#from transformers import CLIPModel, CLIPTokenizer, CLIPTextModel, CLIPProcessor
 
 import ldm.modules.attention
 import ldm.modules.diffusionmodules.model

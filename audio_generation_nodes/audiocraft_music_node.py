@@ -10,7 +10,6 @@ from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtMultimedia import QAudioOutput
 from qtpy.QtWidgets import QPushButton, QVBoxLayout, QWidget, QSlider, QLabel
-from audiocraft.models import MusicGen
 from qtpy.QtCore import QUrl
 from qtpy.QtMultimedia import QMediaPlayer
 
@@ -156,6 +155,8 @@ class AudioCraftNode(AiNode):
         hijack = None
         selected = self.content.model_select.currentText()
         if not self.model or self.loaded_model != selected:
+            from audiocraft.models import MusicGen
+
             self.model = MusicGen.get_pretrained(selected)
             self.model.lm = self.model.lm.to("cpu")
             self.model.compression_model = self.model.compression_model.to("cpu")
