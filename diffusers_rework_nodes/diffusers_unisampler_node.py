@@ -3,7 +3,8 @@ import subprocess
 
 import torch
 from diffusers import DiffusionPipeline, StableDiffusionXLPipeline, StableDiffusionPipeline, \
-    StableDiffusionImg2ImgPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLControlNetPipeline
+    StableDiffusionImg2ImgPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLControlNetPipeline, \
+    StableDiffusionXLInpaintPipeline
 
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil2tensor, torch_gc, tensor2pil
 from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import scheduler_type_values, SchedulerType, \
@@ -76,10 +77,16 @@ class DiffSamplerDataNode(AiNode):
     output_data_ports = [0]
     exec_port = 1
     def __init__(self, scene):
-        super().__init__(scene, inputs=[5,2,6,1], outputs=[6,1])
+        super().__init__(scene, inputs=[5,5,2,6,1], outputs=[6,1])
 
     def evalImplementation_thread(self, index=0):
 
+        mask = self.getInputData(0)
+
+        if mask is not None:
+            mask = tensor2pil(mask[0])
+
+        latent = self.getInputData(2)
         prompt = self.content.prompt.toPlainText()
         prompt_2 = self.content.prompt_2.toPlainText()
         prompt_2 = prompt if prompt_2 == "" else prompt_2
@@ -93,10 +100,10 @@ class DiffSamplerDataNode(AiNode):
         negative_prompt_2 = self.content.n_prompt_2.toPlainText()
         negative_prompt_2 = negative_prompt if negative_prompt_2 == "" else negative_prompt_2
         crops_coords_top_left = (self.content.top_crop.value(), self.content.left_crop.value())
-        image = self.getInputData(0)
+        image = self.getInputData(1)
         if image is not None:
             image = tensor2pil(image[0])
-        data = self.getInputData(2)
+        data = self.getInputData(3)
         cnet_scale = None
         start = None
         stop = None
@@ -115,6 +122,8 @@ class DiffSamplerDataNode(AiNode):
                 cnet_scale = data["controlnet_conditioning_scale"]
                 start = data["control_guidance_start"]
                 stop = data["control_guidance_end"]
+        print(type(image))
+        print(image)
         eta = self.content.eta.value()
         seed = secrets.randbelow(9999999999) if self.content.seed.text() == "" else int(self.content.seed.text())
         scheduler_name = self.content.scheduler_name.currentText()
@@ -153,7 +162,9 @@ class DiffSamplerDataNode(AiNode):
             "image":image,
             "controlnet_conditioning_scale":cnet_scale,
             "control_guidance_start":start,
-            "control_guidance_end":stop
+            "control_guidance_end":stop,
+            "mask":mask,
+            "latent":latent
         }
 
         return [data]
@@ -248,10 +259,10 @@ class DiffSamplerNode(AiNode):
         }
 
         if isinstance(pipe, StableDiffusionImg2ImgPipeline) or isinstance(pipe, StableDiffusionXLImg2ImgPipeline):
-            args["image"] =data["image"]
+            args["image"] = data["image"]
             args["strength"] = data["strength"]
 
-        if isinstance(pipe, StableDiffusionXLImg2ImgPipeline) or isinstance(pipe, StableDiffusionXLPipeline):
+        if isinstance(pipe, StableDiffusionXLImg2ImgPipeline) or isinstance(pipe, StableDiffusionXLPipeline) or isinstance(pipe, StableDiffusionXLInpaintPipeline):
             args["prompt_2"] = data["prompt_2"]
             args["negative_prompt_2"] = data["negative_prompt_2"]
             args["denoising_end"] = data["denoising_end"]
@@ -270,6 +281,10 @@ class DiffSamplerNode(AiNode):
             args["guess_mode"] = False
             args["control_guidance_start"] = data["control_guidance_start"][0]
             args["control_guidance_end"] = data["control_guidance_end"][0]
+
+        if isinstance(pipe, StableDiffusionXLInpaintPipeline):
+            args["image"] = data["image"]
+            args["mask_image"] = data["mask"]
 
         image = pipe(**args).images[0]
 
