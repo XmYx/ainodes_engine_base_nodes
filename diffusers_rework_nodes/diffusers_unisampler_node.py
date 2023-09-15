@@ -100,9 +100,10 @@ class DiffSamplerDataNode(AiNode):
         negative_prompt_2 = self.content.n_prompt_2.toPlainText()
         negative_prompt_2 = negative_prompt if negative_prompt_2 == "" else negative_prompt_2
         crops_coords_top_left = (self.content.top_crop.value(), self.content.left_crop.value())
-        image = self.getInputData(1)
-        if image is not None:
-            image = tensor2pil(image[0])
+        input_image = self.getInputData(1)
+        image = latent
+        if input_image is not None:
+            image = tensor2pil(input_image[0])
         data = self.getInputData(3)
         cnet_scale = None
         start = None
@@ -122,8 +123,6 @@ class DiffSamplerDataNode(AiNode):
                 cnet_scale = data["controlnet_conditioning_scale"]
                 start = data["control_guidance_start"]
                 stop = data["control_guidance_end"]
-        print(type(image))
-        print(image)
         eta = self.content.eta.value()
         seed = secrets.randbelow(9999999999) if self.content.seed.text() == "" else int(self.content.seed.text())
         scheduler_name = self.content.scheduler_name.currentText()
@@ -164,7 +163,6 @@ class DiffSamplerDataNode(AiNode):
             "control_guidance_start":start,
             "control_guidance_end":stop,
             "mask":mask,
-            "latent":latent
         }
 
         return [data]
@@ -182,7 +180,7 @@ class DiffSamplerNode(AiNode):
     category = "aiNodes Base/WIP Experimental"
     NodeContent_class = DiffUniSamplerWidget
     dim = (340, 340)
-    output_data_ports = [0]
+    output_data_ports = [0, 1, 2]
     exec_port = 1
     use_gpu = True
     def __init__(self, scene):
@@ -244,11 +242,9 @@ class DiffSamplerNode(AiNode):
             pipe.to(f"{gs.device.type}:{gpu_id}")
 
         seed = int(data["seed"])
-
-        print("data", data)
-
+        print(seed)
         generator = torch.Generator(target_device).manual_seed(seed)
-
+        latents = None
         args = {
             "prompt": data["prompt"],
             "negative_prompt": data["negative_prompt"],
@@ -285,12 +281,18 @@ class DiffSamplerNode(AiNode):
         if isinstance(pipe, StableDiffusionXLInpaintPipeline):
             args["image"] = data["image"]
             args["mask_image"] = data["mask"]
+        if isinstance(pipe, StableDiffusionXLPipeline):
 
-        image = pipe(**args).images[0]
+
+
+            latents, image = pipe.generate(**args)
+            image = image[0]
+        else:
+            image = pipe(**args).images[0]
 
         if not keepinvram:
             pipe.to("cpu")
 
-        return [[pil2tensor(image)]]
+        return [[pil2tensor(image)], latents, args]
     def remove(self):
         super().remove()

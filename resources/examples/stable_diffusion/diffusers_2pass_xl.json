@@ -1,0 +1,607 @@
+{
+    "id": 2730168725040,
+    "scene_width": 64000,
+    "scene_height": 64000,
+    "nodes": [
+        {
+            "id": 2730169327168,
+            "title": "Diffusers UniSampler",
+            "pos_x": 137.19018554687568,
+            "pos_y": -403.2440185546867,
+            "inputs": [
+                {
+                    "id": 2730169322224,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 4
+                },
+                {
+                    "id": 2730169326880,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2730169326832,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2731996377440,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2731996381088,
+                    "index": 1,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 2
+                },
+                {
+                    "id": 2731996366640,
+                    "index": 2,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2731996378400,
+                    "index": 3,
+                    "multi_edges": false,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {
+                "Keep in VRAM": "False",
+                "Tiled VAE": "False",
+                "Attention Slicing": "False",
+                "Sequential Offload": "False",
+                "Select GPU": "0"
+            },
+            "op_code": 22,
+            "content_label_objname": "sd_diff_sampler_node"
+        },
+        {
+            "id": 2730169329136,
+            "title": "Image Preview",
+            "pos_x": 633.5891113281257,
+            "pos_y": -68.22204589843648,
+            "inputs": [
+                {
+                    "id": 2731996365296,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2731996377728,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2731996378256,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2731996377968,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2731996378544,
+                    "index": 1,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2731996380272,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {
+                "FPS": "24",
+                "": "False"
+            },
+            "op_code": 39,
+            "content_label_objname": "image_output_node"
+        },
+        {
+            "id": 2731996380320,
+            "title": "Diffusers UniSampler",
+            "pos_x": 145.00268554687557,
+            "pos_y": -34.10339355468682,
+            "inputs": [
+                {
+                    "id": 2731996379168,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 4
+                },
+                {
+                    "id": 2731996379504,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2731996378064,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2731996378496,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2731996379120,
+                    "index": 1,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 2
+                },
+                {
+                    "id": 2731996378976,
+                    "index": 2,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2731996379840,
+                    "index": 3,
+                    "multi_edges": false,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {
+                "Keep in VRAM": "False",
+                "Tiled VAE": "False",
+                "Attention Slicing": "False",
+                "Sequential Offload": "False",
+                "Select GPU": "0"
+            },
+            "op_code": 22,
+            "content_label_objname": "sd_diff_sampler_node"
+        },
+        {
+            "id": 2731996377680,
+            "title": "Diffusers - Simple Pipeline",
+            "pos_x": -780.1098144531243,
+            "pos_y": -15.178393554686636,
+            "inputs": [
+                {
+                    "id": 2731996368128,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2731996379456,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 4
+                },
+                {
+                    "id": 2731996379936,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {
+                "Model": "XL REFINER",
+                "XL": "False",
+                "TinyVAE": "False",
+                "Use Local Model": "False",
+                "Model:": "protovisionXLHighFidelity3D_beta0520Bakedvae.safetensors",
+                "pipeline": "img2img_xl"
+            },
+            "op_code": 20,
+            "content_label_objname": "diff_simple_pipeline_node"
+        },
+        {
+            "id": 2731996373120,
+            "title": "Image Preview",
+            "pos_x": 626.9744262695315,
+            "pos_y": -1430.5114746093743,
+            "inputs": [
+                {
+                    "id": 2731996381136,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2731996380416,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2731996380608,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2731996379792,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2731996366208,
+                    "index": 1,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2730169322272,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {
+                "FPS": "24",
+                "": "False"
+            },
+            "op_code": 39,
+            "content_label_objname": "image_output_node"
+        },
+        {
+            "id": 2730169325152,
+            "title": "Diffusers UniSampler Data",
+            "pos_x": -334.6066894531243,
+            "pos_y": -1201.978393554687,
+            "inputs": [
+                {
+                    "id": 2731996381040,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2731996377920,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2731996379264,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 2
+                },
+                {
+                    "id": 2731996380992,
+                    "index": 3,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2731996379552,
+                    "index": 4,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2731996380128,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2731996380560,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {
+                "Return Type": "latent",
+                "Scheduler": "ddim",
+                "Linguistic Prompt": "a hyper realistic macro close up shot of ((nike air max)) made out of PCB traces, chinatown backdrop",
+                "Classic Prompt": "",
+                "Linguistic Negative Prompt": "txt, signature, dupes, deforumed, multiple people",
+                "Classic Negative Prompt": "",
+                "Height": "1024",
+                "Width": "1024",
+                "Steps": "50",
+                "Denoising Start": "0.0",
+                "Denoising End": "0.8",
+                "Scale": "3.0",
+                "Eta": "1.0",
+                "Seed": "",
+                "Top Crop": "0",
+                "Left Crop": "0",
+                "Guidance Rescale": "0.0",
+                "Orig Width": "1024",
+                "Orig height": "1024",
+                "Target width": "1024",
+                "Target height": "1024",
+                "Strength": "1.0",
+                "Aesthetic score": "6.0",
+                "Negative Aesthetic score": "2.5"
+            },
+            "op_code": 21,
+            "content_label_objname": "sd_diff_sampler_data_node"
+        },
+        {
+            "id": 2731996376960,
+            "title": "Diffusers - Simple Pipeline",
+            "pos_x": -782.0129394531243,
+            "pos_y": -520.2440185546867,
+            "inputs": [
+                {
+                    "id": 2731996367168,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2731996368032,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 4
+                },
+                {
+                    "id": 2731996373168,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {
+                "Model": "XL BASE",
+                "XL": "False",
+                "TinyVAE": "False",
+                "Use Local Model": "False",
+                "Model:": "dreamshaperXL10_alpha2Xl10.safetensors",
+                "pipeline": "txt2img_xl"
+            },
+            "op_code": 20,
+            "content_label_objname": "diff_simple_pipeline_node"
+        },
+        {
+            "id": 2731996378448,
+            "title": "Diffusers UniSampler Data",
+            "pos_x": -321.7941894531243,
+            "pos_y": 18.630981445313182,
+            "inputs": [
+                {
+                    "id": 2731996368464,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2731996368272,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 5
+                },
+                {
+                    "id": 2731996366112,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 2
+                },
+                {
+                    "id": 2731996365152,
+                    "index": 3,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2731996369616,
+                    "index": 4,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2731996367216,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2731996368656,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {
+                "Return Type": "latent",
+                "Scheduler": "ddim",
+                "Linguistic Prompt": "",
+                "Classic Prompt": "",
+                "Linguistic Negative Prompt": "",
+                "Classic Negative Prompt": "",
+                "Height": "1024",
+                "Width": "1024",
+                "Steps": "50",
+                "Denoising Start": "0.8",
+                "Denoising End": "1.0",
+                "Scale": "3.0",
+                "Eta": "0.0",
+                "Seed": "",
+                "Top Crop": "0",
+                "Left Crop": "0",
+                "Guidance Rescale": "0.0",
+                "Orig Width": "1024",
+                "Orig height": "1024",
+                "Target width": "1024",
+                "Target height": "1024",
+                "Strength": "1.0",
+                "Aesthetic score": "6.0",
+                "Negative Aesthetic score": "2.5"
+            },
+            "op_code": 21,
+            "content_label_objname": "sd_diff_sampler_data_node"
+        }
+    ],
+    "edges": [
+        {
+            "id": 2731996367312,
+            "edge_type": 2,
+            "start": 2731996381136,
+            "end": 2731996377440
+        },
+        {
+            "id": 2731996372496,
+            "edge_type": 2,
+            "start": 2731996368656,
+            "end": 2731996378064
+        },
+        {
+            "id": 2731996366160,
+            "edge_type": 2,
+            "start": 2731996378400,
+            "end": 2731996380608
+        },
+        {
+            "id": 2731996368176,
+            "edge_type": 2,
+            "start": 2731996365296,
+            "end": 2731996378496
+        },
+        {
+            "id": 2731996370048,
+            "edge_type": 2,
+            "start": 2730169322272,
+            "end": 2731996369616
+        },
+        {
+            "id": 2731996368944,
+            "edge_type": 2,
+            "start": 2731996379168,
+            "end": 2731996379456
+        },
+        {
+            "id": 2731996368992,
+            "edge_type": 2,
+            "start": 2731996366640,
+            "end": 2731996365152
+        },
+        {
+            "id": 2731996369184,
+            "edge_type": 2,
+            "start": 2731996381088,
+            "end": 2731996366112
+        },
+        {
+            "id": 2731996365920,
+            "edge_type": 2,
+            "start": 2731996379840,
+            "end": 2731996378256
+        },
+        {
+            "id": 2731996370624,
+            "edge_type": 2,
+            "start": 2731996380128,
+            "end": 2730169326880
+        },
+        {
+            "id": 2731996366256,
+            "edge_type": 2,
+            "start": 2730169322224,
+            "end": 2731996368032
+        },
+        {
+            "id": 2731996370432,
+            "edge_type": 2,
+            "start": 2731996373168,
+            "end": 2731996368128
+        },
+        {
+            "id": 2731996370384,
+            "edge_type": 2,
+            "start": 2731996379936,
+            "end": 2731996379552
+        },
+        {
+            "id": 2731996367792,
+            "edge_type": 2,
+            "start": 2731996380560,
+            "end": 2730169326832
+        },
+        {
+            "id": 2731996367600,
+            "edge_type": 2,
+            "start": 2731996379504,
+            "end": 2731996367216
+        }
+    ]
+}

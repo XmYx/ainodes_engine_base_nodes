@@ -73,7 +73,6 @@ class DiffusersUnclipNode(AiNode):
         return [return_pixmaps]
     def callback(self, i, j, tensor):
         print(i, j)
-        print(type(tensor))
     def remove(self):
         if self.pipe:
             self.pipe.to("cpu")

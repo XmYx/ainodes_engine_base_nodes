@@ -30,6 +30,7 @@ class DiffUnetNode(AiNode):
         self.model = None
         self.loaded_model = ""
     def evalImplementation_thread(self, index=0):
+
         model_key = self.content.models.currentIndex()
         model_name = diffusers_indexed[model_key]
         if self.model == None or self.loaded_model != model_name:

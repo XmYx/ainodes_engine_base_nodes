@@ -153,6 +153,9 @@ class ScribbleNode(AiNode):
     op_title = "Scribble"
     content_label_objname = "image_scribble_node"
     category = "aiNodes Base/Image"
+    output_data_ports = [0]
+    exec_port = 2
+    dims = (640, 512)
 
 
     def __init__(self, scene):
@@ -160,6 +163,8 @@ class ScribbleNode(AiNode):
         self.color = Qt.black
 
     def initInnerClasses(self):
+        super().initInnerClasses()
+
         self.content = ScribbleWidget(self)
         self.content.setMinimumWidth(512)
         self.content.setMinimumHeight(512)
@@ -183,17 +188,8 @@ class ScribbleNode(AiNode):
     def evalImplementation_thread(self):
         self.busy = True
         pixmap = self.content.image.get_image()
-        return pixmap
+        return [pixmap_to_tensor(pixmap)]
 
-    #@QtCore.Slot(object)
-    def onWorkerFinished(self, pixmap):
-        #super().onWorkerFinished(None)
-
-        pass
-        self.markDirty(False)
-        self.markInvalid(False)
-        self.setOutput(0, [pixmap_to_tensor(pixmap)])
-        self.executeChild(2)
     def switch_color(self):
         if self.color == Qt.black:
             self.color = Qt.white

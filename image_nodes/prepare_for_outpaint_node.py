@@ -57,6 +57,7 @@ class ImagePasteNode(AiNode):
             offset_y = self.content.offset_y.value()
 
             new_img, mask = scale_and_paste(target_size, image, scale, offset_x, offset_y)
+            print(new_img.size)
             img_tensor = pil2tensor(new_img)
             mask_tensor = pil2tensor(mask)
 
@@ -65,7 +66,7 @@ class ImagePasteNode(AiNode):
             return [None, None]
 
 
-def scale_and_paste(target_size, source_img, scale, offset_x, offset_y, expand=8):
+def scale_and_paste(target_size, source_img, scale, offset_x, offset_y, expand=32):
     # Resize the source image
     source_img = source_img.resize((int(source_img.width * scale), int(source_img.height * scale)))
 

@@ -2,6 +2,7 @@ import secrets
 import subprocess
 
 import torch
+from aiofiles import os
 from diffusers import DiffusionPipeline, StableDiffusionXLPipeline
 
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil2tensor, torch_gc
@@ -10,6 +11,7 @@ from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
+from ainodes_frontend import singleton as gs
 
 OP_NODE_DIFFBASE_XL = get_next_opcode()
 
@@ -20,7 +22,8 @@ def dont_apply_watermark(images: torch.FloatTensor):
 class DiffBaseXLWidget(QDMNodeContentWidget):
     def initUI(self):
 
-        self.token = self.create_line_edit("Token")
+        #self.token = self.create_line_edit("Token")
+
         self.return_type = self.create_combo_box(["latent", "pil"], "Return Type")
         self.scheduler_name = self.create_combo_box(scheduler_type_values, "Scheduler")
 

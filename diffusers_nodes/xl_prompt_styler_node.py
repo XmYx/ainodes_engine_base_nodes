@@ -133,12 +133,20 @@ class XLPromptNode(AiNode):
             if "negative_prompt_2" in data:
                 negative_prompt_2 = data["negative_prompt_2"]
         positive_prompt, negative_prompt = read_sdxl_templates_replace_and_combine(self.json_data, self.content.styles.currentText(), prompt, negative_prompt)
-        data = {
-            "prompt_2":prompt,
-            "prompt":positive_prompt,
-            "negative_prompt_2":negative_prompt,
-            "negative_prompt":negative_prompt_2
-        }
+
+
+        if data is not None:
+            data["prompt"] = positive_prompt
+            data["prompt_2"] = prompt
+            data["negative_prompt"] = negative_prompt
+            data["negative_prompt_2"] = negative_prompt_2
+        else:
+            data = {
+                "prompt_2":prompt,
+                "prompt":positive_prompt,
+                "negative_prompt_2":negative_prompt,
+                "negative_prompt":negative_prompt_2
+            }
 
         return [data]
 

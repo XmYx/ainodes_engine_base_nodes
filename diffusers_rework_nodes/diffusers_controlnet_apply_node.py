@@ -59,6 +59,17 @@ class DiffusersControlNetApplyNode(AiNode):
         stop = self.content.stop_value.value()
 
         if data is not None:
+            if "controlnet_conditioning_scale" in data:
+                if data["controlnet_conditioning_scale"] is not None:
+                    data["controlnet_conditioning_scale"].append(scale)
+                    data["guess_mode"].append(False)
+                    data["control_guidance_start"].append(start)
+                    data["control_guidance_end"].append(stop)
+                else:
+                    data["controlnet_conditioning_scale"] = [scale]
+                    data["guess_mode"] = [False]
+                    data["control_guidance_start"] = [start]
+                    data["control_guidance_end"] = [stop]
             if "image" in data:
                 if isinstance(data["image"], list):
                     data["image"].append(image)
@@ -66,16 +77,10 @@ class DiffusersControlNetApplyNode(AiNode):
                     data["image"] = [image]
             else:
                 data["image"] = [image]
-            if "controlnet_conditioning_scale" in data:
-                data["controlnet_conditioning_scale"].append(scale)
-                data["guess_mode"].append(False)
-                data["control_guidance_start"].append(start)
-                data["control_guidance_end"].append(stop)
-            else:
-                data["controlnet_conditioning_scale"] = [scale]
-                data["guess_mode"] = [False]
-                data["control_guidance_start"] = [start]
-                data["control_guidance_end"] = [stop]
+
+            if len(data["controlnet_conditioning_scale"]) == 1:
+                data["image"] = [image]
+
         else:
             data = {
                 "image":[image],
