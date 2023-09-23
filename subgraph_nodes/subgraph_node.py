@@ -110,7 +110,7 @@ class SubgraphNode(AiNode):
         return None
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         if result:
@@ -221,7 +221,7 @@ class SubGraphInputNode(AiNode):
         return True
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         self.executeChild(4)
 
@@ -271,7 +271,7 @@ class SubGraphOutputNode(AiNode):
 
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         self.setOutput(0, result[0])
         self.setOutput(1, result[1])

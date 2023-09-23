@@ -138,7 +138,7 @@ class LoraLoaderNode(AiNode):
             words = "\n".join(data["trainedWords"])
             self.content.help_prompt.setText(f"Trained Words:\n{words}")
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         self.setOutput(0, result[0])
         self.setOutput(1, result[1])

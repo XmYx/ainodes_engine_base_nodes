@@ -235,15 +235,16 @@ class Text2VideoNode(AiNode):
         finally:
             return return_pixmaps
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
 
         self.setOutput(0, result)
         self.markDirty(True)
         self.markInvalid(False)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
+        if exec:
+            if len(self.getOutputs(1)) > 0:
+                self.executeChild(output_index=1)
         #pass
 
     def eval(self, index=0):

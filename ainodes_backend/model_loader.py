@@ -96,11 +96,12 @@ class ModelLoader(torch.nn.Module):
 
     def load_checkpoint_guess_config(self, ckpt_path, output_vae=True, output_clip=True, output_clipvision=False,
                                      embedding_directory=None, style=""):
-        from comfy.sd import ModelPatcher, load_model_weights, CLIP, VAE
-        from comfy.utils import load_torch_file
+        from comfy.model_patcher import ModelPatcher
+        from comfy.sd import load_model_weights, CLIP, VAE
+        from comfy.utils import load_torch_file, calculate_parameters
         from comfy import model_detection, clip_vision, model_management
         from comfy.model_management import should_use_fp16
-        from comfy.sd import calculate_parameters, VAE, load_model_weights, CLIP
+        from comfy.sd import VAE, load_model_weights, CLIP
         from comfy.utils import load_torch_file
         ckpt_path = os.path.join(gs.checkpoints, ckpt_path)
         sd = load_torch_file(ckpt_path)
@@ -226,7 +227,7 @@ class ModelLoader(torch.nn.Module):
         #     torch.backends.cuda.matmul.allow_tf32 = True
         #     torch.backends.cudnn.allow_tf32 = True
         # apply_optimizations(style)
-        if style is not "None":
+        if style != "None":
             apply_optimizations(style)
 
         return ModelPatcher(model), clip, vae

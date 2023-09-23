@@ -120,7 +120,7 @@ class InpaintNode(AiNode):
             pixmap = tensor_image_to_pixmap(result)
             return pixmap
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         if result is not None:

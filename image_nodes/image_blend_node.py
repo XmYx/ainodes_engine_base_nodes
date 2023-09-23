@@ -108,7 +108,7 @@ class BlendNode(AiNode):
         return None
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
 

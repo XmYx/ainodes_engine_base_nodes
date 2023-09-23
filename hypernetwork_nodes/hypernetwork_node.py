@@ -94,7 +94,7 @@ class HypernetworkLoaderNode(AiNode):
         m.unpatch_model()
         gs.models["sd"] = m
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.setOutput(0, result)
         self.busy = False
         self.executeChild(0)

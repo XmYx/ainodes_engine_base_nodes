@@ -116,7 +116,7 @@ class LatentNode(AiNode):
             except Exception as e:
                 print(e)
         else:
-            samples = [self.generate_latent()]
+            samples = self.generate_latent()
         if self.content.rescale_latent.isChecked() == True:
             rescaled_samples = []
             for sample in samples:
@@ -134,18 +134,22 @@ class LatentNode(AiNode):
                 print(f"{len(samples)}x Latents rescaled to: {samples[0].shape}")
         #print(samples[0].shape)
 
-        return samples
+        return {"samples":samples}
             #return self.value
 
     ##@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
+        self.content.update()
+
+        self.content.finished.emit()
+        if exec:
+            if len(self.getOutputs(1)) > 0:
+                self.executeChild(output_index=1)
     def onMarkedDirty(self):
         self.value = None
     def encode_image(self, init_image=None):
@@ -279,13 +283,14 @@ class LatentCompositeNode(AiNode):
         else:
             return self.value
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.setOutput(0, result)
         self.markDirty(False)
         self.markInvalid(False)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
-        return self.value
+        if exec:
+            if len(self.getOutputs(1)) > 0:
+                self.executeChild(output_index=1)
+        #return self.value
 
     def onMarkedDirty(self):
         self.value = None

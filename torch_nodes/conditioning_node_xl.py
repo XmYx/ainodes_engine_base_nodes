@@ -77,17 +77,30 @@ class EmbedDialog(QDialog):
         self.selected_embeds = selected_embeds
         super().accept()
         return selected_embeds
-OP_NODE_CONDITIONING = get_next_opcode()
-class ConditioningWidget(QDMNodeContentWidget):
+OP_NODE_CONDITIONING_XL = get_next_opcode()
+class ConditioningXLWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
         self.create_main_layout(grid=1)
     def create_widgets(self):
 
-        self.prompt = self.create_text_edit("Prompt", placeholder="Prompt or Negative Prompt (use 2x Conditioning Nodes for Stable Diffusion),\n"
+        self.prompt_l = self.create_text_edit("Prompt", placeholder="Prompt or Negative Prompt (use 2x Conditioning Nodes for Stable Diffusion),\n"
                                                                   "and connect them to a K Sampler.\n"
                                                                   "If you want to control your resolution,\n"
                                                                   "or use an init image, use an Empty Latent Node.")
+
+        self.prompt_g = self.create_text_edit("Prompt", placeholder="Prompt or Negative Prompt (use 2x Conditioning Nodes for Stable Diffusion),\n"
+                                                                  "and connect them to a K Sampler.\n"
+                                                                  "If you want to control your resolution,\n"
+                                                                  "or use an init image, use an Empty Latent Node.")
+
+        self.width_val = self.create_spin_box("Height", min_val=256, max_val=4096, default_val=1024)
+        self.height_val = self.create_spin_box("Height", min_val=256, max_val=4096, default_val=1024)
+        self.crop_w = self.create_spin_box("Crop Width", min_val=0, max_val=4096, default_val=0)
+        self.crop_h = self.create_spin_box("Crop Height", min_val=0, max_val=4096, default_val=0)
+        self.target_width = self.create_spin_box("Target Width", min_val=256, max_val=4096, default_val=1024)
+        self.target_height = self.create_spin_box("Target Height", min_val=256, max_val=4096, default_val=1024)
+
         self.skip = self.create_spin_box("Clip Skip", min_val=-11, max_val=0, default_val=-1)
         self.embed_checkbox = self.create_check_box("Use embeds")
         self.button = QtWidgets.QPushButton("Get Conditioning")
@@ -107,12 +120,12 @@ class APIHandler(QObject):
             # Handle error
             self.response_received.emit({})
 
-@register_node(OP_NODE_CONDITIONING)
-class ConditioningNode(AiNode):
+@register_node(OP_NODE_CONDITIONING_XL)
+class ConditioningXLNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/v2/conditioning.png"
-    op_code = OP_NODE_CONDITIONING
+    op_code = OP_NODE_CONDITIONING_XL
     op_title = "Conditioning"
-    content_label_objname = "cond_node"
+    content_label_objname = "cond_node_xl"
     category = "aiNodes Base/Conditioning"
 
     custom_input_socket_name = ["CLIP", "DATA", "EXEC"]
@@ -123,14 +136,14 @@ class ConditioningNode(AiNode):
         self.content.eval_signal.connect(self.evalImplementation)
         # Create a worker object
     def initInnerClasses(self):
-        self.content = ConditioningWidget(self)
+        self.content = ConditioningXLWidget(self)
         self.grNode = CalcGraphicsNode(self)
         self.grNode.icon = self.icon
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
-        self.grNode.height = 400
+        self.grNode.height = 600
         self.grNode.width = 320
-        self.content.setMinimumHeight(300)
+        self.content.setMinimumHeight(500)
         self.content.setMinimumWidth(320)
         self.content.button.clicked.connect(self.evalImplementation)
         self.content.set_embeds.clicked.connect(self.show_embeds)
@@ -175,10 +188,19 @@ class ConditioningNode(AiNode):
     def evalImplementation_thread(self, index=0, prompt_override=None):
         clip = self.getInputData(0)
         assert clip is not None, "Please make sure to load a model, and connect it's clip output to the input"
+
+
+        width = self.content.width_val.value()
+        height = self.content.height_val.value()
+        crop_h = self.content.crop_h.value()
+        crop_w = self.content.crop_w.value()
+
+
         try:
             result = None
             data = None
-            prompt = self.content.prompt.toPlainText()
+            prompt_l = self.content.prompt_l.toPlainText()
+            prompt_g = self.content.prompt_g.toPlainText()
             if prompt_override is not None:
                 prompt = prompt_override
 
@@ -188,27 +210,34 @@ class ConditioningNode(AiNode):
 
             string = "" if not self.content.embed_checkbox.isChecked() else string
 
-            prompt = f"{prompt} {string}" if (self.content.embed_checkbox.isChecked and string != "") else prompt
+            prompt_l = f"{prompt_l} {string}" if (self.content.embed_checkbox.isChecked and string != "") else prompt_l
             data = self.getInputData(1)
             if data:
-                if "prompt" in data:
+                if "prompt_l" in data:
                     prompt = data["prompt"]
                 else:
-                    data["prompt"] = prompt
+                    data["prompt_l"] = prompt_l
                 if "model" in data:
                     if data["model"] == "deepfloyd_1":
-                        result = [gs.models["deepfloyd_1"].encode_prompt(prompt)]
+                        result = [gs.models["deepfloyd_1"].encode_prompt(prompt_l)]
                 else:
                     if prompt_override is not None:
                         prompt = prompt_override
-                    result = [self.get_conditioning(prompt=prompt, clip=clip)]
+                    result = self.get_conditioning(text_l=prompt_l, clip=clip)
 
             else:
                 data = {}
-                data["prompt"] = prompt
-                result = self.get_conditioning(prompt=prompt, clip=clip)
+                data["prompt_l"] = prompt_l
+                result = self.get_conditioning(text_l=prompt_l,
+                                               text_g=prompt_g,
+                                               width=width,
+                                               height=height,
+                                               clip=clip,
+                                               crop_h=crop_h,
+                                               crop_w=crop_w)
+                print(result)
             if gs.logging:
-                print(f"CONDITIONING NODE: Applying conditioning with prompt: {prompt}")
+                print(f"CONDITIONING NODE: Applying conditioning with prompt: {prompt_l}")
             return result, data
         except Exception as e:
             done = handle_ainodes_exception()
@@ -233,7 +262,7 @@ class ConditioningNode(AiNode):
                 string = f'{string} embedding:{item["embed"]["word"]}'
         self.string = string
 
-    def get_conditioning(self, prompt="", clip=None, progress_callback=None):
+    def get_conditioning_(self, prompt="", clip=None, progress_callback=None):
 
         """if gs.loaded_models["loaded"] == []:
             for node in self.scene.nodes:
@@ -258,6 +287,28 @@ class ConditioningNode(AiNode):
                 # c = clip.encode(prompt)
                 # uc = {}
                 # return {"conds":[[c, uc]]}
+    def get_conditioning(self,
+                 text_g:str="",
+                 text_l:str="",
+                 width=512,
+                 height=512,
+                 crop_w=0,
+                 crop_h=0,
+                 target_width=512,
+                 target_height=512,
+                 clip=None,
+                 progress_callback=None):
+        tokens = clip.tokenize(text_g)
+        tokens["l"] = clip.tokenize(text_l)["l"]
+        if len(tokens["l"]) != len(tokens["g"]):
+            empty = clip.tokenize("")
+            while len(tokens["l"]) < len(tokens["g"]):
+                tokens["l"] += empty["l"]
+            while len(tokens["l"]) > len(tokens["g"]):
+                tokens["g"] += empty["g"]
+        cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+        return {"conds":[[cond,{"pooled_output": pooled, "width": width, "height": height, "crop_w": crop_w, "crop_h": crop_h,
+                   "target_width": target_width, "target_height": target_height}]]}
 
     #@QtCore.Slot(object)
     def onWorkerFinished(self, result, exec=True):
@@ -268,10 +319,6 @@ class ConditioningNode(AiNode):
             self.setOutput(0, result[1])
             self.markDirty(False)
             self.markInvalid(False)
-        self.content.update()
-
-        self.content.finished.emit()
-        if exec:
             if gs.should_run:
                 self.executeChild(2)
 

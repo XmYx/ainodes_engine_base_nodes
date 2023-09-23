@@ -156,7 +156,7 @@ class ImagePreviewNode(AiNode):
         self.resize(image)
 
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         self.images = result
         if self.content.checkbox.isChecked() == True:
@@ -180,8 +180,9 @@ class ImagePreviewNode(AiNode):
         self.setOutput(0, result)
         self.markInvalid(False)
         self.markDirty(False)
-        if gs.should_run:
-            self.executeChild(2)
+        if exec:
+            if gs.should_run:
+                self.executeChild(2)
 
     def manual_save(self):
 

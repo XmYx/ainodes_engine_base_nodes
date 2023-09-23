@@ -93,7 +93,7 @@ class ControlnetLoaderNode(AiNode):
         #     return self.value
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         self.markDirty(False)

@@ -80,7 +80,7 @@ class MidiNode(AiNode):
 
         #return True
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         self.executeChild(0)
 

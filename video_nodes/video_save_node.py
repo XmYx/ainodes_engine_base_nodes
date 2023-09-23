@@ -122,7 +122,7 @@ class VideoOutputNode(AiNode):
             print(f"VIDEO SAVE NODE: Image added to frame buffer, current frames: {len(self.content.video.frames)}")
         return pixmap_list
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         self.setOutput(0, result)

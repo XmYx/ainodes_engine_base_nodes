@@ -25,6 +25,9 @@ class TorchLoaderWidget(QDMNodeContentWidget):
 
     def create_widgets(self):
         checkpoint_folder = gs.checkpoints
+
+        os.makedirs(checkpoint_folder, exist_ok=True)
+
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
         self.dropdown = self.create_combo_box(checkpoint_files, "Model:")
         if checkpoint_files == []:
@@ -39,6 +42,9 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         # self.config_dropdown.setCurrentText("v1-inference_fp16.yaml")
 
         vae_folder = gs.vae
+
+        os.makedirs(vae_folder, exist_ok=True)
+
         vae_files = [f for f in os.listdir(vae_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
         vae_files = sorted(vae_files, key=str.lower)
         self.vae_dropdown = self.create_combo_box(vae_files, "Vae")
@@ -160,7 +166,7 @@ class TorchLoaderNode(AiNode):
         return True
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
 
         self.setOutput(0, self.vae)
@@ -169,8 +175,8 @@ class TorchLoaderNode(AiNode):
 
         self.markDirty(False)
         self.markInvalid(False)
-
-        self.executeChild(3)
+        if exec:
+            self.executeChild(3)
 
     def onInputChanged(self, socket=None):
         pass

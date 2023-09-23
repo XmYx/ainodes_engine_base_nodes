@@ -220,7 +220,7 @@ class CNApplyNode(AiNode):
         return c
 
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         self.markDirty(False)
         self.markInvalid(False)

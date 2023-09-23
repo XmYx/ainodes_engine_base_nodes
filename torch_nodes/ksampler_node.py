@@ -102,11 +102,11 @@ class KSamplerNode(AiNode):
         # Add a task to the task queue
         cond_list = [self.getInputData(6)]
         n_cond_list = [self.getInputData(5)]
-        print("C", cond_list, isinstance(cond_list, dict))
+        # print("C", cond_list, isinstance(cond_list, dict))
         if isinstance(cond_list[0], dict):
             cond_list = cond_list[0]["conds"]
 
-            print(len(cond_list))
+            # print(len(cond_list))
 
             if len(cond_list) == 1:
                 cond_list = [cond_list]
@@ -119,6 +119,14 @@ class KSamplerNode(AiNode):
 
         self.steps = self.content.steps.value()
         latent_list = self.getInputData(4)
+
+        pre_latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
+
+        if latent_list != None:
+            latent_list = [latent_list.get("samples")]
+        else:
+            latent_list = [pre_latent]
+
         data = self.getInputData(3)
         unet = self.getInputData(2)
         vae = self.getInputData(1)
@@ -130,8 +138,6 @@ class KSamplerNode(AiNode):
         assert cond_list is not None, "POSITIVE CONDITIONING NOT FOUND, MAKE SURE TO ADD A CONDITIONING NODE"
         assert n_cond_list is not None, "POSITIVE CONDITIONING NOT FOUND, MAKE SURE TO ADD A CONDITIONING NODE"
 
-        if latent_list == None:
-            latent_list = [torch.zeros([1, 4, 512 // 8, 512 // 8])]
 
 
         return_latents = []
@@ -304,7 +310,7 @@ class KSamplerNode(AiNode):
         #                     frame = np.array(img)
         #                     node.content.video.add_frame(frame, dump=node.content.dump_at.value())
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
 
         #super().onWorkerFinished(None)
@@ -318,9 +324,12 @@ class KSamplerNode(AiNode):
 
 
         self.content.progress_signal.emit(100)
-        if gs.should_run:
-            if len(self.getOutputs(2)) > 0:
-                self.executeChild(output_index=2)
+        self.content.finished.emit()
+
+        if exec:
+            if gs.should_run:
+                if len(self.getOutputs(2)) > 0:
+                    self.executeChild(output_index=2)
 
     #@QtCore.Slot(str)
     def setSeed(self):

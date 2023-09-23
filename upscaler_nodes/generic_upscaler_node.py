@@ -105,7 +105,7 @@ class UpscalerNode(AiNode):
         return return_pixmaps
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         if result:

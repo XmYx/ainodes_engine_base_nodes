@@ -57,7 +57,7 @@ class ExecNode(AiNode):
         return True
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         self.executeChild(0)
