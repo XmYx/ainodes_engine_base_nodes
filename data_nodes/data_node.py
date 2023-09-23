@@ -156,7 +156,6 @@ class DataNode(AiNode):
             data = merge_dicts(data, values)
         else:
             data = values
-        print(data)
         return data
 
 

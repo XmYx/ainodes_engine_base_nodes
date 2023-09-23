@@ -104,9 +104,6 @@ class DataMergeNode(AiNode):
 
         tensor_bw, mask_norm_image, image_out_binary = self.segment_image(image, prompt, blur, threshold, dilation)
 
-        print(image.shape)
-        print(tensor_bw.shape)
-        print(image_out_binary.shape)
 
         out_img = image - image_out_binary
 

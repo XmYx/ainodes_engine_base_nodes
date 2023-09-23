@@ -852,5 +852,4 @@ class StableDiffusionPipeline(DiffusionPipeline, TextualInversionLoaderMixin, Lo
 
         if not return_dict:
             return (image, has_nsfw_concept)
-        print(len(image_list))
         return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)

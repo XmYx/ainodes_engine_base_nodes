@@ -4,7 +4,7 @@ from PIL import Image
 from qtpy import QtCore, QtGui
 
 from ..ainodes_backend.matte.matte import MatteInference
-from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, pil2tensor
+from ..ainodes_backend import pixmap_to_tensor, tensor_image_to_pixmap, pil2tensor, tensor2pil
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode

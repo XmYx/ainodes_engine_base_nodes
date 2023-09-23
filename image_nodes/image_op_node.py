@@ -176,7 +176,6 @@ class ImageOpNode(AiNode):
         tensor = None
         # Convert the QPixmap object to a PIL Image object
         image = tensor2pil(pixmap)
-        print(image)
         if method in image_ops_valid_methods:
             # Get the requested ImageEnhance method
             enhance_method = getattr(ImageEnhance, method, None)
@@ -335,7 +334,6 @@ class ImageOpNode(AiNode):
             image = image.convert("RGB")
             image = ImageOps.invert(image)
         if image != None:
-            print(image)
             # Convert the PIL Image object to a QPixmap object
             tensor = pil2tensor(image)
         return tensor

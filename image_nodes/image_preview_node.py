@@ -43,31 +43,6 @@ class ImagePreviewWidget(QDMNodeContentWidget):
         self.create_button_layout([self.start_stop])
         self.create_main_layout(grid=1)
 
-        # self.image = QLabel(self)
-        # self.image.setAlignment(Qt.AlignLeft)
-        # self.image.setObjectName(self.node.content_label_objname)
-        # self.checkbox = QtWidgets.QCheckBox("Autosave")
-        # self.meta_checkbox = QtWidgets.QCheckBox("Embed Node graph in PNG")
-        #
-        #
-        #
-        # palette = QtGui.QPalette()
-        # palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("white"))
-        # palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor("black"))
-        # self.checkbox.setPalette(palette)
-        # self.meta_checkbox.setPalette(palette)
-        # button_layout = QtWidgets.QHBoxLayout()
-        # button_layout.addWidget(self.button)
-        # button_layout.addWidget(self.next_button)
-        # layout = QtWidgets.QVBoxLayout()
-        # layout.setContentsMargins(15, 30, 15, 35)
-        # layout.addWidget(self.image)
-        # layout.addWidget(self.checkbox)
-        # layout.addWidget(self.meta_checkbox)
-        # layout.addLayout(button_layout)
-        # self.setLayout(layout)
-
-
 
 @register_node(OP_NODE_IMG_PREVIEW)
 class ImagePreviewNode(AiNode):
@@ -143,9 +118,11 @@ class ImagePreviewNode(AiNode):
     def evalImplementation_thread(self, index=0):
         self.busy = True
         if len(self.getInputs(0)) > 0:
-            self.images.append(self.getInputData(0))
-            print("im_preview_images", self.images)
-            return self.images
+
+            image = self.getInputData(0)
+
+            self.images.append(image)
+            return image
 
     def show_image(self, image):
 
@@ -182,7 +159,6 @@ class ImagePreviewNode(AiNode):
                 self.executeChild(2)
 
     def manual_save(self):
-
         for image in self.images:
             self.save_image(image)
 
@@ -226,16 +202,5 @@ class ImagePreviewNode(AiNode):
         self.grNode.setToolTip("")
         self.grNode.height = pixmap.size().height() + 255
         self.grNode.width = pixmap.size().width() + 30
-
         self.content.setGeometry(0, 25, pixmap.size().width(), pixmap.size().height() + 150)
-
-        # self.content.setMinimumHeight(pixmap.size().height())
-        # self.content.setMinimumWidth(pixmap.size().width())
-        # self.content.setMaximumHeight(pixmap.size().height() + 500)
-        # self.content.setMaximumWidth(pixmap.size().width())
         self.update_all_sockets()
-        #self.content.setGeometry(0, 0, pixmap.size().width(),
-        #                         pixmap.size().height())
-        #for socket in self.outputs + self.inputs:
-        #    socket.setSocketPosition()
-        #self.updateConnectedEdges()
