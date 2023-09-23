@@ -143,10 +143,9 @@ class ImagePreviewNode(AiNode):
     def evalImplementation_thread(self, index=0):
         self.busy = True
         if len(self.getInputs(0)) > 0:
-            images = self.getInputData(0)
-
-
-            return images
+            self.images.append(self.getInputData(0))
+            print("im_preview_images", self.images)
+            return self.images
 
     def show_image(self, image):
 
@@ -157,11 +156,9 @@ class ImagePreviewNode(AiNode):
 
 
     def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-        self.images = result
         if self.content.checkbox.isChecked() == True:
-            if result:
-                self.save_image(result[0])
+            if result is not None:
+                self.save_image(result)
         if result is not None:
 
             for item in result:

@@ -253,13 +253,13 @@ class KSamplerNode(AiNode):
                 #
                 # cpu_s = sample[0]
                 x_sample = self.decode_sample(sample[0]["samples"], vae)
-                return_samples.append(sample[0]["samples"].detach())
+                return_samples = sample[0]["samples"].detach()
 
                 #return_samples.append(cpu_s)
 
                 #image = Image.fromarray(x_sample.astype(np.uint8))
                 #pm = tensor_image_to_pixmap(image)
-                return_latents.append(x_sample.detach())
+                return_latents = x_sample.detach()
                 if self.content.tensor_preview.isChecked():
                     if len(self.getOutputs(2)) > 0:
                         nodes = self.getOutputs(0)
@@ -271,7 +271,8 @@ class KSamplerNode(AiNode):
                 x+=1
             # unload_model()
 
-            return [return_latents, return_samples]
+            return [return_latents, {"samples":return_samples}]
+
         except Exception as e:
             handle_ainodes_exception()
             return_pixmaps, return_samples = None, None
