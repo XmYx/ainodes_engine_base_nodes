@@ -17,7 +17,7 @@ class LoraLoaderWidget(QDMNodeContentWidget):
         self.create_widgets()
         self.create_main_layout(grid=1)
     def create_widgets(self):
-        lora_folder = gs.loras
+        lora_folder = gs.prefs.loras
         lora_files = [f for f in os.listdir(lora_folder) if f.endswith(('.safetensors', '.ckpt', '.pt', '.bin', '.pth'))]
         if lora_files == []:
             self.dropdown.addItem("Please place a lora in models/loras")
@@ -95,7 +95,7 @@ class LoraLoaderNode(AiNode):
 
         file = self.content.dropdown.currentText()
 
-        sha = sha256(os.path.join(gs.loras, file))
+        sha = sha256(os.path.join(gs.prefs.loras, file))
 
         print("SHA", sha)
 
@@ -153,7 +153,7 @@ class LoraLoaderNode(AiNode):
         if strength_model == 0 and strength_clip == 0:
             return model, clip
 
-        lora_path = os.path.join(gs.loras, lora_name)
+        lora_path = os.path.join(gs.prefs.loras, lora_name)
         lora = None
         if self.loaded_lora is not None:
             if self.loaded_lora[0] == lora_path:
@@ -169,7 +169,7 @@ class LoraLoaderNode(AiNode):
         return model_lora, clip_lora
 
     def load_lora_to_ckpt(self, lora_name, unet, clip):
-        lora_path = os.path.join(gs.loras, lora_name)
+        lora_path = os.path.join(gs.prefs.loras, lora_name)
         strength_model = self.content.model_weight.value()
         strength_clip = self.content.clip_weight.value()
         unet, clip = load_lora_for_models(lora_path, strength_model, strength_clip, unet, clip)

@@ -252,7 +252,7 @@ def find_closest_hypernetwork_name(search: str):
     if not search:
         return None
     search = search.lower()
-    applicable = [name for name in gs.hypernetworks if search in name.lower()]
+    applicable = [name for name in gs.prefs.hypernetworks if search in name.lower()]
     if not applicable:
         return None
     applicable = sorted(applicable, key=lambda name: len(name))

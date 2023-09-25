@@ -17,7 +17,7 @@ class T2ILoaderWidget(QDMNodeContentWidget):
         self.create_widgets()
         self.create_main_layout(grid=1)
     def create_widgets(self):
-        checkpoint_folder = gs.t2i_adapter
+        checkpoint_folder = gs.prefs.t2i_adapter
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', ".safetensors"))]
         self.t2i = self.create_combo_box(checkpoint_files, "t2i")
         if "loaded_t2i" not in gs.models:
@@ -78,7 +78,7 @@ class T2ILoaderNode(AiNode):
 
     def load_t2i(self):
         #if "controlnet" not in gs.models:
-        t2i_dir = gs.t2i_adapter
+        t2i_dir = gs.prefs.t2i_adapter
         t2i_path = os.path.join(t2i_dir, self.content.t2i.currentText())
         if "t2i" in gs.models:
             try:

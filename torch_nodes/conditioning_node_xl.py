@@ -161,7 +161,7 @@ class ConditioningXLNode(AiNode):
 
     def show_embeds(self):
 
-        embed_files = [f for f in os.listdir(gs.embeddings) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
+        embed_files = [f for f in os.listdir(gs.prefs.embeddings) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
         if embed_files is not []:
             # The embedding strings returned as: "embedding:<filename without extension>:<weight> where weight is a float between 0.0 and 1.0"
             self.show_embed_dialog(embed_files)
@@ -175,7 +175,7 @@ class ConditioningXLNode(AiNode):
 
             """for embed in self.embed_dict:
                 print("word", embed["embed"]["filename"])
-                file = os.path.join(gs.embeddings, embed["embed"]["filename"])
+                file = os.path.join(gs.prefs.embeddings, embed["embed"]["filename"])
                 sha = sha256(file)
                 self.apihandler.response_received.connect(self.handle_response)
                 self.apihandler.get_response(sha)"""

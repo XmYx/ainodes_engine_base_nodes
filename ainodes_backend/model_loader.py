@@ -103,7 +103,7 @@ class ModelLoader(torch.nn.Module):
         from comfy.model_management import should_use_fp16
         from comfy.sd import VAE, load_model_weights, CLIP
         from comfy.utils import load_torch_file
-        ckpt_path = os.path.join(gs.checkpoints, ckpt_path)
+        ckpt_path = os.path.join(gs.prefs.checkpoints, ckpt_path)
         sd = load_torch_file(ckpt_path)
         sd_keys = sd.keys()
         clip = None
@@ -159,7 +159,7 @@ class ModelLoader(torch.nn.Module):
         from comfy.utils import load_torch_file
 
         state_dict = None
-        ckpt_path = os.path.join(gs.checkpoints, file)
+        ckpt_path = os.path.join(gs.prefs.checkpoints, file)
         config_path = os.path.join('models/configs', config_name)
 
         with open(config_path, 'r') as stream:
@@ -876,7 +876,7 @@ def make_linear_decode(model_version, device='cuda:0'):
 #         self.pad_with_end = pad_with_end
 #         vocab = self.tokenizer.get_vocab()
 #         self.inv_vocab = {v: k for k, v in vocab.items()}
-#         self.embedding_directory = gs.embeddings
+#         self.embedding_directory = gs.prefs.embeddings
 #         self.max_word_length = 8
 #
 #     def tokenize_with_weights(self, text):

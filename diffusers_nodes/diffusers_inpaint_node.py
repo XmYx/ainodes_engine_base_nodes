@@ -79,10 +79,14 @@ class DiffInpaintNode(AiNode):
         scheduler_enum = SchedulerType(scheduler_name)
         self.pipe = get_scheduler(self.pipe, scheduler_enum)
 
+        img = tensor2pil(images[0])
+        mask_img = tensor2pil(masks[0])
 
         image = self.pipe(prompt = prompt,
-                    image = tensor2pil(images[0]),
-                    mask_image = tensor2pil(masks[0]),
+                    image = img,
+                    mask_image = mask_img,
+                    width=img.size[0],
+                    height=img.size[1],
                     num_inference_steps = num_inference_steps,
                     strength=strength,
                     guidance_scale = guidance_scale,

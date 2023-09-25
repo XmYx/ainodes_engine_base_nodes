@@ -6,8 +6,8 @@
         {
             "id": 2419920889760,
             "title": "Empty Latent Image",
-            "pos_x": -382.74072265624943,
-            "pos_y": 751.0498046874999,
+            "pos_x": -20.344482421874886,
+            "pos_y": 1170.6665039062495,
             "inputs": [
                 {
                     "id": 2422374053728,
@@ -55,8 +55,8 @@
                 }
             ],
             "content": {
-                "Width": "1024",
-                "Height": "1024",
+                "Width": "1408",
+                "Height": "960",
                 "Latent Rescale": "False",
                 "Noise Seed": "",
                 "Noise Subseed": "",
@@ -71,8 +71,8 @@
         {
             "id": 2422819241360,
             "title": "Conditioning",
-            "pos_x": -84.40087890624955,
-            "pos_y": 296.6552734374999,
+            "pos_x": 802.5162353515619,
+            "pos_y": 258.50830078125,
             "inputs": [
                 {
                     "id": 2422374027120,
@@ -120,7 +120,7 @@
                 }
             ],
             "content": {
-                "Prompt": "cyberpunk panda",
+                "Prompt": "highly detailed 3d render of a us police car, wavy abstract background, color splash, 70s color scheme",
                 "Clip Skip": "-2",
                 "Use embeds": "False"
             },
@@ -130,8 +130,8 @@
         {
             "id": 2422819240784,
             "title": "Torch Loader",
-            "pos_x": 978.19677734375,
-            "pos_y": 362.9638671874999,
+            "pos_x": 2327.6459350585924,
+            "pos_y": 320.04852294921875,
             "inputs": [
                 {
                     "id": 2422374033840,
@@ -183,8 +183,8 @@
         {
             "id": 2422374026064,
             "title": "Conditioning",
-            "pos_x": 305.83349609375034,
-            "pos_y": 289.9169921874998,
+            "pos_x": 1197.5189819335933,
+            "pos_y": 251.77001953124977,
             "inputs": [
                 {
                     "id": 2419920893216,
@@ -242,8 +242,8 @@
         {
             "id": 2437554799760,
             "title": "Torch Loader",
-            "pos_x": -526.4282226562495,
-            "pos_y": 399.3623046874999,
+            "pos_x": 398.63586425781193,
+            "pos_y": 323.068359375,
             "inputs": [
                 {
                     "id": 2422373613328,
@@ -295,8 +295,8 @@
         {
             "id": 2422374015824,
             "title": "K Sampler",
-            "pos_x": -428.492675781249,
-            "pos_y": 1226.953124999999,
+            "pos_x": 277.22631835937534,
+            "pos_y": 974.2294311523428,
             "inputs": [
                 {
                     "id": 2422374034704,
@@ -381,12 +381,12 @@
             "content": {
                 "Scheduler:": "karras",
                 "Sampler:": "euler",
-                "Seed:": "",
+                "Seed:": "-716394341166733597",
                 "Steps:": "50",
                 "Start Step:": "0",
                 "Last Step:": "30",
-                "Stop Sampling Early": "True",
-                "Force full denoise": "False",
+                "Stop Sampling Early": "False",
+                "Force full denoise": "True",
                 "Show Tensor Preview": "True",
                 "Disable noise generation": "False",
                 "Iterate seed": "False",
@@ -400,8 +400,8 @@
         {
             "id": 2422374026928,
             "title": "K Sampler",
-            "pos_x": 1005.5405273437495,
-            "pos_y": 741.8701171874991,
+            "pos_x": 2357.4310913085924,
+            "pos_y": 987.2390747070301,
             "inputs": [
                 {
                     "id": 2422374034320,
@@ -488,15 +488,15 @@
                 "Sampler:": "euler",
                 "Seed:": "",
                 "Steps:": "40",
-                "Start Step:": "20",
+                "Start Step:": "0",
                 "Last Step:": "40",
-                "Stop Sampling Early": "True",
-                "Force full denoise": "False",
+                "Stop Sampling Early": "False",
+                "Force full denoise": "True",
                 "Show Tensor Preview": "True",
-                "Disable noise generation": "True",
+                "Disable noise generation": "False",
                 "Iterate seed": "False",
                 "Use latent from loop": "False",
-                "Denoise:": "1.0",
+                "Denoise:": "0.85",
                 "Guidance Scale:": "7.5"
             },
             "op_code": 35,
@@ -505,8 +505,8 @@
         {
             "id": 2643315715968,
             "title": "Image Preview",
-            "pos_x": -116.08886718749994,
-            "pos_y": 741.5771484374995,
+            "pos_x": 623.008728027343,
+            "pos_y": 727.2720336914058,
             "inputs": [
                 {
                     "id": 2643315716352,
@@ -555,7 +555,7 @@
             ],
             "content": {
                 "FPS": "24",
-                "": "False"
+                "": "True"
             },
             "op_code": 29,
             "content_label_objname": "image_output_node"
@@ -563,8 +563,8 @@
         {
             "id": 2643834776752,
             "title": "Image Preview",
-            "pos_x": 1376.9531249999993,
-            "pos_y": 734.9853515624998,
+            "pos_x": 2747.7416992187486,
+            "pos_y": 758.9569091796873,
             "inputs": [
                 {
                     "id": 2643834776944,
@@ -617,6 +617,124 @@
             },
             "op_code": 29,
             "content_label_objname": "image_output_node"
+        },
+        {
+            "id": 2020816098432,
+            "title": "Conditioning",
+            "pos_x": 3140.020751953122,
+            "pos_y": 259.7808837890627,
+            "inputs": [
+                {
+                    "id": 2020815891296,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 4
+                },
+                {
+                    "id": 2020815892016,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2020815893024,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2020815894560,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2020815893696,
+                    "index": 1,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 3
+                },
+                {
+                    "id": 2020815891632,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {
+                "Prompt": "",
+                "Clip Skip": "-2",
+                "Use embeds": "False"
+            },
+            "op_code": 54,
+            "content_label_objname": "cond_node"
+        },
+        {
+            "id": 2020816098816,
+            "title": "Conditioning",
+            "pos_x": 2747.230529785154,
+            "pos_y": 261.4074707031252,
+            "inputs": [
+                {
+                    "id": 2020815892304,
+                    "index": 0,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 4
+                },
+                {
+                    "id": 2020815892688,
+                    "index": 1,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2020815894032,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 3,
+                    "socket_type": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "id": 2020815891536,
+                    "index": 0,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 6
+                },
+                {
+                    "id": 2020815891440,
+                    "index": 1,
+                    "multi_edges": true,
+                    "position": 6,
+                    "socket_type": 3
+                },
+                {
+                    "id": 2020815891728,
+                    "index": 2,
+                    "multi_edges": false,
+                    "position": 6,
+                    "socket_type": 1
+                }
+            ],
+            "content": {
+                "Prompt": "highly detailed 3d render of a us police car, wavy abstract background, color splash, 70s color scheme",
+                "Clip Skip": "-2",
+                "Use embeds": "False"
+            },
+            "op_code": 54,
+            "content_label_objname": "cond_node"
         }
     ],
     "edges": [
@@ -639,12 +757,6 @@
             "end": 2422374034272
         },
         {
-            "id": 2422374027408,
-            "edge_type": 2,
-            "start": 2422374053680,
-            "end": 2422374033696
-        },
-        {
             "id": 2422374027312,
             "edge_type": 2,
             "start": 2422374034752,
@@ -655,12 +767,6 @@
             "edge_type": 2,
             "start": 2422373612560,
             "end": 2422374027120
-        },
-        {
-            "id": 2422374028080,
-            "edge_type": 2,
-            "start": 2422374033648,
-            "end": 2422374033936
         },
         {
             "id": 2422374028464,
@@ -703,6 +809,30 @@
             "edge_type": 2,
             "start": 2422374024528,
             "end": 2643834776944
+        },
+        {
+            "id": 2020816097808,
+            "edge_type": 2,
+            "start": 2422374025920,
+            "end": 2020815892304
+        },
+        {
+            "id": 2020816098960,
+            "edge_type": 2,
+            "start": 2020815891296,
+            "end": 2422374025920
+        },
+        {
+            "id": 2023630912480,
+            "edge_type": 2,
+            "start": 2020815891440,
+            "end": 2422374033696
+        },
+        {
+            "id": 2023630912864,
+            "edge_type": 2,
+            "start": 2422374033648,
+            "end": 2020815893696
         }
     ]
 }

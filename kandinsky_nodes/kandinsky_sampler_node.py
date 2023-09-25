@@ -58,7 +58,7 @@ class KandinskySamplerNode(AiNode):
         assert len(image_embeds) == len(negative_image_embeds), "Make sure to pass the same amount of positive and negative conditionings"
         total_imgs = len(image_embeds)
         index = 0
-        use_feedback = True
+        use_feedback = self.content.use_feedback.isChecked()
         for image_embed, negative_image_embed in zip(image_embeds, negative_image_embeds):
             num_steps = self.content.steps.value()
             guidance_scale = self.content.cfg_scale.value()

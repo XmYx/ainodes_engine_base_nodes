@@ -17,7 +17,7 @@ class ControlnetLoaderWidget(QDMNodeContentWidget):
         self.create_main_layout(grid=1)
 
     def create_widgets(self):
-        checkpoint_folder = gs.controlnet
+        checkpoint_folder = gs.prefs.controlnet
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', ".safetensors"))]
         self.control_net_name = self.create_combo_box(checkpoint_files, "ControlNet")
         if "loaded_controlnet" not in gs.models:
@@ -104,7 +104,7 @@ class ControlnetLoaderNode(AiNode):
 
     def load_controlnet(self, prev_net=None):
         #if "controlnet" not in gs.models:
-        controlnet_dir = gs.controlnet
+        controlnet_dir = gs.prefs.controlnet
         controlnet_path = os.path.join(controlnet_dir, self.content.control_net_name.currentText())
         # if "controlnet" in gs.models:
         #     try:

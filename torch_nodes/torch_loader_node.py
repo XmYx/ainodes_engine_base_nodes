@@ -24,7 +24,7 @@ class TorchLoaderWidget(QDMNodeContentWidget):
 
 
     def create_widgets(self):
-        checkpoint_folder = gs.checkpoints
+        checkpoint_folder = gs.prefs.checkpoints
 
         os.makedirs(checkpoint_folder, exist_ok=True)
 
@@ -41,7 +41,7 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         # self.config_dropdown = self.create_combo_box(config_files, "Config:")
         # self.config_dropdown.setCurrentText("v1-inference_fp16.yaml")
 
-        vae_folder = gs.vae
+        vae_folder = gs.prefs.vae
 
         os.makedirs(vae_folder, exist_ok=True)
 

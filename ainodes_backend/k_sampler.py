@@ -297,19 +297,15 @@ class KSampler:
 
     def __init__(self, model, steps, device, sampler=None, scheduler=None, denoise=None, model_options={}):
         from comfy.k_diffusion import external as k_diffusion_external
+        from comfy import model_base
         #self.model = model
         from comfy.samplers import CFGNoisePredictor, CompVisVDenoiser, KSamplerX0Inpaint
 
         self.model_denoise = CFGNoisePredictor(model)
-
-        print(model.model_type)
-        if model.model_type == 2:
+        if model.model_type == model_base.ModelType.V_PREDICTION:
             self.model_wrap = CompVisVDenoiser(self.model_denoise, quantize=True)
         else:
             self.model_wrap = k_diffusion_external.CompVisDenoiser(self.model_denoise, quantize=True)
-
-
-        #self.model_wrap.parameterization = model.parameterization
         self.model_k = KSamplerX0Inpaint(self.model_wrap)
         self.device = device
         if scheduler not in self.SCHEDULERS:

@@ -3,7 +3,7 @@ from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor_image_to_pixmap, pixmap_to_tensor, torch_gc, \
     tensor2pil
-from diffusers import StableUnCLIPImg2ImgPipeline, UnCLIPImageVariationPipeline
+from diffusers import StableUnCLIPImg2ImgPipeline, UnCLIPImageVariationPipeline, ControlNetModel
 from diffusers.utils import load_image
 import torch
 
@@ -13,7 +13,7 @@ import qrcode
 from PIL import Image
 
 #MANDATORY
-OP_NODE_DIFF_CONTROLNET = get_next_opcode()
+OP_NODE_DIFF_CONTROLNET_LOADER = get_next_opcode()
 
 controlnets_15 = {
         "qrControl_monstel-labs": "monster-labs/control_v1p_sd15_qrcode_monster",
@@ -68,9 +68,6 @@ class DiffusersControlNetWidget(QDMNodeContentWidget):
         self.version_select = self.create_combo_box(["1.5", "2.0/2.1", "XL"], "Version")
 
         self.controlnet_name = self.create_combo_box(self.get_control_list(), "ControlNet")
-        self.scale = self.create_double_spin_box(label_text="Control Strength", min_val=0.0, max_val=10.0, default_val=1.0, step=0.01)
-        self.start_value = self.create_double_spin_box("Start", min_val=0, max_val=1.0, default_val=0.0)
-        self.stop_value = self.create_double_spin_box("Stop", min_val=0, max_val=1.0, default_val=1.0)
         self.version_select.currentIndexChanged.connect(self.update_combo_box)
 
         self.create_main_layout(grid=1)
@@ -89,21 +86,22 @@ class DiffusersControlNetWidget(QDMNodeContentWidget):
             return [str(key) for key, value in controlnets_xl.items()]
 
 #NODE CLASS
-@register_node(OP_NODE_DIFF_CONTROLNET)
+@register_node(OP_NODE_DIFF_CONTROLNET_LOADER)
 class DiffusersControlNetNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
     help_text = "Diffusers - "
-    op_code = OP_NODE_DIFF_CONTROLNET
-    op_title = "Diffusers - ControlNet"
-    content_label_objname = "diffusers_controlnet_node"
+    op_code = OP_NODE_DIFF_CONTROLNET_LOADER
+    op_title = "Diffusers - ControlNet Loader"
+    content_label_objname = "diffusers_controlnet_loader_node"
     category = "aiNodes Base/Diffusers"
     NodeContent_class = DiffusersControlNetWidget
     dim = (340, 340)
     output_data_ports = [0]
     exec_port = 1
+    custom_output_socket_name = ["CONTROLNET", "EXEC"]
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[5,6,1], outputs=[6,1])
+        super().__init__(scene, inputs=[6,1], outputs=[4,1])
 
     #MAIN NODE FUNCTION
     def evalImplementation_thread(self, index=0):
@@ -111,39 +109,25 @@ class DiffusersControlNetNode(AiNode):
         controlnet_name = self.content.controlnet_name.currentText()
         ver = self.content.version_select.currentText()
 
+
         controlnet_dict = controlnets_15 if ver == "1.5" else controlnets_21
-        controlnet_dict = controlnet_dict if "xl" not in ver else controlnets_xl
+        controlnet_dict = controlnet_dict if "XL" not in ver else controlnets_xl
 
         controlnet_repo = controlnet_dict[controlnet_name]
 
-        images = self.getInputData(0)
-        print(images)
+        data = self.getInputData(0)
 
-        data = self.getInputData(1)
+        cnet = ControlNetModel.from_pretrained(controlnet_repo, torch_dtype=torch.float16)
 
-        image = tensor2pil(images[0])
-        scale = self.content.scale.value()
-        start = self.content.start_value.value()
-        stop = self.content.stop_value.value()
-
-
-        to_insert = {
-                    "name":controlnet_repo,
-                    "image":image,
-                    "scale":scale,
-                    "start":start,
-                    "stop":stop
-                }
-
-        if data:
-            if "control_diff" in data:
-                data["control_diff"].append(to_insert)
+        if data is not None:
+            if "controlnets" in data:
+                data["controlnets"].append(cnet)
             else:
-                data["control_diff"] = [to_insert]
+                data["controlnets"] = [cnet]
         else:
-            data = {"control_diff":[to_insert]}
-        return [data]
+            data = {"controlnets":[cnet]}
 
+        return [data]
 
     def remove(self):
         super().remove()
