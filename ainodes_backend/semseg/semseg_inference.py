@@ -100,7 +100,6 @@ class SemSegModel():
         img = self.preprocess(image)
         seg_map = self.model_forward(img)
         seg_map, masks = self.postprocess(image, seg_map, True)
-        print(type(seg_map))
         return seg_map, masks
     def infer(self, image):
 
