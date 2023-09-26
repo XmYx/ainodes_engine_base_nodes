@@ -86,6 +86,10 @@ class SubgraphNode(AiNode):
         except:
             done = handle_ainodes_exception()
 
+    def get_nodes(self):
+        return self.graph_window.widget().scene.nodes.copy()
+
+
     def evalImplementation_thread(self, index=0, *args, **kwargs):
 
         nodes = self.graph_window.widget().scene.nodes
@@ -120,7 +124,8 @@ class SubgraphNode(AiNode):
             if result[2] is not None:
                 self.content.image_signal.emit(tensor_image_to_pixmap(result[2][0]))
             self.setOutput(3, result[3])
-            self.executeChild(4)
+            if exec:
+                self.executeChild(4)
 
     def onDoubleClicked(self, event=None):
         if self.graph_window:
