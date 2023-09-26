@@ -134,6 +134,8 @@ def cleanup_additional_models(models):
 def sample(model, noise, steps, cfg, sampler_name, scheduler, positive, negative, latent_image, denoise=1.0,
            disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, noise_mask=None, sigmas=None,
            callback=None, disable_pbar=False, seed=None):
+
+    print("USING HIJACK SAMPLER")
     from comfy import model_management
     from comfy import samplers
 

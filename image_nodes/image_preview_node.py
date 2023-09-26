@@ -32,10 +32,16 @@ class ImagePreviewWidget(QDMNodeContentWidget):
 
         self.image = self.create_label("")
         self.fps = self.create_spin_box(min_val=1, max_val=250, default_val=24, step=1, label_text="FPS")
-        self.checkbox = QtWidgets.QCheckBox("Autosave")
-        self.meta_checkbox = QtWidgets.QCheckBox("Embed Node graph in PNG")
-        self.clipboard = QtWidgets.QCheckBox("Copy to Clipboard")
-        self.create_button_layout([self.checkbox, self.meta_checkbox, self.clipboard])
+        # self.checkbox = QtWidgets.QCheckBox("Autosave")
+        # self.meta_checkbox = QtWidgets.QCheckBox("Embed Node graph in PNG")
+        # self.clipboard = QtWidgets.QCheckBox("Copy to Clipboard")
+
+        self.create_check_box("Autosave", spawn="autosave_checkbox")
+        self.create_check_box("Embed Node graph in PNG", spawn="meta_checkbox")
+        self.create_check_box("Copy to Clipboard", spawn="clipboard")
+
+
+        self.create_button_layout([self.autosave_checkbox, self.meta_checkbox, self.clipboard])
         self.button = QtWidgets.QPushButton("Save Image")
         self.next_button = QtWidgets.QPushButton("Show Next")
         self.create_button_layout([self.button, self.next_button])
@@ -133,7 +139,7 @@ class ImagePreviewNode(AiNode):
 
 
     def onWorkerFinished(self, result, exec=True):
-        if self.content.checkbox.isChecked() == True:
+        if self.content.autosave_checkbox.isChecked() == True:
             if result is not None:
                 self.save_image(result)
         if result is not None:
