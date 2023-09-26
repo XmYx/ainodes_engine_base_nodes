@@ -344,9 +344,9 @@ def report_statistics(loss_info:dict):
         except Exception as e:
             print(e)
 
-gs.system.hypernetwork_dir = "models/hypernetwork"
+gs.hypernetwork_dir = "models/hypernetwork"
 
-hypernetworks = list_hypernetworks(gs.system.hypernetwork_dir)
+hypernetworks = list_hypernetworks(gs.hypernetwork_dir)
 
 
 def train_hypernetwork(hypernetwork_name='Name',                       # Network Name
