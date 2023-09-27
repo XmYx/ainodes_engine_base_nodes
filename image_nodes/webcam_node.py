@@ -10,6 +10,8 @@ from torch import autocast
 
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import pil2tensor
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.opt_ip2p_pipeline import StableDiffusionInstructPix2PixPipeline
+from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import get_scheduler, scheduler_type_values, \
+    SchedulerType
 from ainodes_frontend.base import register_node, get_next_opcode, Worker
 from ainodes_frontend.base import AiNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -31,6 +33,11 @@ class WebcamPreviewWidget(QDMNodeContentWidget):
         self.scale = self.create_double_spin_box("Scale", min_val=0.01, max_val=25.00, default_val=7.5, step=0.01)
         self.image_scale = self.create_double_spin_box("Image Guidance Scale", min_val=0.01, max_val=25.00, default_val=1.0, step=0.01)
         self.seed = self.create_line_edit("Seed")
+        self.blendimgs = self.create_double_spin_box("Blend A", min_val=0.00, max_val=1.00, default_val=1.0, step=0.01)
+        self.blendimgs_2 = self.create_double_spin_box("Blend B", min_val=0.00, max_val=1.00, default_val=0.0, step=0.01)
+
+        self.scheduler_name = self.create_combo_box(scheduler_type_values, "Scheduler")
+
 
         self.image = self.create_label("")
         self.available_cameras = self.get_available_cameras()
@@ -83,7 +90,8 @@ class WebcamPreviewNode(AiNode):
         self.update_all_sockets()
 
         self.generator = torch.Generator(gs.device.type)
-
+        self.scheduler = ""
+        self.init = None
 
     def initInnerClasses(self):
         super().initInnerClasses()
@@ -101,15 +109,20 @@ class WebcamPreviewNode(AiNode):
     def start(self):
 
         worker = Worker(self.run_live)
-        self.threadpool.start(worker)
 
         self.run = True
+        self.init_avail = False
+
+        self.threadpool.start(worker)
+
     def stop(self):
         self.run = False
+        self.init = None
 
     def get_params(self, frame):
 
         seed = secrets.randbelow(9999999999) if self.content.seed.text() == "" else int(self.content.seed.text())
+        self.generator.manual_seed(seed)
         print("Using Seed", seed)
         return {"image":frame,
                 "prompt":self.content.prompt.toPlainText(),
@@ -118,7 +131,8 @@ class WebcamPreviewNode(AiNode):
                 "guidance_scale":self.content.scale.value(),
                 "image_guidance_scale":self.content.image_scale.value(),
                 "num_inference_steps":self.content.steps.value(),
-                "generator":self.generator.manual_seed(seed)}
+                "generator":self.generator,
+                "scheduler_name":self.content.scheduler_name.currentText()}
 
     def run_live(self, progress_callback=None):
 
@@ -135,11 +149,22 @@ class WebcamPreviewNode(AiNode):
                 generator = torch.Generator(gs.device.type).manual_seed(seed)
                 if frame is not None:
                     params = self.get_params(frame)
-
+                    if self.scheduler != params["scheduler_name"]:
+                        scheduler_enum = SchedulerType(params["scheduler_name"])
+                        self.pipe = get_scheduler(self.pipe, scheduler_enum)
+                        self.scheduler = params["scheduler_name"]
                     params["image"] = cv2.resize(frame, (params["width"], params["height"]),
                                            interpolation=cv2.INTER_LANCZOS4)
+                    if self.init_avail:
+                        if self.content.blendimgs.value() != 1.0 or self.content.blendimgs_2.value() != 0.0:
 
 
+                            lastinit = cv2.resize(self.init, (self.content.width_val.value(), self.content.height_val.value()),
+                                                  interpolation=cv2.INTER_LANCZOS4)
+                            print(params["image"].shape)
+                            print(lastinit.shape)
+                            params["image"] = cv2.addWeighted(params["image"], self.content.blendimgs_2.value(), lastinit,
+                                                    self.content.blendimgs.value(), 0)
                     latents = self.pipe(**params)
                     self.content.decodevae.emit(latents)
 
@@ -155,7 +180,9 @@ class WebcamPreviewNode(AiNode):
             image = (image / 2 + 0.5).clamp(0, 1)
 
             # 4. Convert tensor values to float32
-            image =  image.permute(0, 2, 3, 1).float().detach().cpu()
+            image = image.float().detach().cpu()
+            self.init = np.array(image[0].permute(1,2,0)).astype(np.uint8)
+            image = image.permute(0, 2, 3, 1)
 
             # 5. Add batch dimension (if it's removed in prior steps)
             if image.dim() == 3:
