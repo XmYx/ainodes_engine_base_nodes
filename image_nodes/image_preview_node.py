@@ -59,6 +59,9 @@ class ImagePreviewNode(AiNode):
     category = "aiNodes Base/Image"
     dims = (512,512)
 
+    make_dirty = True
+
+
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
 
