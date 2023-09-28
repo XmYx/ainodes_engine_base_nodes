@@ -64,14 +64,15 @@ class DiffSDIpNode(AiNode):
         if image is not None:
             image = tensor2pil(image[0])
         download_ip_adapter_xl()
-        image_encoder_path = "models/ip_adapter/image_encoder"
-        ip_ckpt = "models/ip_adapter/sdxl_models/ip-adapter_sdxl_vit-h.bin"
+        image_encoder_path = "models/ip_adapter/models/image_encoder"
+        ip_ckpt = "models/ip_adapter/sdxl_models/ip-adapter-plus_sdxl_vit-h.bin"
         device = gs.device
         if self.pipe == None:
-            self.pipe = IPAdapterXL(pipe, image_encoder_path, ip_ckpt, device)
+            from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.ip_adapter.ip_adapter import IPAdapterPlusXL
+            self.pipe = IPAdapterPlusXL(pipe, image_encoder_path, ip_ckpt, device, num_tokens=16)
         if self.pipe.device.type != "cuda":
             self.pipe.to("cuda")
-
+        image = image.resize((512, 512))
         args = {
             "pil_image": image,
             "num_samples": 1,
@@ -124,16 +125,18 @@ def download_ip_adapter_xl():
     os.makedirs(target_dir, exist_ok=True)
 
     for file in adapter_files:
-        if not os.path.isfile(os.path.join(target_dir, file)):
+        subfolder = "sdxl_models"
+        if not os.path.isfile(os.path.join(target_dir, subfolder, file)):
             hf_hub_download(repo_id=repo_id,
                             filename=file,
-                            subfolder="sdxl_models",
+                            subfolder=subfolder,
                             local_dir=target_dir,
                             local_dir_use_symlinks=False)
     for file in image_encoder_files:
-        if not os.path.isfile(os.path.join(target_dir, file)):
+        subfolder = "models/image_encoder"
+        if not os.path.isfile(os.path.join(target_dir, subfolder, file)):
             hf_hub_download(repo_id=repo_id,
                             filename=file,
-                            subfolder="sdxl_models/image_encoder",
+                            subfolder=subfolder,
                             local_dir=target_dir,
                             local_dir_use_symlinks=False)
