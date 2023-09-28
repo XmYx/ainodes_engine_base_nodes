@@ -51,20 +51,21 @@ class DiffSDIpNode(AiNode):
     NodeContent_class = DiffSDIPAdapterWidget
     dim = (340, 460)
     output_data_ports = [0]
-    custom_input_socket_name = ["PIPE", "IMAGE", "EXEC"]
+    #custom_input_socket_name = ["PIPE", "IMAGE", "EXEC"]
     def __init__(self, scene):
-        super().__init__(scene, inputs=[4,5,1], outputs=[5,1])
+        super().__init__(scene, inputs=[4,5,6,1], outputs=[5,1])
         self.pipe = None
     def evalImplementation_thread(self, index=0):
 
         pipe = self.getInputData(0)
         image = self.getInputData(1)
+        data = self.getInputData(2)
 
         if image is not None:
             image = tensor2pil(image[0])
-
+        download_ip_adapter_xl()
         image_encoder_path = "models/ip_adapter/image_encoder"
-        ip_ckpt = "models/ip_adapter/ip-adapter_sdxl.bin"
+        ip_ckpt = "models/ip_adapter/sdxl_models/ip-adapter_sdxl_vit-h.bin"
         device = gs.device
         if self.pipe == None:
             self.pipe = IPAdapterXL(pipe, image_encoder_path, ip_ckpt, device)
@@ -81,7 +82,17 @@ class DiffSDIpNode(AiNode):
             "num_inference_steps":self.content.steps.value(),
         }
 
-        image = self.pipe.generate(**args)[0]
+        if data is not None:
+            data.update(args)
+        else:
+            data = args
+
+        data["prompt_2"] = None
+        del data["prompt_2"]
+        data["negative_prompt_2"] = None
+        del data["negative_prompt_2"]
+
+        image = self.pipe.generate(**data)[0]
         image = pil2tensor(image)
         #del pipe
         return [[image]]
@@ -96,3 +107,33 @@ class DiffSDIpNode(AiNode):
         except:
             self.pipe = None
         super().remove()
+
+from huggingface_hub import hf_hub_download
+
+def download_ip_adapter_xl():
+
+    ip_ckpt = "models/ip-adapter_sdxl_vit-h.bin"
+    repo_id = "h94/IP-Adapter"
+    target_dir = "models/ip_adapter"
+    image_encoder_path = "models/ip_adapter/image_encoder"
+
+
+    adapter_files = ["ip-adapter-plus_sdxl_vit-h.bin"]
+    image_encoder_files = ["config.json", "model.safetensors"]
+
+    os.makedirs(target_dir, exist_ok=True)
+
+    for file in adapter_files:
+        if not os.path.isfile(os.path.join(target_dir, file)):
+            hf_hub_download(repo_id=repo_id,
+                            filename=file,
+                            subfolder="sdxl_models",
+                            local_dir=target_dir,
+                            local_dir_use_symlinks=False)
+    for file in image_encoder_files:
+        if not os.path.isfile(os.path.join(target_dir, file)):
+            hf_hub_download(repo_id=repo_id,
+                            filename=file,
+                            subfolder="sdxl_models/image_encoder",
+                            local_dir=target_dir,
+                            local_dir_use_symlinks=False)
