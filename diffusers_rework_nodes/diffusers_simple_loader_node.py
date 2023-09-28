@@ -22,7 +22,7 @@ class DiffSDSimplePipelineWidget(QDMNodeContentWidget):
         self.create_check_box("TinyVAE", spawn="tinyvae")
 
         self.create_check_box("Use Local Model", spawn="use_local_models")
-        checkpoint_folder = gs.prefs.checkpoints_xl
+        checkpoint_folder = gs.prefs.checkpoints
 
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
         self.local_model = self.create_combo_box(checkpoint_files, "Model:")
@@ -72,7 +72,7 @@ class DiffSDPipelineNode(AiNode):
         if not self.content.use_local_models.isChecked():
             self.pipe = pipe_class.from_pretrained(model_name, torch_dtype=torch.float16)
         else:
-            model_name = f"{gs.prefs.checkpoints_xl}/{self.content.local_model.currentText()}"
+            model_name = f"{gs.prefs.checkpoints}/{self.content.local_model.currentText()}"
             self.pipe = pipe_class.from_single_file(model_name, torch_dtype=torch.float16)
 
         if isinstance(self.pipe, StableDiffusionXLPipeline):

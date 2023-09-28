@@ -32,6 +32,11 @@ class DiffSDIPAdapterWidget(QDMNodeContentWidget):
                                                                   "and connect them to a K Sampler.\n"
                                                                   "If you want to control your resolution,\n"
                                                                   "or use an init image, use an Empty Latent Node.")
+        self.n_prompt = self.create_text_edit("Linguistic Negative Prompt", placeholder="Linguistic Negative Prompt")
+        self.scale = self.create_double_spin_box("Scale", min_val=0.01, max_val=25.00, default_val=1.0, step=0.01)
+        self.seed = self.create_line_edit("Seed")
+
+        self.steps = self.create_spin_box("Steps", min_val=1, max_val=4096, default_val=25, step=1)
 
         self.create_main_layout(grid=1)
 
@@ -61,14 +66,24 @@ class DiffSDIpNode(AiNode):
         image_encoder_path = "models/ip_adapter/image_encoder"
         ip_ckpt = "models/ip_adapter/ip-adapter_sdxl.bin"
         device = gs.device
-        pipe = IPAdapterXL(pipe, image_encoder_path, ip_ckpt, device)
-        if pipe.device.type != "cuda":
-            pipe.to("cuda")
+        if self.pipe == None:
+            self.pipe = IPAdapterXL(pipe, image_encoder_path, ip_ckpt, device)
+        if self.pipe.device.type != "cuda":
+            self.pipe.to("cuda")
 
-        seed = secrets.randbelow(999999999999)
-        images = pipe.generate(pil_image=image, num_samples=1, num_inference_steps=30, seed=seed   )[0]
-        image = pil2tensor(images)
-        del pipe
+        args = {
+            "pil_image": image,
+            "num_samples": 1,
+            "seed" : secrets.randbelow(9999999999) if self.content.seed.text() == "" else int(self.content.seed.text()),
+            "prompt":self.content.prompt.toPlainText(),
+            "negative_prompt":self.content.n_prompt.toPlainText(),
+            "guidance_scale":self.content.scale.value(),
+            "num_inference_steps":self.content.steps.value(),
+        }
+
+        image = self.pipe.generate(**args)[0]
+        image = pil2tensor(image)
+        #del pipe
         return [[image]]
 
 

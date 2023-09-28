@@ -178,8 +178,6 @@ class TorchLoaderNode(AiNode):
         if exec:
             self.executeChild(3)
 
-    def onInputChanged(self, socket=None):
-        pass
 
 
 

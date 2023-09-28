@@ -13,7 +13,7 @@ from diffusers.pipelines.stable_diffusion.pipeline_output import StableDiffusion
 
 #from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
 
-StableDiffusionPipelineOutput
+# StableDiffusionPipelineOutput
 
 def is_torch2_available():
     return hasattr(F, "scaled_dot_product_attention")
