@@ -126,6 +126,7 @@ class ImageOpNode(AiNode):
     op_title = "Image Operators"
     content_label_objname = "image_op_node"
     category = "aiNodes Base/Image"
+    make_dirty = True
 
 
     def __init__(self, scene):
@@ -161,16 +162,16 @@ class ImageOpNode(AiNode):
         return return_tensor_list
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, pixmap_list):
+    def onWorkerFinished(self, result, exec=True):
         #super().onWorkerFinished(None)
         self.busy = False
-        self.setOutput(0, pixmap_list)
-        if gs.should_run:
 
-            if len(self.getOutputs(2)) > 0:
-                self.executeChild(2)
+        self.setOutput(0, result)
         self.markDirty(False)
         self.markInvalid(False)
+
+        if exec:
+            self.executeChild(2)
 
     def image_op(self, pixmap, method):
         tensor = None

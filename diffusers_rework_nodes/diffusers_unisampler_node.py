@@ -282,7 +282,8 @@ class DiffSamplerNode(AiNode):
             args["image"] = data["image"]
             args["mask_image"] = data["mask"]
         if isinstance(pipe, StableDiffusionXLPipeline):
-
+            args["width"] = data["width"]
+            args["height"] = data["height"]
 
 
             latents, image = pipe.generate(**args)
