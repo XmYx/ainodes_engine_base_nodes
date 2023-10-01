@@ -4,7 +4,7 @@ import secrets
 import torch
 
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor2pil, pil2tensor
-from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.ip_adapter import IPAdapterXL
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.ip_adapter import IPAdapterXL, IPAdapterPlus, IPAdapterPlusXL
 from ai_nodes.ainodes_engine_base_nodes.diffusers_nodes.diffusers_helpers import diffusers_models, diffusers_indexed, \
     scheduler_type_values, SchedulerType, get_scheduler_class
 from ainodes_frontend.base import register_node, get_next_opcode
@@ -17,6 +17,7 @@ from diffusers import (StableDiffusionPipeline, StableDiffusionXLPipeline,
                        StableDiffusionImg2ImgPipeline, StableDiffusionControlNetPipeline,
                        StableDiffusionXLImg2ImgPipeline, StableDiffusionControlNetImg2ImgPipeline,
                        StableDiffusionXLControlNetPipeline)
+
 
 
 class DiffSDIPAdapterWidget(QDMNodeContentWidget):
@@ -55,6 +56,10 @@ class DiffSDIpNode(AiNode):
     def __init__(self, scene):
         super().__init__(scene, inputs=[4,5,6,1], outputs=[5,1])
         self.pipe = None
+
+    def load_ip_on_pipe(self, pipe):
+        pass
+
     def evalImplementation_thread(self, index=0):
 
         pipe = self.getInputData(0)
@@ -63,13 +68,27 @@ class DiffSDIpNode(AiNode):
 
         if image is not None:
             image = tensor2pil(image[0])
-        download_ip_adapter_xl()
-        image_encoder_path = "models/ip_adapter/models/image_encoder"
-        ip_ckpt = "models/ip_adapter/sdxl_models/ip-adapter-plus_sdxl_vit-h.bin"
+
+
+        if isinstance(pipe, StableDiffusionXLPipeline) or isinstance(pipe, StableDiffusionXLControlNetPipeline):
+            version = "XL_PLUS"
+        elif isinstance(pipe, StableDiffusionPipeline) or isinstance(pipe, StableDiffusionImg2ImgPipeline) or isinstance(StableDiffusionControlNetPipeline):
+            version = "1.5_PLUS"
+
+
+        download_ip_adapter_xl(version)
+
+        if version == "XL_PLUS":
+            image_encoder_path = "models/ip_adapter/models/image_encoder"
+            ip_ckpt = "models/ip_adapter/sdxl_models/ip-adapter-plus_sdxl_vit-h.bin"
+            adapter_class = IPAdapterPlusXL
+        elif version == "1.5_PLUS":
+            ip_ckpt = "models/ip_adapter/models/ip-adapter-plus_sd15.bin"
+            adapter_class = IPAdapterPlus
+
         device = gs.device
         if self.pipe == None:
-            from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.ip_adapter.ip_adapter import IPAdapterPlusXL
-            self.pipe = IPAdapterPlusXL(pipe, image_encoder_path, ip_ckpt, device, num_tokens=16)
+            self.pipe = adapter_class(pipe, image_encoder_path, ip_ckpt, device, num_tokens=16)
         if self.pipe.device.type != "cuda":
             self.pipe.to("cuda")
         image = image.resize((512, 512))
@@ -95,7 +114,6 @@ class DiffSDIpNode(AiNode):
 
         image = self.pipe.generate(**data)[0]
         image = pil2tensor(image)
-        #del pipe
         return [[image]]
 
 
@@ -111,21 +129,25 @@ class DiffSDIpNode(AiNode):
 
 from huggingface_hub import hf_hub_download
 
-def download_ip_adapter_xl():
-
-    ip_ckpt = "models/ip-adapter_sdxl_vit-h.bin"
-    repo_id = "h94/IP-Adapter"
-    target_dir = "models/ip_adapter"
-    image_encoder_path = "models/ip_adapter/image_encoder"
-
-
-    adapter_files = ["ip-adapter-plus_sdxl_vit-h.bin"]
-    image_encoder_files = ["config.json", "model.safetensors"]
+def download_ip_adapter_xl(version="XL_PLUS"):
+    if version == "XL_PLUS":
+        repo_id = "h94/IP-Adapter"
+        target_dir = "models/ip_adapter"
+        adapter_files = ["ip-adapter-plus_sdxl_vit-h.bin"]
+        image_encoder_files = ["config.json", "model.safetensors"]
+    else:
+        repo_id = "h94/IP-Adapter"
+        target_dir = "models/ip_adapter"
+        adapter_files = ["ip-adapter-plus_sd15.bin"]
+        image_encoder_files = ["config.json", "model.safetensors"]
 
     os.makedirs(target_dir, exist_ok=True)
 
     for file in adapter_files:
-        subfolder = "sdxl_models"
+        if version in ["XL_PLUS", "XL"]:
+            subfolder = "sdxl_models"
+        elif version in ["1.5", "1.5_PLUS"]:
+            subfolder = "models"
         if not os.path.isfile(os.path.join(target_dir, subfolder, file)):
             hf_hub_download(repo_id=repo_id,
                             filename=file,
@@ -133,7 +155,10 @@ def download_ip_adapter_xl():
                             local_dir=target_dir,
                             local_dir_use_symlinks=False)
     for file in image_encoder_files:
-        subfolder = "models/image_encoder"
+        if version in ["1.5", "1.5_PLUS", "XL_PLUS"]:
+            subfolder = "models/image_encoder"
+        elif version in ["XL"]:
+            subfolder = "sdxl_models/image_encoder"
         if not os.path.isfile(os.path.join(target_dir, subfolder, file)):
             hf_hub_download(repo_id=repo_id,
                             filename=file,

@@ -29,25 +29,30 @@ OP_NODE_IMG_PREVIEW = get_next_opcode()
 class ImagePreviewWidget(QDMNodeContentWidget):
     preview_signal = QtCore.Signal(object)
     def initUI(self):
-
         self.image = self.create_label("")
         self.fps = self.create_spin_box(min_val=1, max_val=250, default_val=24, step=1, label_text="FPS")
-        # self.checkbox = QtWidgets.QCheckBox("Autosave")
-        # self.meta_checkbox = QtWidgets.QCheckBox("Embed Node graph in PNG")
-        # self.clipboard = QtWidgets.QCheckBox("Copy to Clipboard")
 
-        self.create_check_box("Autosave", spawn="autosave_checkbox")
-        self.create_check_box("Embed Node graph in PNG", spawn="meta_checkbox")
-        self.create_check_box("Copy to Clipboard", spawn="clipboard")
+        # Create checkboxes and store the horizontal layout
+        checkbox_layout = self.create_horizontal_layout([
+            self.create_check_box("Autosave", spawn="autosave_checkbox"),
+            self.create_check_box("Embed Node graph in PNG", spawn="meta_checkbox"),
+            self.create_check_box("Copy to Clipboard", spawn="clipboard")
+        ])
 
-
-        self.create_button_layout([self.autosave_checkbox, self.meta_checkbox, self.clipboard])
+        # Add any additional widgets/buttons to the checkbox_layout if needed
         self.button = QtWidgets.QPushButton("Save Image")
         self.next_button = QtWidgets.QPushButton("Show Next")
-        self.create_button_layout([self.button, self.next_button])
+        checkbox_layout.addWidget(self.button)
+        checkbox_layout.addWidget(self.next_button)
+
         self.start_stop = QtWidgets.QPushButton("Play / Pause")
-        self.create_button_layout([self.start_stop])
-        self.create_main_layout(grid=1)
+        checkbox_layout.addWidget(self.start_stop)
+
+
+        self.create_main_layout()
+
+        # Add the checkbox_layout to the main layout
+        self.main_layout.addLayout(checkbox_layout)
 
 
 @register_node(OP_NODE_IMG_PREVIEW)
@@ -168,8 +173,8 @@ class ImagePreviewNode(AiNode):
                 self.executeChild(2)
 
     def manual_save(self):
-        for image in self.images:
-            self.save_image(image)
+        #for image in self.images:
+        self.save_image(self.images[len(self.images) - 1][0])
 
     def save_image(self, pixmap):
         try:

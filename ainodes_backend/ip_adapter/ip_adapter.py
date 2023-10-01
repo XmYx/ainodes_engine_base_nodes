@@ -120,7 +120,6 @@ class IPAdapter:
             negative_prompt=None,
             scale=1.0,
             num_samples=4,
-            seed=-1,
             guidance_scale=7.5,
             num_inference_steps=30,
             **kwargs,
@@ -157,13 +156,12 @@ class IPAdapter:
             prompt_embeds = torch.cat([prompt_embeds_, image_prompt_embeds], dim=1)
             negative_prompt_embeds = torch.cat([negative_prompt_embeds_, uncond_image_prompt_embeds], dim=1)
 
-        generator = torch.Generator(self.device).manual_seed(seed) if seed is not None else None
+        #generator = torch.Generator(self.device).manual_seed(seed) if seed is not None else None
         images = self.pipe(
             prompt_embeds=prompt_embeds,
             negative_prompt_embeds=negative_prompt_embeds,
             guidance_scale=guidance_scale,
             num_inference_steps=num_inference_steps,
-            generator=generator,
             **kwargs,
         ).images
 
