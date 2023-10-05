@@ -252,7 +252,7 @@ class DiffusersPipeLineNode(AiNode):
             "height":height
         }
 
-        return [[pil2tensor(image)], data]
+        return [torch.stack([pil2tensor(image)]), data]
 
     def load_lora(self):
         from .diffusers_lora_loader import install_lora_hook

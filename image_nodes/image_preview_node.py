@@ -62,26 +62,21 @@ class ImagePreviewNode(AiNode):
     op_title = "Image Preview"
     content_label_objname = "image_output_node"
     category = "aiNodes Base/Image"
-    dims = (512,512)
+    output_data_ports = [0]
+    NodeContent_class = ImagePreviewWidget
+    dim = (340, 460)
 
     make_dirty = True
 
 
+
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
-
-    def initInnerClasses(self):
-        self.content = ImagePreviewWidget(self)
-        self.grNode = CalcGraphicsNode(self)
-        self.grNode.icon = self.icon
-        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
-
-        self.grNode.height = 350
-        self.grNode.width = 400
         self.images = []
+        self.pixmaps = []
+
         self.index = 0
         self.content.preview_signal.connect(self.show_image)
-        self.content.eval_signal.connect(self.evalImplementation)
         self.content.button.clicked.connect(self.manual_save)
         self.content.next_button.clicked.connect(self.show_next_image)
         self.timer = QtCore.QTimer()
@@ -89,16 +84,14 @@ class ImagePreviewNode(AiNode):
         self.timer.timeout.connect(self.iter_preview)
         self.content.start_stop.clicked.connect(self.start_stop)
         self.content.fps.valueChanged.connect(self.set_interval)
-        #self.timer.start()
 
     def set_interval(self, fps):
         interval = int(1000.0 / fps)
         self.timer.setInterval(interval)
 
-
     def remove(self):
         try:
-            self.timer.start()
+            self.timer.stop()
         except:
             pass
         del self.images
@@ -108,35 +101,64 @@ class ImagePreviewNode(AiNode):
             self.timer.stop()
         else:
             self.timer.start()
+
+    def add_image(self, image_tensor, show=False):
+        #self.images.append(image_tensor)
+        pixmap = tensor_image_to_pixmap(image_tensor)
+        if show:
+            self.content.preview_signal.emit(pixmap)
+        self.pixmaps.append(pixmap)
+
     def iter_preview(self):
         self.show_next_image()
 
-
     def show_next_image(self):
-        if hasattr(self, "images"):
-            length = len(self.images)
-            if self.index >= length:
-                self.index = 0
-            if length > 0:
-                pixmap = tensor_image_to_pixmap(self.images[self.index])
-                #pixmap = pil_image_to_pixmap(img)
-                self.resize(pixmap)
-
-                self.content.preview_signal.emit(pixmap)
-                self.setOutput(0, [pixmap])
-                self.index += 1
+        length = len(self.pixmaps)
+        if self.index >= length:
+            self.index = 0
+        if length > 0:
+            pixmap = self.pixmaps[self.index]
+            self.resize(pixmap)
+            self.content.preview_signal.emit(pixmap)
+            self.setOutput(0, [pixmap])
+            self.index += 1
         else:
             self.timer.stop()
 
-    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
+        start_time = time.time()  # Start the timer
+
+        result = None
+
         self.busy = True
         if len(self.getInputs(0)) > 0:
-
             image = self.getInputData(0)
 
-            self.images.append(image)
-            return image
+            print("Im Preview Node", image.shape)
+            if image.shape[0] > 1:  # Assuming the tensor shape is [channels, height, width]
+                for img in image:
+                    print(img.shape)
+                    self.add_image(img.unsqueeze(0), show=True)
+            else:
+                self.add_image(image, show=True)
+            #self.show_next_image()
+            #result = [image]
+        if self.content.autosave_checkbox.isChecked() == True:
+            if image is not None:
+                self.save_image(image)
+        # if image is not None:
+        #     for item in image:
+        #         if not isinstance(item, QtGui.QPixmap):
+        #             pixmap = tensor_image_to_pixmap(item)
+        #         else:
+        #             pixmap = item
+        #         self.content.preview_signal.emit(pixmap)
+        #         self.resize(pixmap)
+        if gs.debug:
+            elapsed_time = time.time() - start_time  # Calculate elapsed time
+            print(f"Image Preview Node executed in {elapsed_time:.4f} seconds.")  # Print the time taken
+        print("IM Preview Node returning", image.shape)
+        return [image]
 
     def show_image(self, image):
 
@@ -145,32 +167,6 @@ class ImagePreviewNode(AiNode):
         self.content.image.setPixmap(image)
         self.resize(image)
 
-
-    def onWorkerFinished(self, result, exec=True):
-        if self.content.autosave_checkbox.isChecked() == True:
-            if result is not None:
-                self.save_image(result)
-        if result is not None:
-
-            for item in result:
-
-                if not isinstance(item, QtGui.QPixmap):
-
-                    pixmap = tensor_image_to_pixmap(item)
-                else:
-                    pixmap = item
-                self.content.preview_signal.emit(pixmap)
-                self.resize(pixmap)
-                # for image in result:
-                #     self.content.preview_signal.emit(image)
-                    #time.sleep(0.1)
-
-        self.setOutput(0, result)
-        self.markInvalid(False)
-        self.markDirty(False)
-        if exec:
-            if gs.should_run:
-                self.executeChild(2)
 
     def manual_save(self):
         #for image in self.images:
@@ -214,7 +210,13 @@ class ImagePreviewNode(AiNode):
 
     def resize(self, pixmap):
         self.grNode.setToolTip("")
-        self.grNode.height = pixmap.size().height() + 255
-        self.grNode.width = pixmap.size().width() + 30
-        self.content.setGeometry(0, 25, pixmap.size().width(), pixmap.size().height() + 150)
-        self.update_all_sockets()
+        dims = [pixmap.size().height() + 255, pixmap.size().width() + 30]
+        if self.dim != dims:
+            self.dim = dims
+            self.grNode.height = dims[0]
+            self.grNode.width = dims[1]
+            self.content.setGeometry(0, 25, pixmap.size().width(), pixmap.size().height() + 150)
+            self.update_all_sockets()
+
+    def onInputChanged(self, socket=None):
+        self.markDirty(True)

@@ -294,6 +294,7 @@ class DiffSamplerNode(AiNode):
         if not keepinvram:
             pipe.to("cpu")
 
-        return [[pil2tensor(image)], latents, args]
+        return [pil2tensor(image), latents, args]
+
     def remove(self):
         super().remove()

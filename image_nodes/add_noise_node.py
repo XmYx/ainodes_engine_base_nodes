@@ -1,3 +1,5 @@
+import torch
+
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.ainodes_tensor.add_noise import add_noise, add_noise_with_mask
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
@@ -51,5 +53,5 @@ class AddNoiseNode(AiNode):
                     result = add_noise(tensor, noise_type=noise_type, noise_amount=noise_amount)
                 results.append(result)
 
-        return [results]
+        return [torch.stack(results)]
 

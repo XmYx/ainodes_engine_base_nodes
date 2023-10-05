@@ -90,7 +90,7 @@ class WebcamPreviewNode(AiNode):
     op_title = "Webcam Preview"
     content_label_objname = "webcam_output_node"
     category = "aiNodes Base/Image"
-    dims = (800, 600)
+    dims = (800, 720)
     NodeContent_class = WebcamPreviewWidget
 
     output_data_ports = [0, 1]
@@ -109,7 +109,6 @@ class WebcamPreviewNode(AiNode):
         self.generator = torch.Generator(gs.device.type)
         self.scheduler = ""
         self.init = None
-        self.cap = None
         self.images = []
         self.morphed_images = []
         self.loaded_pipeline = ""
@@ -128,7 +127,7 @@ class WebcamPreviewNode(AiNode):
         self.content.stop_diffusion.clicked.connect(self.stop)
         self.content.decodevae.connect(self.decode_vae)
 
-        self.grNode.height = self.dims[0]
+        self.grNode.height = self.dims[0] + 100
         self.grNode.width = self.dims[1]
         self.content.setGeometry(0, 25, self.dims[1], self.dims[0])
 
@@ -578,7 +577,11 @@ class WebcamPreviewNode(AiNode):
         self.images = [self.images[1]]
 
     def start_webcam_feed(self):
+        if hasattr(self, 'cap') and self.cap.isOpened():  # Check if cap exists and is opened
+            return  # If it's already open, just return without doing anything
+
         cam_index = self.content.dropdown_camera.currentIndex()
+
         self.cap = cv2.VideoCapture(cam_index)
 
         if not self.cap.isOpened():
@@ -595,13 +598,17 @@ class WebcamPreviewNode(AiNode):
             return None
 
     def evalImplementation_thread(self):
+        start_time = time.time()  # Start the timer
 
-        if self.cap == None:
-            self.start_webcam_feed()
+        self.start_webcam_feed()
         frame = self.update_frame()
-        result = pil2tensor(Image.fromarray(frame))
+        #result = pil2tensor(Image.fromarray(frame))
 
-        print("webcamnode", type(result))
+        result = torch.from_numpy(frame.astype(np.float32) / 255.0).unsqueeze(0)
+        if gs.debug:
+
+            elapsed_time_ms = (time.time() - start_time) * 1000  # Calculate elapsed time in milliseconds
+            print(f"Webcam Node executed in {elapsed_time_ms:.2f} ms.")  # Print the time taken in milliseconds
 
         return [result, None]
 
@@ -708,7 +715,11 @@ class WebcamPreviewNode(AiNode):
 
     def remove(self):
         if hasattr(self, 'cap'):
-            self.cap.release()
+            if self.cap is not None:
+                try:
+                    self.cap.release()
+                except:
+                    pass
         if hasattr(self, 'webcam_timer'):
             self.webcam_timer.stop()
         super().remove()

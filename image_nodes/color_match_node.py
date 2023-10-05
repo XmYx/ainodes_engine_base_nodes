@@ -37,7 +37,6 @@ class ColorMatch(AiNode):
         self.grNode.height = 140
         self.grNode.width = 256
         self.content.eval_signal.connect(self.evalImplementation)
-        import cv2
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
@@ -63,18 +62,10 @@ class ColorMatch(AiNode):
             pixmap = pil2tensor(pil_image)
 
 
-            return pixmap
+            return [pixmap]
         else:
             self.markDirty(True)
             return None
-    #@QtCore.Slot(object)
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-        #super().onWorkerFinished(None)
-        if result is not None:
-            self.setOutput(0, [result])
-            self.markDirty(False)
-            self.executeChild(output_index=1)
 
 def maintain_colors_old(prev_img, color_match_sample, mode):
     from skimage.exposure import match_histograms

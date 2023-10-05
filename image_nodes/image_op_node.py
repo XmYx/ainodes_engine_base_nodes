@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import torch
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from qtpy import QtWidgets, QtCore, QtGui
 
@@ -159,19 +160,10 @@ class ImageOpNode(AiNode):
                 for tensor in tensor_list:
                     return_tensor = self.image_op(tensor, method)
                     return_tensor_list.append(return_tensor)
-        return return_tensor_list
 
-    #@QtCore.Slot(object)
-    def onWorkerFinished(self, result, exec=True):
-        #super().onWorkerFinished(None)
-        self.busy = False
 
-        self.setOutput(0, result)
-        self.markDirty(False)
-        self.markInvalid(False)
+        return [torch.stack(return_tensor_list), None]
 
-        if exec:
-            self.executeChild(2)
 
     def image_op(self, pixmap, method):
         tensor = None
@@ -337,6 +329,9 @@ class ImageOpNode(AiNode):
         if image != None:
             # Convert the PIL Image object to a QPixmap object
             tensor = pil2tensor(image)
+
+
+        print(tensor.shape)
         return tensor
 
 

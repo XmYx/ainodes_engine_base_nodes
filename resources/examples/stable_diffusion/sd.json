@@ -65,7 +65,7 @@
                 "Subnoise Height": "512",
                 "Subnoise strength": "1.0"
             },
-            "op_code": 59,
+            "op_code": 71,
             "content_label_objname": "empty_latent_node"
         },
         {
@@ -124,61 +124,8 @@
                 "Clip Skip": "-2",
                 "Use embeds": "False"
             },
-            "op_code": 54,
+            "op_code": 66,
             "content_label_objname": "cond_node"
-        },
-        {
-            "id": 2422819240784,
-            "title": "Torch Loader",
-            "pos_x": 2327.6459350585924,
-            "pos_y": 320.04852294921875,
-            "inputs": [
-                {
-                    "id": 2422374033840,
-                    "index": 0,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 1
-                }
-            ],
-            "outputs": [
-                {
-                    "id": 2422374032112,
-                    "index": 0,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 4
-                },
-                {
-                    "id": 2422374025920,
-                    "index": 1,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 4
-                },
-                {
-                    "id": 2422374025968,
-                    "index": 2,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 4
-                },
-                {
-                    "id": 2422374026016,
-                    "index": 3,
-                    "multi_edges": false,
-                    "position": 6,
-                    "socket_type": 1
-                }
-            ],
-            "content": {
-                "Model:": "protovisionXLHighFidelity3D_beta0520Bakedvae.safetensors",
-                "Vae": "default",
-                "LDM Optimization": "None",
-                "Force Reload": "False"
-            },
-            "op_code": 69,
-            "content_label_objname": "torch_loader_node"
         },
         {
             "id": 2422374026064,
@@ -236,14 +183,14 @@
                 "Clip Skip": "-2",
                 "Use embeds": "False"
             },
-            "op_code": 54,
+            "op_code": 66,
             "content_label_objname": "cond_node"
         },
         {
             "id": 2437554799760,
             "title": "Torch Loader",
-            "pos_x": 398.63586425781193,
-            "pos_y": 323.068359375,
+            "pos_x": -243.45397949218759,
+            "pos_y": 269.3574218750001,
             "inputs": [
                 {
                     "id": 2422373613328,
@@ -289,14 +236,14 @@
                 "LDM Optimization": "None",
                 "Force Reload": "False"
             },
-            "op_code": 69,
+            "op_code": 81,
             "content_label_objname": "torch_loader_node"
         },
         {
             "id": 2422374015824,
             "title": "K Sampler",
-            "pos_x": 277.22631835937534,
-            "pos_y": 974.2294311523428,
+            "pos_x": 302.61694335937534,
+            "pos_y": 864.8544311523428,
             "inputs": [
                 {
                     "id": 2422374034704,
@@ -394,112 +341,7 @@
                 "Denoise:": "1.0",
                 "Guidance Scale:": "7.5"
             },
-            "op_code": 35,
-            "content_label_objname": "K_sampling_node"
-        },
-        {
-            "id": 2422374026928,
-            "title": "K Sampler",
-            "pos_x": 2357.4310913085924,
-            "pos_y": 987.2390747070301,
-            "inputs": [
-                {
-                    "id": 2422374034320,
-                    "index": 0,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 4
-                },
-                {
-                    "id": 2422374034272,
-                    "index": 1,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 4
-                },
-                {
-                    "id": 2422374034224,
-                    "index": 2,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 4
-                },
-                {
-                    "id": 2422374033456,
-                    "index": 3,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 6
-                },
-                {
-                    "id": 2422374033744,
-                    "index": 4,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 2
-                },
-                {
-                    "id": 2422374033696,
-                    "index": 5,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 3
-                },
-                {
-                    "id": 2422374033648,
-                    "index": 6,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 3
-                },
-                {
-                    "id": 2422374033600,
-                    "index": 7,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 1
-                }
-            ],
-            "outputs": [
-                {
-                    "id": 2422374024528,
-                    "index": 0,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 5
-                },
-                {
-                    "id": 2422374024480,
-                    "index": 1,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 2
-                },
-                {
-                    "id": 2422374024624,
-                    "index": 2,
-                    "multi_edges": false,
-                    "position": 6,
-                    "socket_type": 1
-                }
-            ],
-            "content": {
-                "Scheduler:": "karras",
-                "Sampler:": "euler",
-                "Seed:": "",
-                "Steps:": "40",
-                "Start Step:": "0",
-                "Last Step:": "40",
-                "Stop Sampling Early": "False",
-                "Force full denoise": "True",
-                "Show Tensor Preview": "True",
-                "Disable noise generation": "False",
-                "Iterate seed": "False",
-                "Use latent from loop": "False",
-                "Denoise:": "0.85",
-                "Guidance Scale:": "7.5"
-            },
-            "op_code": 35,
+            "op_code": 47,
             "content_label_objname": "K_sampling_node"
         },
         {
@@ -555,150 +397,33 @@
             ],
             "content": {
                 "FPS": "24",
-                "": "True"
+                "": "False"
             },
-            "op_code": 29,
+            "op_code": 39,
             "content_label_objname": "image_output_node"
         },
         {
-            "id": 2643834776752,
-            "title": "Image Preview",
-            "pos_x": 2747.7416992187486,
-            "pos_y": 758.9569091796873,
+            "id": 2001253870048,
+            "title": "Lora Loader",
+            "pos_x": -213.7304687500001,
+            "pos_y": 749.7148437499995,
             "inputs": [
                 {
-                    "id": 2643834776944,
-                    "index": 0,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 5
-                },
-                {
-                    "id": 2643834777568,
-                    "index": 1,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 6
-                },
-                {
-                    "id": 2643834777616,
-                    "index": 2,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 1
-                }
-            ],
-            "outputs": [
-                {
-                    "id": 2643834777664,
-                    "index": 0,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 5
-                },
-                {
-                    "id": 2643834777712,
-                    "index": 1,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 6
-                },
-                {
-                    "id": 2643834777760,
-                    "index": 2,
-                    "multi_edges": false,
-                    "position": 6,
-                    "socket_type": 1
-                }
-            ],
-            "content": {
-                "FPS": "24",
-                "": "True"
-            },
-            "op_code": 29,
-            "content_label_objname": "image_output_node"
-        },
-        {
-            "id": 2020816098432,
-            "title": "Conditioning",
-            "pos_x": 3140.020751953122,
-            "pos_y": 259.7808837890627,
-            "inputs": [
-                {
-                    "id": 2020815891296,
+                    "id": 2001253868224,
                     "index": 0,
                     "multi_edges": false,
                     "position": 3,
                     "socket_type": 4
                 },
                 {
-                    "id": 2020815892016,
+                    "id": 2001253868128,
                     "index": 1,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 6
-                },
-                {
-                    "id": 2020815893024,
-                    "index": 2,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 1
-                }
-            ],
-            "outputs": [
-                {
-                    "id": 2020815894560,
-                    "index": 0,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 6
-                },
-                {
-                    "id": 2020815893696,
-                    "index": 1,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 3
-                },
-                {
-                    "id": 2020815891632,
-                    "index": 2,
-                    "multi_edges": false,
-                    "position": 6,
-                    "socket_type": 1
-                }
-            ],
-            "content": {
-                "Prompt": "",
-                "Clip Skip": "-2",
-                "Use embeds": "False"
-            },
-            "op_code": 54,
-            "content_label_objname": "cond_node"
-        },
-        {
-            "id": 2020816098816,
-            "title": "Conditioning",
-            "pos_x": 2747.230529785154,
-            "pos_y": 261.4074707031252,
-            "inputs": [
-                {
-                    "id": 2020815892304,
-                    "index": 0,
                     "multi_edges": false,
                     "position": 3,
                     "socket_type": 4
                 },
                 {
-                    "id": 2020815892688,
-                    "index": 1,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 6
-                },
-                {
-                    "id": 2020815894032,
+                    "id": 2001253868176,
                     "index": 2,
                     "multi_edges": false,
                     "position": 3,
@@ -707,21 +432,21 @@
             ],
             "outputs": [
                 {
-                    "id": 2020815891536,
+                    "id": 2001253868032,
                     "index": 0,
                     "multi_edges": true,
                     "position": 6,
-                    "socket_type": 6
+                    "socket_type": 4
                 },
                 {
-                    "id": 2020815891440,
+                    "id": 2001253868080,
                     "index": 1,
                     "multi_edges": true,
                     "position": 6,
-                    "socket_type": 3
+                    "socket_type": 4
                 },
                 {
-                    "id": 2020815891728,
+                    "id": 2001253867744,
                     "index": 2,
                     "multi_edges": false,
                     "position": 6,
@@ -729,12 +454,13 @@
                 }
             ],
             "content": {
-                "Prompt": "highly detailed 3d render of a us police car, wavy abstract background, color splash, 70s color scheme",
-                "Clip Skip": "-2",
-                "Use embeds": "False"
+                "Lora": "3l3ctronics-step00003000.safetensors",
+                "Force Load": "False",
+                "Model Weight": "1.0",
+                "Clip Weight": "1.0"
             },
-            "op_code": 54,
-            "content_label_objname": "cond_node"
+            "op_code": 77,
+            "content_label_objname": "lora_loader_node"
         }
     ],
     "edges": [
@@ -751,18 +477,6 @@
             "end": 2422374025104
         },
         {
-            "id": 2422374028128,
-            "edge_type": 2,
-            "start": 2422374032112,
-            "end": 2422374034272
-        },
-        {
-            "id": 2422374027312,
-            "edge_type": 2,
-            "start": 2422374034752,
-            "end": 2422373612752
-        },
-        {
             "id": 2422374028608,
             "edge_type": 2,
             "start": 2422373612560,
@@ -775,28 +489,10 @@
             "end": 2422374053008
         },
         {
-            "id": 2422374029088,
-            "edge_type": 2,
-            "start": 2422374024336,
-            "end": 2422374033744
-        },
-        {
             "id": 2422374029184,
             "edge_type": 2,
             "start": 2422374025152,
             "end": 2422374033936
-        },
-        {
-            "id": 2422374035616,
-            "edge_type": 2,
-            "start": 2422374034224,
-            "end": 2422374025968
-        },
-        {
-            "id": 2422374035712,
-            "edge_type": 2,
-            "start": 2422373612368,
-            "end": 2422374034800
         },
         {
             "id": 2643834781504,
@@ -805,34 +501,28 @@
             "end": 2643315716352
         },
         {
-            "id": 2643975815856,
+            "id": 2001253868272,
             "edge_type": 2,
-            "start": 2422374024528,
-            "end": 2643834776944
+            "start": 2422373612368,
+            "end": 2001253868128
         },
         {
-            "id": 2020816097808,
+            "id": 2001253867648,
             "edge_type": 2,
-            "start": 2422374025920,
-            "end": 2020815892304
+            "start": 2422373612560,
+            "end": 2001253868224
         },
         {
-            "id": 2020816098960,
+            "id": 2001253868320,
             "edge_type": 2,
-            "start": 2020815891296,
-            "end": 2422374025920
+            "start": 2001253868080,
+            "end": 2422374034800
         },
         {
-            "id": 2023630912480,
+            "id": 1994001909312,
             "edge_type": 2,
-            "start": 2020815891440,
-            "end": 2422374033696
-        },
-        {
-            "id": 2023630912864,
-            "edge_type": 2,
-            "start": 2422374033648,
-            "end": 2020815893696
+            "start": 2422374034752,
+            "end": 2422373612752
         }
     ]
 }

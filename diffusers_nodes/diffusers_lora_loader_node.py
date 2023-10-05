@@ -10,6 +10,10 @@ from diffusers import StableDiffusionPipeline
 
 #MANDATORY
 OP_NODE_DIFF_LOADLORA = get_next_opcode()
+OP_NODE_DIFF_FUSELORA = get_next_opcode()
+OP_NODE_DIFF_UNFUSELORA = get_next_opcode()
+OP_NODE_DIFF_UNLOADLORA = get_next_opcode()
+
 from ainodes_frontend import singleton as gs
 
 #NODE WIDGET
@@ -25,11 +29,17 @@ class DiffusersLoraWidget(QDMNodeContentWidget):
         self.dropdown = self.create_combo_box(lora_files, "Lora")
 
         self.create_main_layout(grid=1)
+class DiffusersEmptyWidget(QDMNodeContentWidget):
+    def initUI(self):
+        self.create_main_layout(grid=1)
+class DiffusersEmptyWidget2(QDMNodeContentWidget):
+    def initUI(self):
+        self.create_main_layout(grid=1)
 
 
 #NODE CLASS
 @register_node(OP_NODE_DIFF_LOADLORA)
-class DiffusersControlNetNode(AiNode):
+class DiffusersLoraLoaderNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
     help_text = "Diffusers - Lora Loader"
     op_code = OP_NODE_DIFF_LOADLORA
@@ -40,6 +50,7 @@ class DiffusersControlNetNode(AiNode):
     dim = (340, 340)
     output_data_ports = [0]
     exec_port = 1
+    make_dirty = True
 
     custom_input_socket_name = ["PIPE", "EXEC"]
     custom_output_socket_name = ["PIPE", "EXEC"]
@@ -53,9 +64,7 @@ class DiffusersControlNetNode(AiNode):
         pipe = self.getInputData(0)
 
         assert pipe is not None, "No Pipe found"
-        #assert isinstance(pipe, StableDiffusionPipeline), "Can only work with a diffusers pipeline"
-        #pipe = self.load_lora(pipe)
-        #pipe = self.load_lora(pipe)
+
         lora_path = self.content.dropdown.currentText()
         pipe.load_lora_weights("models/loras", weight_name=lora_path, local_files_only=True)
         return [pipe]
@@ -66,6 +75,111 @@ class DiffusersControlNetNode(AiNode):
         lora_path = self.content.dropdown.currentText()
         lora1 = pipe.apply_lora(f"models/loras/{lora_path}", alpha=0.8)
         return pipe
+
+    def remove(self):
+        super().remove()
+
+@register_node(OP_NODE_DIFF_FUSELORA)
+class DiffusersFuseLoraNode(AiNode):
+    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
+    help_text = "Diffusers - Fuse Lora"
+    op_code = OP_NODE_DIFF_FUSELORA
+    op_title = "Diffusers - Fuse LORA"
+    content_label_objname = "diffusers_fuselora_node"
+    category = "aiNodes Base/Diffusers"
+    NodeContent_class = DiffusersEmptyWidget
+    dim = (340, 340)
+    output_data_ports = [0]
+    exec_port = 1
+    make_dirty = True
+
+    custom_input_socket_name = ["PIPE", "EXEC"]
+    custom_output_socket_name = ["PIPE", "EXEC"]
+
+    def __init__(self, scene):
+        super().__init__(scene, inputs=[4,1], outputs=[4,1])
+
+    #MAIN NODE FUNCTION
+    def evalImplementation_thread(self, index=0):
+
+        pipe = self.getInputData(0)
+
+        try:
+            pipe.fuse_lora()
+        except:
+            pass
+        return [pipe]
+
+    def remove(self):
+        super().remove()
+
+
+@register_node(OP_NODE_DIFF_UNFUSELORA)
+class DiffusersUnFuseLoraNode(AiNode):
+    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
+    help_text = "Diffusers - Unfuse Lora"
+    op_code = OP_NODE_DIFF_UNFUSELORA
+    op_title = "Diffusers - Unfuse LORA"
+    content_label_objname = "diffusers_unfuselora_node"
+    category = "aiNodes Base/Diffusers"
+    NodeContent_class = DiffusersEmptyWidget2
+    dim = (340, 340)
+    output_data_ports = [0]
+    exec_port = 1
+
+    make_dirty = True
+
+    custom_input_socket_name = ["PIPE", "EXEC"]
+    custom_output_socket_name = ["PIPE", "EXEC"]
+
+    def __init__(self, scene):
+        super().__init__(scene, inputs=[4,1], outputs=[4,1])
+
+    #MAIN NODE FUNCTION
+    def evalImplementation_thread(self, index=0):
+
+        pipe = self.getInputData(0)
+
+        try:
+            pipe.unfuse_lora()
+        except:
+            pass
+        return [pipe]
+
+    def remove(self):
+        super().remove()
+
+@register_node(OP_NODE_DIFF_UNLOADLORA)
+class DiffusersUnloadLoraNode(AiNode):
+    icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
+    help_text = "Diffusers - Unload Lora"
+    op_code = OP_NODE_DIFF_UNLOADLORA
+    op_title = "Diffusers - Unload LORA"
+    content_label_objname = "diffusers_unfuselora_node"
+    category = "aiNodes Base/Diffusers"
+    NodeContent_class = DiffusersEmptyWidget2
+    dim = (340, 340)
+    output_data_ports = [0]
+    exec_port = 1
+
+    make_dirty = True
+
+    custom_input_socket_name = ["PIPE", "EXEC"]
+    custom_output_socket_name = ["PIPE", "EXEC"]
+
+    def __init__(self, scene):
+        super().__init__(scene, inputs=[4,1], outputs=[4,1])
+
+    #MAIN NODE FUNCTION
+    def evalImplementation_thread(self, index=0):
+
+        pipe = self.getInputData(0)
+
+        try:
+            pipe.unload_lora_weights()
+        except:
+            pass
+        return [pipe]
 
     def remove(self):
         super().remove()
