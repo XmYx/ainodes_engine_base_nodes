@@ -1,4 +1,5 @@
 import copy
+import os
 import random
 import secrets
 import numpy as np
@@ -8,7 +9,7 @@ from ..ainodes_backend import tensor_image_to_pixmap, get_torch_device, common_k
 
 import torch
 from PIL import Image
-from PIL.ImageQt import ImageQt
+from PIL.ImageQt import ImageQt, QImage
 from qtpy import QtWidgets, QtCore, QtGui
 from qtpy.QtGui import QPixmap
 
@@ -32,6 +33,7 @@ SAMPLERS = ["euler", "euler_ancestral", "heun", "dpm_2", "dpm_2_ancestral",
 class KSamplerWidget(QDMNodeContentWidget):
     seed_signal = QtCore.Signal()
     progress_signal = QtCore.Signal(int)
+    preview_signal = QtCore.Signal(object)
     def initUI(self):
         self.create_widgets()
         self.create_main_layout(grid=1)
@@ -44,15 +46,16 @@ class KSamplerWidget(QDMNodeContentWidget):
         self.last_step = self.create_spin_box("Last Step:", 1, 1000, 5)
         self.stop_early = self.create_check_box("Stop Sampling Early")
         self.force_denoise = self.create_check_box("Force full denoise", checked=True)
+        self.preview_type = self.create_combo_box(["taesd", "quick-rgb"], "Preview Type")
         self.tensor_preview = self.create_check_box("Show Tensor Preview", checked=True)
         self.disable_noise = self.create_check_box("Disable noise generation")
         self.iterate_seed = self.create_check_box("Iterate seed")
         self.use_internal_latent = self.create_check_box("Use latent from loop")
         self.denoise = self.create_double_spin_box("Denoise:", 0.00, 25.00, 0.01, 1.00)
         self.guidance_scale = self.create_double_spin_box("Guidance Scale:", 1.01, 100.00, 0.01, 7.50)
-        self.button = QtWidgets.QPushButton("Run")
+        #self.button = QtWidgets.QPushButton("Run")
         self.fix_seed_button = QtWidgets.QPushButton("Fix Seed")
-        self.create_button_layout([self.button, self.fix_seed_button])
+        self.create_button_layout([self.fix_seed_button])
         self.progress_bar = self.create_progress_bar("progress", 0, 100, 0)
 
 @register_node(OP_NODE_K_SAMPLER)
@@ -63,40 +66,64 @@ class KSamplerNode(AiNode):
     content_label_objname = "K_sampling_node"
     category = "aiNodes Base/Sampling"
 
+    NodeContent_class = KSamplerWidget
+    #dim = (256, 800)
+
+    make_dirty = True
+
+
     custom_input_socket_name = ["CONTROLNET", "VAE", "MODEL", "DATA", "LATENT", "NEG COND", "POS COND", "EXEC"]
 
     def __init__(self, scene, inputs=[], outputs=[]):
         super().__init__(scene, inputs=[4,4,4,6,2,3,3,1], outputs=[5,2,1])
-
-        # Create a worker object
-    def initInnerClasses(self):
-        self.content = KSamplerWidget(self)
-        self.grNode = CalcGraphicsNode(self)
-        self.grNode.icon = self.icon
-        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
-        self.grNode.height = 750
-        self.grNode.width = 256
-        self.content.setMinimumWidth(250)
-        self.content.setMinimumHeight(500)
         self.seed = ""
         self.content.fix_seed_button.clicked.connect(self.setSeed)
         self.content.seed_signal.connect(self.setSeed)
         self.content.progress_signal.connect(self.setProgress)
-        self.progress_value = 0
-        self.content.eval_signal.connect(self.evalImplementation)
-        self.content.button.clicked.connect(self.content.eval_signal)
+        self.content.preview_signal.connect(self.handle_preview)
         self.device = get_torch_device()
-        self.latent_rgb_factors = torch.tensor([
-            #   R        G        B
-            [0.298, 0.207, 0.208],  # L1
-            [0.187, 0.286, 0.173],  # L2
-            [-0.158, 0.189, 0.264],  # L3
-            [-0.184, -0.271, -0.473],  # L4
-        ], dtype=torch.float, device=gs.device)
+        self.grNode.height = 750
+        self.grNode.width = 320
+        self.content.setMinimumWidth(316)
+        self.content.setMinimumHeight(500)
+        self.update_all_sockets()
+
+    #     # Create a worker object
+    # def initInnerClasses(self):
+    #     self.content = KSamplerWidget(self)
+    #     self.grNode = CalcGraphicsNode(self)
+    #     self.grNode.icon = self.icon
+    #     self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
+    #     self.progress_value = 0
+    #     self.content.eval_signal.connect(self.evalImplementation_thread)
+    #     self.content.button.clicked.connect(self.evalImplementation)
+
+
+    def set_rgb_factor(self, type="classic"):
+        if hasattr(self, "latent_rgb_factors"):
+            self.latent_rgb_factors.to("cpu")
+            del self.latent_rgb_factors
+        if type == "classic":
+            self.latent_rgb_factors = torch.tensor([
+                #   R        G        B
+                [0.298, 0.207, 0.208],  # L1
+                [0.187, 0.286, 0.173],  # L2
+                [-0.158, 0.189, 0.264],  # L3
+                [-0.184, -0.271, -0.473],  # L4
+            ], dtype=torch.float, device="cpu")
+        else:
+            self.latent_rgb_factors = torch.tensor([
+                #   R        G        B
+                [0.3920, 0.4054, 0.4549],
+                [-0.2634, -0.0196, 0.0653],
+                [0.0568, 0.1687, -0.0755],
+                [-0.3112, -0.2359, -0.2076]
+            ], dtype=torch.float, device="cpu")
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
         from ..ainodes_backend import tensor_image_to_pixmap, get_torch_device, common_ksampler
+        self.content.progress_signal.emit(0)
 
         #pass
         # Add a task to the task queue
@@ -129,6 +156,20 @@ class KSamplerNode(AiNode):
 
         data = self.getInputData(3)
         unet = self.getInputData(2)
+
+        from comfy import model_base
+
+        self.model_version = "xl" if type(unet.model) in [model_base.SDXL, model_base.SDXLRefiner] else "classic"
+        self.set_rgb_factor(self.model_version)
+        self.preview_mode = self.content.preview_type.currentText()
+        taesd_decoder_version = "taesd_decoder.pth" if self.model_version == "classic" else "taesdxl_decoder.pth"
+        if self.preview_mode == "taesd" and os.path.isfile(taesd_decoder_version):
+            from comfy.taesd.taesd import TAESD
+            self.taesd = TAESD(None, f"models/vae/{taesd_decoder_version}").to("cuda")
+        else:
+            print(f"TAESD enabled, but models/vae/{taesd_decoder_version} was not found, switching to simple RGB Preview")
+            self.preview_mode = "quick-rgb"
+
         vae = self.getInputData(1)
         control_model = self.getInputData(0)
         #unet.cuda()
@@ -201,7 +242,9 @@ class KSamplerNode(AiNode):
                 self.last_step = self.steps if self.content.stop_early.isChecked() == False else self.content.last_step.value()
                 short_steps = self.last_step - self.content.start_step.value()
 
-                self.single_step = 100 / self.steps if self.content.start_step.value() == 0 and self.last_step == self.steps else short_steps
+                self.single_step = int(100 / self.steps) if self.content.start_step.value() == 0 and self.last_step == self.steps else int(short_steps)
+
+
                 self.progress_value = 0
                 if self.content.use_internal_latent.isChecked():
                     if cpu_s is not None:
@@ -224,41 +267,14 @@ class KSamplerNode(AiNode):
                                          disable_noise=self.content.disable_noise.isChecked(),
                                          start_step=self.start_step,
                                          last_step=self.last_step,
-                                         force_full_denoise=self.content.force_denoise.isChecked())
-                # sample = common_ksampler(device=self.device,
-                #                          seed=self.seed,
-                #                          steps=self.steps,
-                #                          start_step=self.start_step,
-                #                          last_step=self.last_step,
-                #                          cfg=self.cfg,
-                #                          sampler_name=self.sampler_name,
-                #                          scheduler=self.scheduler,
-                #                          positive=cond,
-                #                          negative=n_cond,
-                #                          latent=latent,
-                #                          disable_noise=self.content.disable_noise.isChecked(),
-                #                          force_full_denoise=self.content.force_denoise.isChecked(),
-                #                          denoise=self.denoise,
-                #                          callback=self.callback,
-                #                          noise_mask=noise_mask,
-                #                          model=unet,
-                #                          control_model=control_model)
-                #print("K SAMPLE DONE", sample.shape)
+                                         force_full_denoise=self.content.force_denoise.isChecked(),
+                                         callback=self.callback)
 
                 for c in cond:
                     if "control" in c[1]:
                         del c[1]["control"]
-                # from comfy.model_management import unload_model
-                # unload_model()
-                #
-                # cpu_s = sample[0]
                 x_sample = self.decode_sample(sample[0]["samples"], vae)
                 return_samples = sample[0]["samples"].detach()
-
-                #return_samples.append(cpu_s)
-
-                #image = Image.fromarray(x_sample.astype(np.uint8))
-                #pm = tensor_image_to_pixmap(image)
                 return_latents = x_sample.detach()
                 if self.content.tensor_preview.isChecked():
                     if len(self.getOutputs(2)) > 0:
@@ -269,8 +285,8 @@ class KSamplerNode(AiNode):
 
 
                 x+=1
-            # unload_model()
-
+            if self.preview_mode == "taesd":
+                del self.taesd
             return [return_latents, {"samples":return_samples}]
 
         except Exception as e:
@@ -280,62 +296,65 @@ class KSamplerNode(AiNode):
         return [return_pixmaps, return_samples]
     def decode_sample(self, sample, vae):
         decoded = vae.decode_tiled(sample)
-        #decoded = vae.decode(sample)
-        #decoded_array = 255. * decoded[0].detach().numpy()
         return decoded
 
-    def callback(self, tensors, *args, **kwargs):
-        print(tensors)
+    def callback(self, i, tensors, *args, **kwargs):
         # i = tensors["i"]
-        # self.content.progress_signal.emit(1)
-        # if self.content.tensor_preview.isChecked():
-        #     if i < self.last_step - 2:
-        #
-        #         latent = torch.einsum('...lhw,lr -> ...rhw', tensors["denoised"][0], self.latent_rgb_factors)
-        #         latent = (((latent + 1) / 2)
-        #                   .clamp(0, 1)  # change scale from -1..1 to 0..1
-        #                   .mul(0xFF)  # to 0..255
-        #                   .byte())
-        #         # Copying to cpu as numpy array
-        #         latent = rearrange(latent, 'c h w -> h w c').detach().cpu().numpy()
-        #         img = Image.fromarray(latent)
-        #         img = img.resize((img.size[0] * 8, img.size[1] * 8), resample=Image.LANCZOS)
-        #         latent_pixmap = pil_image_to_pixmap(img)
-        #         #self.setOutput(0, [latent_pixmap])
-        #         if len(self.getOutputs(2)) > 0:
-        #             nodes = self.getOutputs(0)
-        #             for node in nodes:
-        #                 if isinstance(node, ImagePreviewNode):
-        #                     node.content.preview_signal.emit(latent_pixmap)
-        #                 if isinstance(node, VideoOutputNode):
-        #                     frame = np.array(img)
-        #                     node.content.video.add_frame(frame, dump=node.content.dump_at.value())
-    #@QtCore.Slot(object)
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-
-        #super().onWorkerFinished(None)
-
-        #if gs.logging:
-        #    print("K SAMPLER:", self.content.steps.value(), "steps,", self.content.sampler.currentText(), " seed: ", self.seed, "images", result[0])
-        self.markDirty(False)
-        self.markInvalid(False)
-        self.setOutput(0, result[0])
-        self.setOutput(1, result[1])
+        self.content.progress_signal.emit(self.single_step)
+        if self.content.tensor_preview.isChecked():
+            if i < self.last_step - 2:
+                self.content.preview_signal.emit(tensors)
+    def handle_preview(self, tensors):
 
 
-        self.content.progress_signal.emit(100)
-        self.content.finished.emit()
 
-        if exec:
-            if gs.should_run:
-                if len(self.getOutputs(2)) > 0:
-                    self.executeChild(output_index=2)
+        if self.preview_mode == "quick-rgb":
 
-    #@QtCore.Slot(str)
+            latent_image = tensors[0].permute(1, 2, 0).cpu() @ self.latent_rgb_factors
+
+            latents_ubyte = (((latent_image + 1) / 2)
+                             .clamp(0, 1)  # change scale from -1..1 to 0..1
+                             .mul(0xFF)  # to 0..255
+                             .byte())
+
+            np_frame = latents_ubyte.numpy()
+            # Convert numpy array to QImage
+            h, w, c = np_frame.shape
+            latent_image = QImage(np_frame.data, w, h, c * w, QImage.Format.Format_RGB888)
+
+            # Convert QImage to QPixmap
+            pixmap = QPixmap.fromImage(latent_image)
+
+            scaled_size = pixmap.size() * 8
+            pixmap = pixmap.scaled(scaled_size, QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                                   QtCore.Qt.TransformationMode.SmoothTransformation)
+
+        elif self.preview_mode == "taesd":
+            x_sample = self.taesd.decoder(tensors)[0].detach()
+            x_sample = x_sample.sub(0.5).mul(2)
+
+            x_sample = torch.clamp((x_sample + 1.0) / 2.0, min=0.0, max=1.0)
+            x_sample = 255. * np.moveaxis(x_sample.cpu().numpy(), 0, 2)
+            h, w, c = x_sample.shape
+            np_frame = x_sample.astype(np.uint8)
+            byte_data = np_frame.tobytes()
+            image = QtGui.QImage(byte_data, w, h, c * w, QtGui.QImage.Format.Format_RGB888)
+            pixmap = QtGui.QPixmap.fromImage(image)
+
+
+        if len(self.getOutputs(0)) > 0:
+            nodes = self.getOutputs(0)
+            for node in nodes:
+                if isinstance(node, ImagePreviewNode):
+                    node.content.preview_signal.emit(pixmap)
+                if isinstance(node, VideoOutputNode):
+                    frame = np.array(np_frame)
+                    node.content.video.add_frame(frame, dump=node.content.dump_at.value())
+
+
     def setSeed(self):
         self.content.seed.setText(str(self.seed))
-    #@QtCore.Slot(int)
+
     def setProgress(self, progress=None):
 
         self.progress_value += self.single_step
@@ -343,8 +362,6 @@ class KSamplerNode(AiNode):
             self.content.progress_bar.setValue(int(self.progress_value))
         else:
             self.content.progress_bar.setValue(100)
-    def onInputChanged(self, socket=None):
-        pass
     def apply_control_net(self, conditioning, c_net, progress_callback=None):
         cnet_string = 'controlnet'
 
@@ -366,7 +383,6 @@ class KSamplerNode(AiNode):
             n[1]['control'] = c_net
             n[1]['control'].control_model.cpu()
             c.append(n)
-        print(len(c))
         return c
 
 def get_fixed_seed(seed):

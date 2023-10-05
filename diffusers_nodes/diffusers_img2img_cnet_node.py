@@ -155,11 +155,6 @@ class DiffusersImg2ImgPipeLineNode(AiNode):
         from .diffusers_lora_loader import install_lora_hook
         install_lora_hook(self.pipe)
         lora1 = self.pipe.apply_lora("models/loras/add_detail.safetensors", alpha=0.8)
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-
-        self.setOutput(0, result)
-        self.executeChild(2)
 
     def remove(self):
         print("REMOVING", self)

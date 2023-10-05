@@ -8,7 +8,7 @@ from .torch_gc import torch_gc
 
 
 
-def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False):
+def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, callback=None):
     #device = comfy.model_management.get_torch_device()
     latent_image = latent["samples"]
     from comfy.sample import prepare_noise
@@ -37,7 +37,7 @@ def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, 
 
     samples = sample(model, noise, steps, cfg, sampler_name, scheduler, positive, negative, latent_image,
                                   denoise=denoise, disable_noise=disable_noise, start_step=start_step, last_step=last_step,
-                                  force_full_denoise=force_full_denoise, noise_mask=noise_mask, callback=None, seed=seed)
+                                  force_full_denoise=force_full_denoise, noise_mask=noise_mask, callback=callback, seed=seed)
 
     out = latent.copy()
     out["samples"] = samples
@@ -168,13 +168,13 @@ def sample(model, noise, steps, cfg, sampler_name, scheduler, positive, negative
 
     #cleanup_additional_models(models)
 
-    del negative_copy
-    del positive_copy
-    del sampler.model_k
-    del sampler.model_wrap.inner_model
-    del sampler.model_wrap
-    del sampler.model_denoise
-    del sampler
+    # del negative_copy
+    # del positive_copy
+    # del sampler.model_k
+    # del sampler.model_wrap.inner_model
+    # del sampler.model_wrap
+    # del sampler.model_denoise
+    # del sampler
 
 
     return samples

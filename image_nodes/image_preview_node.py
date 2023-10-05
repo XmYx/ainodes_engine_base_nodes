@@ -102,8 +102,11 @@ class ImagePreviewNode(AiNode):
         else:
             self.timer.start()
 
-    def add_image(self, image_tensor, show=False):
-        #self.images.append(image_tensor)
+    def add_image(self, image_tensor, show=False, reset=True):
+        if reset:
+            self.images.clear()
+            self.pixmaps.clear()
+        self.images.append(image_tensor)
         pixmap = tensor_image_to_pixmap(image_tensor)
         if show:
             self.content.preview_signal.emit(pixmap)
