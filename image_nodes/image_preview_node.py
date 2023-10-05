@@ -132,20 +132,16 @@ class ImagePreviewNode(AiNode):
         start_time = time.time()  # Start the timer
 
         result = None
-
         self.busy = True
         if len(self.getInputs(0)) > 0:
             image = self.getInputData(0)
 
-            print("Im Preview Node", image.shape)
             if image.shape[0] > 1:  # Assuming the tensor shape is [channels, height, width]
                 for img in image:
                     print(img.shape)
                     self.add_image(img.unsqueeze(0), show=True)
             else:
                 self.add_image(image, show=True)
-            #self.show_next_image()
-            #result = [image]
         if self.content.autosave_checkbox.isChecked() == True:
             if image is not None:
                 self.save_image(image)
@@ -160,7 +156,6 @@ class ImagePreviewNode(AiNode):
         if gs.debug:
             elapsed_time = time.time() - start_time  # Calculate elapsed time
             print(f"Image Preview Node executed in {elapsed_time:.4f} seconds.")  # Print the time taken
-        print("IM Preview Node returning", image.shape)
         return [image]
 
     def show_image(self, image):
