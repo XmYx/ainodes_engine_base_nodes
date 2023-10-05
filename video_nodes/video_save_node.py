@@ -21,7 +21,7 @@ class VideoOutputWidget(QDMNodeContentWidget):
     def initUI(self):
         self.video = GifRecorder()
         self.current_frame = 0
-        self.type_select = self.create_combo_box(items=["GIF", "mp4_ffmpeg", "mp4_fourcc"], label_text="Save Format")
+        self.type_select = self.create_combo_box(items=["GIF", "mp4_ffmpeg", "mp4_fourcc", "webm_ffmpeg", "webm_cv2"], label_text="Save Format")
         # self.type_select.addItems(["GIF", "mp4_ffmpeg", "mp4_fourcc"])
         self.save_button = QPushButton("Save buffer to selected type", self)
         #self.new_button = QPushButton("New Video", self)
@@ -104,7 +104,7 @@ class VideoOutputNode(AiNode):
 
     def evalImplementation_thread(self, index=0):
         self.busy = True
-        pixmap_list = []
+        tensors = []
         if self.getInput(0) is not None:
             input_node, other_index = self.getInput(0)
             if not input_node:
@@ -112,21 +112,19 @@ class VideoOutputNode(AiNode):
                 self.markInvalid()
                 return
 
-            pixmap_list = input_node.getOutput(other_index)
-            for val in pixmap_list:
-                image = tensor2pil(val)
+            tensors = input_node.getOutput(other_index)
+            print("Video Input", tensors.shape)
+            if tensors.shape[0] > 1:
+                for tensor in tensors:
+                    image = tensor2pil(tensor.unsqueeze(0))
+                    frame = np.array(image)
+                    self.content.video.add_frame(frame, dump=self.content.dump_at.value())
+            else:
+                image = tensor2pil(tensors)
                 frame = np.array(image)
-                #self.markInvalid(False)
-                #self.markDirty(True)
                 self.content.video.add_frame(frame, dump=self.content.dump_at.value())
             print(f"VIDEO SAVE NODE: Image added to frame buffer, current frames: {len(self.content.video.frames)}")
-        return pixmap_list
-
-    def onWorkerFinished(self, result):
-        self.busy = False
-        #super().onWorkerFinished(None)
-        self.setOutput(0, result)
-        self.executeChild(1)
+        return [tensors]
 
     def close(self):
         self.content.video.close(self.filename)
@@ -203,6 +201,7 @@ class GifRecorder:
 
 
     def close(self, timestamp, fps, type='GIF', dump=False, audio_path=None):
+        print(type)
         if type == 'GIF':
             os.makedirs("output/gifs", exist_ok=True)
             filename = f"output/gifs/{timestamp}.gif"
@@ -213,11 +212,11 @@ class GifRecorder:
                 print(f"VIDEO SAVE NODE: Video saving {len(self.frames)} frames at {self.fps}fps as {self.filename}")
                 #imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), subrectangles=True, quantizer='nq-fs', palettesize=8)
                 imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), palettesize=8)
-                pils = []
-                for frame in self.frames:
-                    pils.append(Image.fromarray(frame))
+                # pils = []
+                # for frame in self.frames:
+                #     pils.append(Image.fromarray(frame))
 
-                pils[0].save("test_gif.gif", "GIF", save_all=True, duration=40, append_images=pils[1:], loop=0, quality=1)
+                #pils[0].save("test_gif.gif", "GIF", save_all=True, duration=40, append_images=pils[1:], loop=1, quality=1)
 
             else:
                 print("The buffer is empty, cannot save.")
@@ -282,6 +281,46 @@ class GifRecorder:
                 video_writer.release()
             else:
                 print("The buffer is empty, cannot save.")
+        elif type == 'webm_ffmpeg':
+            os.makedirs("output/webms", exist_ok=True)
+            filename = f"output/webms/{timestamp}.webm"
+            if len(self.frames) > 0:
+                width = self.frames[0].shape[1]
+                height = self.frames[0].shape[0]
+                cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
+                       'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libvpx-vp9', '-b:v', '1M', '-c:a', 'libopus',
+                       '-strict', '-2',
+                       filename]
+                video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+                for frame in self.frames:
+                    video_writer.stdin.write(frame.tobytes())
+                video_writer.communicate()
+
+                # if audio path is provided, merge the audio and the video
+                if audio_path is not None:
+                    try:
+                        output_filename = f"output/webms/{timestamp}_with_audio.webm"
+                        cmd = ['ffmpeg', '-y', '-i', filename, '-i', audio_path, '-c:v', 'copy', '-c:a', 'libopus',
+                               '-strict', '-2', output_filename]
+                        subprocess.run(cmd)
+                    except Exception as e:
+                        print(f"Audio file merge failed from path {audio_path}\n{repr(e)}")
+                        pass
+        elif type == 'webm_cv2':
+            print("saving webm")
+            os.makedirs("output/webms", exist_ok=True)
+            filename = f"output/webms/{timestamp}.webm"
+            if len(self.frames) > 0:
+                width = self.frames[0].shape[1]
+                height = self.frames[0].shape[0]
+                video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'VP90'), fps, (width, height))
+                for frame in self.frames:
+                    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                    video_writer.write(frame)
+                video_writer.release()
+            else:
+                print("The buffer is empty, cannot save.")
+
 
         if dump == True:
             self.frames = []

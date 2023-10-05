@@ -125,7 +125,7 @@ class ConditioningXLNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/v2/conditioning.png"
     op_code = OP_NODE_CONDITIONING_XL
     op_title = "Conditioning"
-    content_label_objname = "cond_node"
+    content_label_objname = "cond_node_xl"
     category = "aiNodes Base/Conditioning"
 
     custom_input_socket_name = ["CLIP", "DATA", "EXEC"]
@@ -161,7 +161,7 @@ class ConditioningXLNode(AiNode):
 
     def show_embeds(self):
 
-        embed_files = [f for f in os.listdir(gs.embeddings) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
+        embed_files = [f for f in os.listdir(gs.prefs.embeddings) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
         if embed_files is not []:
             # The embedding strings returned as: "embedding:<filename without extension>:<weight> where weight is a float between 0.0 and 1.0"
             self.show_embed_dialog(embed_files)
@@ -175,7 +175,7 @@ class ConditioningXLNode(AiNode):
 
             """for embed in self.embed_dict:
                 print("word", embed["embed"]["filename"])
-                file = os.path.join(gs.embeddings, embed["embed"]["filename"])
+                file = os.path.join(gs.prefs.embeddings, embed["embed"]["filename"])
                 sha = sha256(file)
                 self.apihandler.response_received.connect(self.handle_response)
                 self.apihandler.get_response(sha)"""
@@ -311,7 +311,7 @@ class ConditioningXLNode(AiNode):
                    "target_width": target_width, "target_height": target_height}]]}
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         if result is not None:

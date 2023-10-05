@@ -68,7 +68,7 @@ class DataIfNode(AiNode):
 
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         self.markDirty(False)
         self.setOutput(0, result)

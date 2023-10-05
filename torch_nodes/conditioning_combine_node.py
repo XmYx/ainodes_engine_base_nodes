@@ -202,7 +202,7 @@ class ConditioningCombineNode(AiNode):
         return out
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         if result is not None:
@@ -256,7 +256,7 @@ class ConditioningAreaNode(AiNode):
             return None
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         if result is not None:

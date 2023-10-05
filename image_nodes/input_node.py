@@ -239,16 +239,16 @@ class ImageInputNode(AiNode):
             pixmap = self.content.image.pixmap()
         return pixmap
 
-    def onWorkerFinished(self, pixmap):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
 
         self.markDirty(False)
         self.markInvalid(False)
 
-        if pixmap is not None:
-            self.setOutput(0, [pixmap_to_tensor(pixmap)])
+        if result is not None:
+            self.setOutput(0, [pixmap_to_tensor(result)])
 
-            if len(self.getOutputs(1)) > 0:
+            if exec:
                 self.executeChild(output_index=1)
         else:
             print("End of Video or No Image loaded, stopping execution at", self)

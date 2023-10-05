@@ -4,15 +4,15 @@ from typing import Union, Optional, Dict, Any, Tuple, List
 import torch
 from diffusers import DDIMScheduler, HeunDiscreteScheduler, KDPM2DiscreteScheduler, KDPM2AncestralDiscreteScheduler, \
     LMSDiscreteScheduler, PNDMScheduler, EulerDiscreteScheduler, EulerAncestralDiscreteScheduler, \
-    DPMSolverSinglestepScheduler, DPMSolverMultistepScheduler
+    DPMSolverSinglestepScheduler, DPMSolverMultistepScheduler, UniPCMultistepScheduler, DEISMultistepScheduler
 
 from diffusers.models.controlnet import ControlNetOutput
 
 
 diffusers_models = [
-
     {"name": "XL BASE", "repo": "stabilityai/stable-diffusion-xl-base-1.0"},
     {"name": "XL REFINER", "repo": "stabilityai/stable-diffusion-xl-refiner-1.0"},
+    {"name": "CyberRealistic", "repo": "emilianJR/CyberRealistic_V3"},
     {"name": "segmind_tiny", "repo": "segmind/tiny-sd"},
     {"name": "segmind_tiny-mxfinetune", "repo": "segmind/tiny-sd-mxfinetune"},
     {"name": "segmind_base", "repo": "segmind/small-sd"},
@@ -147,8 +147,18 @@ class SchedulerType(Enum):
     PNDM = "pndm"
     EULER = "euler"
     EULER_A = "euler_a"
-    DPMPP_SDE_ANCESTRAL = "dpmpp_sde_ancestral"
     DPMPP_2M = "dpmpp_2m"
+    DPMPP_2M_KARRAS = "dpmpp_2m_karras"
+    DPMPP_2M_SDE = "dpmpp_2m_sde"
+    DPMPP_2M_SDE_KARRAS = "dpmpp_2m_sde_karras"
+    DPMPP_2S_A = "dpmpp_2s_a"
+    DPMPP_SDE = "dpmpp_sde"
+    DPMPP_SDE_KARRAS = "dpmpp_sde_karras"
+    DPM2_KARRAS = "dpm2_karras"
+    DPM2_A_KARRAS = "dpm2_a_karras"
+    LMS_KARRAS = "lms_karras"
+    DEIS_MULTISTEP = "deis_multistep"
+    UNIPC_MULTISTEP = "unipc_multistep"
 
 scheduler_type_values = [item.value for item in SchedulerType]
 
@@ -162,8 +172,24 @@ def get_scheduler(pipe, scheduler: SchedulerType):
         SchedulerType.PNDM: PNDMScheduler.from_config,
         SchedulerType.EULER: EulerDiscreteScheduler.from_config,
         SchedulerType.EULER_A: EulerAncestralDiscreteScheduler.from_config,
-        SchedulerType.DPMPP_SDE_ANCESTRAL: DPMSolverSinglestepScheduler.from_config,
-        SchedulerType.DPMPP_2M: DPMSolverMultistepScheduler.from_config
+        SchedulerType.DPMPP_2M: DPMSolverMultistepScheduler.from_config,
+        SchedulerType.DPMPP_2M_KARRAS: lambda config: DPMSolverMultistepScheduler.from_config(config,
+                                                                                              use_karras_sigmas=True),
+        SchedulerType.DPMPP_2M_SDE: lambda config: DPMSolverMultistepScheduler.from_config(config,
+                                                                                           algorithm_type="sde-dpmsolver++"),
+        SchedulerType.DPMPP_2M_SDE_KARRAS: lambda config: DPMSolverMultistepScheduler.from_config(config,
+                                                                                                  use_karras_sigmas=True,
+                                                                                                  algorithm_type="sde-dpmsolver++"),
+        SchedulerType.DPMPP_2S_A: DPMSolverSinglestepScheduler.from_config,
+        SchedulerType.DPMPP_SDE: DPMSolverSinglestepScheduler.from_config,
+        SchedulerType.DPMPP_SDE_KARRAS: lambda config: DPMSolverSinglestepScheduler.from_config(config,
+                                                                                                use_karras_sigmas=True),
+        SchedulerType.DPM2_KARRAS: lambda config: KDPM2DiscreteScheduler.from_config(config, use_karras_sigmas=True),
+        SchedulerType.DPM2_A_KARRAS: lambda config: KDPM2AncestralDiscreteScheduler.from_config(config,
+                                                                                                use_karras_sigmas=True),
+        SchedulerType.LMS_KARRAS: lambda config: LMSDiscreteScheduler.from_config(config, use_karras_sigmas=True),
+        SchedulerType.UNIPC_MULTISTEP: UniPCMultistepScheduler.from_config,
+        SchedulerType.DEIS_MULTISTEP: DEISMultistepScheduler.from_config
     }
 
     new_scheduler = scheduler_mapping[scheduler](pipe.scheduler.config)

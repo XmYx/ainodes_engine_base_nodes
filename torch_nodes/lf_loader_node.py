@@ -106,7 +106,7 @@ class DeepFloydLoaderNode(AiNode):
             print("Could not load DeepFloyd because of ", e)
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
 

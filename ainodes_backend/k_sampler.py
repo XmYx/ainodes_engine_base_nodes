@@ -8,7 +8,7 @@ from .torch_gc import torch_gc
 
 
 
-def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False):
+def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, callback=None):
     #device = comfy.model_management.get_torch_device()
     latent_image = latent["samples"]
     from comfy.sample import prepare_noise
@@ -37,7 +37,7 @@ def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, 
 
     samples = sample(model, noise, steps, cfg, sampler_name, scheduler, positive, negative, latent_image,
                                   denoise=denoise, disable_noise=disable_noise, start_step=start_step, last_step=last_step,
-                                  force_full_denoise=force_full_denoise, noise_mask=noise_mask, callback=None, seed=seed)
+                                  force_full_denoise=force_full_denoise, noise_mask=noise_mask, callback=callback, seed=seed)
 
     out = latent.copy()
     out["samples"] = samples
@@ -134,6 +134,8 @@ def cleanup_additional_models(models):
 def sample(model, noise, steps, cfg, sampler_name, scheduler, positive, negative, latent_image, denoise=1.0,
            disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, noise_mask=None, sigmas=None,
            callback=None, disable_pbar=False, seed=None):
+
+    print("USING HIJACK SAMPLER")
     from comfy import model_management
     from comfy import samplers
 
@@ -152,7 +154,7 @@ def sample(model, noise, steps, cfg, sampler_name, scheduler, positive, negative
     positive_copy = broadcast_cond(positive, noise.shape[0], device)
     negative_copy = broadcast_cond(negative, noise.shape[0], device)
 
-    models = load_additional_models(positive, negative, model.model_dtype())
+    #models = load_additional_models(positive, negative, model.model_dtype())
 
     sampler = KSampler(model.model, steps=steps, device=device, sampler=sampler_name, scheduler=scheduler,
                                       denoise=denoise, model_options=model.model_options)
@@ -160,19 +162,19 @@ def sample(model, noise, steps, cfg, sampler_name, scheduler, positive, negative
                              start_step=start_step, last_step=last_step, force_full_denoise=force_full_denoise,
                              denoise_mask=noise_mask, sigmas=sigmas, callback=callback, disable_pbar=disable_pbar,
                              seed=seed)
-    model_management.unload_model()
+    #model_management.unload_model()
 
     samples = samples.cpu()
 
-    cleanup_additional_models(models)
+    #cleanup_additional_models(models)
 
-    del negative_copy
-    del positive_copy
-    del sampler.model_k
-    del sampler.model_wrap.inner_model
-    del sampler.model_wrap
-    del sampler.model_denoise
-    del sampler
+    # del negative_copy
+    # del positive_copy
+    # del sampler.model_k
+    # del sampler.model_wrap.inner_model
+    # del sampler.model_wrap
+    # del sampler.model_denoise
+    # del sampler
 
 
     return samples
@@ -363,7 +365,7 @@ class KSampler:
         from comfy.k_diffusion import sampling as k_diffusion_sampling
         from comfy.extra_samplers import uni_pc
         from comfy.ldm.models.diffusion.ddim import DDIMSampler
-        from comfy.samplers import resolve_cond_masks, apply_empty_x_to_equal_area, encode_adm, \
+        from comfy.samplers import resolve_areas_and_cond_masks, apply_empty_x_to_equal_area, encode_adm, \
             blank_inpaint_image_like
         from comfy.samplers import sampling_function
 
@@ -393,8 +395,8 @@ class KSampler:
         positive = positive[:]
         negative = negative[:]
 
-        resolve_cond_masks(positive, noise.shape[2], noise.shape[3], self.device)
-        resolve_cond_masks(negative, noise.shape[2], noise.shape[3], self.device)
+        resolve_areas_and_cond_masks(positive, noise.shape[2], noise.shape[3], self.device)
+        resolve_areas_and_cond_masks(negative, noise.shape[2], noise.shape[3], self.device)
 
         #make sure each cond area has an opposite one with the same area
         for c in positive:

@@ -134,7 +134,7 @@ class REALESRGANNode(AiNode):
 
         return return_pixmaps
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         if result:
             self.setOutput(0, result)

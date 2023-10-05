@@ -53,12 +53,5 @@ class DISBGNode(AiNode):
                 fg_pixmap = pil2tensor(img)
                 bg_pixmap = pil2tensor(bg)
                 mask_pixmap = pil2tensor(mask)
-                return([bg_pixmap, fg_pixmap, mask_pixmap])
+                return[bg_pixmap, fg_pixmap, mask_pixmap]
 
-    def onWorkerFinished(self, result):
-        self.busy = False
-        self.setOutput(0, [result[0]])
-        self.setOutput(1, [result[1]])
-        self.setOutput(2, [result[2]])
-        if len(self.getOutputs(3)) > 0:
-            self.executeChild(output_index=3)

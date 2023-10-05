@@ -37,7 +37,7 @@ class ExecSplitterNode(AiNode):
     def evalImplementation_thread(self, index=0, *args, **kwargs):
         return None
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         self.executeChild(1)

@@ -22,15 +22,15 @@ class UpscalerWidget(QDMNodeContentWidget):
         self.create_main_layout(grid=1)
 
     def create_widgets(self):
-        checkpoint_folder = gs.upscalers
+        checkpoint_folder = gs.prefs.upscalers
 
         print(os.getcwd())
 
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
         self.dropdown = self.create_combo_box(checkpoint_files, "Models")
         if checkpoint_files == []:
-            self.dropdown.addItem(f"Please place a model in {gs.upscalers}")
-            print(f"TORCH LOADER NODE: No model file found at {os.getcwd()}/{gs.upscalers},")
+            self.dropdown.addItem(f"Please place a model in {gs.prefs.upscalers}")
+            print(f"TORCH LOADER NODE: No model file found at {os.getcwd()}/{gs.prefs.upscalers},")
             print(f"TORCH LOADER NODE: please download your favorite ckpt before Evaluating this node.")
 
 
@@ -72,7 +72,7 @@ class UpscalerNode(AiNode):
     def evalImplementation_thread(self, index=0):
         #try:
         model_name = self.content.dropdown.currentText()
-        model_path = f"{gs.upscalers}/{model_name}"
+        model_path = f"{gs.prefs.upscalers}/{model_name}"
         loaded = self.loader.load_model(model_path, model_name)
         print("UPSCALER LOADER:", loaded)
 
@@ -105,7 +105,7 @@ class UpscalerNode(AiNode):
         return return_pixmaps
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         if result:

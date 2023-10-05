@@ -265,7 +265,7 @@ class VimNode(AiNode):
     def origFunction(self):
         return True
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         assert isinstance(result, list), "Result is not a list"
         assert len(result) == 4, "Please make sure to return a list of all 4 elements [data:dict, conditionings:List[Torch.tensor]], images:List[QPixmap], latents:List[Torch.tensor], even if they are None."

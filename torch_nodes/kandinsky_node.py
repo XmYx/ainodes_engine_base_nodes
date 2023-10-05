@@ -261,7 +261,7 @@ class KandinskyNode(AiNode):
 
 
     ##@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         self.busy = False

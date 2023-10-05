@@ -126,7 +126,7 @@ class ImageListNode(AiNode):
         pixmap = self.pixmap
         return pixmap
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
 
         tensor = pixmap_to_tensor(result)

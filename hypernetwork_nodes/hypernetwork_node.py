@@ -18,13 +18,13 @@ class HypernetworkLoaderWidget(QDMNodeContentWidget):
         self.create_main_layout(grid=1)
 
     def create_widgets(self):
-        hypernetwork_folder = gs.hypernetworks
+        hypernetwork_folder = gs.prefs.hypernetworks
         hypernetworks = [f for f in os.listdir(hypernetwork_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
         self.hypernetwork = self.create_combo_box(hypernetworks, "Hypernetwork:")
         self.strength = self.create_double_spin_box("Strength", -10.0, 10.0, 0.1, 1.0, "hypernetwork_strength")
         if hypernetworks == []:
             self.hypernetwork.addItem("Please place a model in models/hypernetworks")
-            print(f"TORCH LOADER NODE: No model file found at {os.getcwd()}/{gs.hypernetworks},")
+            print(f"TORCH LOADER NODE: No model file found at {os.getcwd()}/{gs.prefs.hypernetworks},")
             print(f"TORCH LOADER NODE: please download your favorite ckpt before Evaluating this node.")
         self.button = QtWidgets.QPushButton("Unpatch Model")
         self.create_button_layout([self.button])
@@ -64,7 +64,7 @@ class HypernetworkLoaderNode(AiNode):
         assert unet is not None, "Unet Not connected or loaded, plase make sure to input a valid Stable Diffusion unet."
 
         hypernetwork = self.content.hypernetwork.currentText()
-        path = os.path.join(gs.hypernetworks, hypernetwork)
+        path = os.path.join(gs.prefs.hypernetworks, hypernetwork)
         if hypernetwork not in self.loaded_hypernetworks:
             patch = self.load_hypernetwork_patch(path, self.content.strength.value())
             if patch is not None:
@@ -94,7 +94,7 @@ class HypernetworkLoaderNode(AiNode):
         m.unpatch_model()
         gs.models["sd"] = m
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.setOutput(0, result)
         self.busy = False
         self.executeChild(0)

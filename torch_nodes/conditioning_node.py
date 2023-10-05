@@ -148,7 +148,7 @@ class ConditioningNode(AiNode):
 
     def show_embeds(self):
 
-        embed_files = [f for f in os.listdir(gs.embeddings) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
+        embed_files = [f for f in os.listdir(gs.prefs.embeddings) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
         if embed_files is not []:
             # The embedding strings returned as: "embedding:<filename without extension>:<weight> where weight is a float between 0.0 and 1.0"
             self.show_embed_dialog(embed_files)
@@ -162,7 +162,7 @@ class ConditioningNode(AiNode):
 
             """for embed in self.embed_dict:
                 print("word", embed["embed"]["filename"])
-                file = os.path.join(gs.embeddings, embed["embed"]["filename"])
+                file = os.path.join(gs.prefs.embeddings, embed["embed"]["filename"])
                 sha = sha256(file)
                 self.apihandler.response_received.connect(self.handle_response)
                 self.apihandler.get_response(sha)"""
@@ -260,7 +260,7 @@ class ConditioningNode(AiNode):
                 # return {"conds":[[c, uc]]}
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         if result is not None:
@@ -268,6 +268,10 @@ class ConditioningNode(AiNode):
             self.setOutput(0, result[1])
             self.markDirty(False)
             self.markInvalid(False)
+        self.content.update()
+
+        self.content.finished.emit()
+        if exec:
             if gs.should_run:
                 self.executeChild(2)
 

@@ -96,13 +96,14 @@ class ModelLoader(torch.nn.Module):
 
     def load_checkpoint_guess_config(self, ckpt_path, output_vae=True, output_clip=True, output_clipvision=False,
                                      embedding_directory=None, style=""):
-        from comfy.sd import ModelPatcher, load_model_weights, CLIP, VAE
-        from comfy.utils import load_torch_file
+        from comfy.model_patcher import ModelPatcher
+        from comfy.sd import load_model_weights, CLIP, VAE
+        from comfy.utils import load_torch_file, calculate_parameters
         from comfy import model_detection, clip_vision, model_management
         from comfy.model_management import should_use_fp16
-        from comfy.sd import calculate_parameters, VAE, load_model_weights, CLIP
+        from comfy.sd import VAE, load_model_weights, CLIP
         from comfy.utils import load_torch_file
-        ckpt_path = os.path.join(gs.checkpoints, ckpt_path)
+        ckpt_path = os.path.join(gs.prefs.checkpoints, ckpt_path)
         sd = load_torch_file(ckpt_path)
         sd_keys = sd.keys()
         clip = None
@@ -158,7 +159,7 @@ class ModelLoader(torch.nn.Module):
         from comfy.utils import load_torch_file
 
         state_dict = None
-        ckpt_path = os.path.join(gs.checkpoints, file)
+        ckpt_path = os.path.join(gs.prefs.checkpoints, file)
         config_path = os.path.join('models/configs', config_name)
 
         with open(config_path, 'r') as stream:
@@ -226,7 +227,7 @@ class ModelLoader(torch.nn.Module):
         #     torch.backends.cuda.matmul.allow_tf32 = True
         #     torch.backends.cudnn.allow_tf32 = True
         # apply_optimizations(style)
-        if style is not "None":
+        if style != "None":
             apply_optimizations(style)
 
         return ModelPatcher(model), clip, vae
@@ -875,7 +876,7 @@ def make_linear_decode(model_version, device='cuda:0'):
 #         self.pad_with_end = pad_with_end
 #         vocab = self.tokenizer.get_vocab()
 #         self.inv_vocab = {v: k for k, v in vocab.items()}
-#         self.embedding_directory = gs.embeddings
+#         self.embedding_directory = gs.prefs.embeddings
 #         self.max_word_length = 8
 #
 #     def tokenize_with_weights(self, text):

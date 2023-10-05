@@ -84,7 +84,7 @@ class VideoInputNode(AiNode):
         #self.content.setGeometry(0, 0, 512, 512)
         self.content.stop_button.clicked.connect(self.content.video.reset)
         self.markInvalid(True)
-    def evalImplementation(self, index=0):
+    def evalImplementation_thread(self, index=0):
         time.sleep(0.1)
         skip = self.content.skip_frames.value()
         pixmap = self.content.video.get_frame(skip=skip)
@@ -107,9 +107,6 @@ class VideoInputNode(AiNode):
             socket.setSocketPosition()
         self.updateConnectedEdges()
 
-    def eval(self):
-        self.markDirty(True)
-        self.content.eval_signal.emit()
 
 
 class VideoPlayer:

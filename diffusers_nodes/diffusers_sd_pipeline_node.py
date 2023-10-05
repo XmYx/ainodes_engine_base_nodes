@@ -33,7 +33,7 @@ class DiffusersPipeLineWidget(QDMNodeContentWidget):
     def initUI(self):
         self.models = self.create_combo_box([item["name"] for item in diffusers_models], "Model")
 
-        lora_folder = gs.loras
+        lora_folder = gs.prefs.loras
         lora_files = [f for f in os.listdir(lora_folder) if f.endswith(('.safetensors', '.ckpt', '.pt', '.bin', '.pth'))]
         if lora_files == []:
             self.dropdown.addItem("Please place a lora in models/loras")
@@ -252,7 +252,7 @@ class DiffusersPipeLineNode(AiNode):
             "height":height
         }
 
-        return [[pil2tensor(image)], data]
+        return [torch.stack([pil2tensor(image)]), data]
 
     def load_lora(self):
         from .diffusers_lora_loader import install_lora_hook

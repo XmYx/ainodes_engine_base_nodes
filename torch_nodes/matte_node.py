@@ -113,7 +113,7 @@ class MatteNode(AiNode):
         return shrunken_mask_3ch
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         self.setOutput(0, [result[0]])

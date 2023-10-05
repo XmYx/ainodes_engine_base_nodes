@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import torch
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from qtpy import QtWidgets, QtCore, QtGui
 
@@ -126,6 +127,7 @@ class ImageOpNode(AiNode):
     op_title = "Image Operators"
     content_label_objname = "image_op_node"
     category = "aiNodes Base/Image"
+    make_dirty = True
 
 
     def __init__(self, scene):
@@ -158,25 +160,15 @@ class ImageOpNode(AiNode):
                 for tensor in tensor_list:
                     return_tensor = self.image_op(tensor, method)
                     return_tensor_list.append(return_tensor)
-        return return_tensor_list
 
-    #@QtCore.Slot(object)
-    def onWorkerFinished(self, pixmap_list):
-        #super().onWorkerFinished(None)
-        self.busy = False
-        self.setOutput(0, pixmap_list)
-        if gs.should_run:
 
-            if len(self.getOutputs(2)) > 0:
-                self.executeChild(2)
-        self.markDirty(False)
-        self.markInvalid(False)
+        return [torch.stack(return_tensor_list), None]
+
 
     def image_op(self, pixmap, method):
         tensor = None
         # Convert the QPixmap object to a PIL Image object
         image = tensor2pil(pixmap)
-        print(image)
         if method in image_ops_valid_methods:
             # Get the requested ImageEnhance method
             enhance_method = getattr(ImageEnhance, method, None)
@@ -335,9 +327,11 @@ class ImageOpNode(AiNode):
             image = image.convert("RGB")
             image = ImageOps.invert(image)
         if image != None:
-            print(image)
             # Convert the PIL Image object to a QPixmap object
             tensor = pil2tensor(image)
+
+
+        print(tensor.shape)
         return tensor
 
 

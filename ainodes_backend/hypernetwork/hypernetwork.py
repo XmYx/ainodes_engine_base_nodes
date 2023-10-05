@@ -252,7 +252,7 @@ def find_closest_hypernetwork_name(search: str):
     if not search:
         return None
     search = search.lower()
-    applicable = [name for name in gs.hypernetworks if search in name.lower()]
+    applicable = [name for name in gs.prefs.hypernetworks if search in name.lower()]
     if not applicable:
         return None
     applicable = sorted(applicable, key=lambda name: len(name))
@@ -344,9 +344,9 @@ def report_statistics(loss_info:dict):
         except Exception as e:
             print(e)
 
-gs.system.hypernetwork_dir = "models/hypernetwork"
+gs.hypernetwork_dir = "models/hypernetwork"
 
-hypernetworks = list_hypernetworks(gs.system.hypernetwork_dir)
+hypernetworks = list_hypernetworks(gs.hypernetwork_dir)
 
 
 def train_hypernetwork(hypernetwork_name='Name',                       # Network Name

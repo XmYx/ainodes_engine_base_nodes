@@ -75,48 +75,57 @@ class LatentNode(AiNode):
             self.markDirty(False)
             self.markInvalid(False)
         elif self.getInput(2) != None:
-            try:
-                node, index = self.getInput(2)
-                pixmap_list = node.getOutput(index)
-                samples = []
-                assert vae is not None, "No VAE found for encoding your image, please make sure to load and connect one."
-                vae.first_stage_model.cuda()
-                for image in pixmap_list:
-                    #image = pixmap_to_tensor(pixmap)
 
-                    #print("image", image)
+            #print("encoding image")
 
-                    """image, mask_image = load_img(image,
-                                                 shape=(image.size[0], image.size[1]),
-                                                 use_alpha_as_mask=True)
-                    image = image.to("cuda")
-                    image = repeat(image, '1 ... -> b ...', b=1)"""
+            input_image = self.getInputData(2)
 
+            #print("input_image", input_image.shape)
+            vae.first_stage_model.cuda()
 
-                    # image = image.convert("RGB")
-                    # image = np.array(image).astype(np.float32) / 255.0
-                    # image = image[None] #.transpose(0, 3, 1, 2)
-                    # image = torch.from_numpy(image)
-                    # image = image.detach().cpu()
-                    # torch_gc()
-                    img = image.movedim(-1,1).detach().clone()
-                    print("img", img.shape)
-                    latent = vae.encode_tiled_(vae, img)
-                    latent = latent.to("cpu")
-                    image = image.detach().to("cpu")
-                    del image
-                    samples.append(latent)
-                    shape = latent.shape
-                    del latent
-                    torch_gc()
-                vae.first_stage_model.cpu()
-                torch_gc()
-                if gs.logging:
-                    print(f"EMPTY LATENT NODE: Using Image input, encoding to Latent with parameters: {shape}")
-            except Exception as e:
-                print(e)
+            input_image = input_image.movedim(-1, 1).detach().clone()
+            #print("input_image_after", input_image.shape)
+            with torch.inference_mode():
+                samples = vae.encode_tiled_(vae, input_image)
+            #print("latent", samples.shape)
+            vae.first_stage_model.cpu()
+            # node, index = self.getInput(2)
+            # pixmap_list = self.getInputData(2)
+            # samples = []
+            # assert vae is not None, "No VAE found for encoding your image, please make sure to load and connect one."
+            # vae.first_stage_model.cuda()
+            # for image in pixmap_list:
+            #     #image = pixmap_to_tensor(pixmap)
+            #
+            #     #print("image", image)
+            #
+            #     """image, mask_image = load_img(image,
+            #                                  shape=(image.size[0], image.size[1]),
+            #                                  use_alpha_as_mask=True)
+            #     image = image.to("cuda")
+            #     image = repeat(image, '1 ... -> b ...', b=1)"""
+            #
+            #
+            #     # image = image.convert("RGB")
+            #     # image = np.array(image).astype(np.float32) / 255.0
+            #     # image = image[None] #.transpose(0, 3, 1, 2)
+            #     # image = torch.from_numpy(image)
+            #     # image = image.detach().cpu()
+            #     # torch_gc()
+            #     #img = image.movedim(-1,1).detach().clone()
+            #     #print("img", img.shape)
+            #     latent = vae.encode_tiled_(vae, image)
+            #     latent = latent.to("cpu")
+            #     image = image.detach().to("cpu")
+            #     del image
+            #     samples = latent
+            #     shape = latent.shape
+            #     del latent
+            #     torch_gc()
+            # vae.first_stage_model.cpu()
+            # torch_gc()
         else:
-            samples = [self.generate_latent()]
+            samples = self.generate_latent()
         if self.content.rescale_latent.isChecked() == True:
             rescaled_samples = []
             for sample in samples:
@@ -133,19 +142,23 @@ class LatentNode(AiNode):
             if gs.logging:
                 print(f"{len(samples)}x Latents rescaled to: {samples[0].shape}")
         #print(samples[0].shape)
-
-        return samples
+        result = {"samples":samples}
+        return result
             #return self.value
 
     ##@QtCore.Slot(object)
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.busy = False
         #super().onWorkerFinished(None)
         self.markDirty(False)
         self.markInvalid(False)
         self.setOutput(0, result)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
+        self.content.update()
+
+        self.content.finished.emit()
+        if exec:
+            if len(self.getOutputs(1)) > 0:
+                self.executeChild(output_index=1)
     def onMarkedDirty(self):
         self.value = None
     def encode_image(self, init_image=None):
@@ -279,13 +292,14 @@ class LatentCompositeNode(AiNode):
         else:
             return self.value
 
-    def onWorkerFinished(self, result):
+    def onWorkerFinished(self, result, exec=True):
         self.setOutput(0, result)
         self.markDirty(False)
         self.markInvalid(False)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
-        return self.value
+        if exec:
+            if len(self.getOutputs(1)) > 0:
+                self.executeChild(output_index=1)
+        #return self.value
 
     def onMarkedDirty(self):
         self.value = None

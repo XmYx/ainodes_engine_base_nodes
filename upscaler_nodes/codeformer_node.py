@@ -40,31 +40,28 @@ class CodeFormerNode(AiNode):
 
     def evalImplementation_thread(self, index=0):
         self.busy = True
-        images = self.getInputData(0)
-        results = []
-        if images:
-            for image in images:
-                pil_img = tensor2pil(image)
-                bg_up = self.content.bg_upsample.isChecked()
-                bg_up = 'realesrgan' if bg_up else 'None'
-                args = SimpleNamespace(
-                    input_path='./inputs/whole_imgs',
-                    output_path=None,
-                    fidelity_weight=self.content.fidelity.value(),
-                    upscale=self.content.upscale.value(),
-                    has_aligned=False,
-                    only_center_face=False,
-                    draw_box=False,
-                    detection_model='retinaface_resnet50',
-                    bg_upsampler=bg_up,
-                    face_upsample=self.content.face_upsample.isChecked(),
-                    bg_tile=400,
-                    suffix=None,
-                    save_video_fps=None
-                )
-                #print(args)
-                result = run_codeformer(args, [pil_img])
-                pixmap = pil2tensor(result[0])
-                results.append(pixmap)
-        return [results]
+        image = self.getInputData(0)
+        pil_img = tensor2pil(image[0])
+        bg_up = self.content.bg_upsample.isChecked()
+        bg_up = 'realesrgan' if bg_up else 'None'
+        print(bg_up)
+        args = SimpleNamespace(
+            input_path='./inputs/whole_imgs',
+            output_path=None,
+            fidelity_weight=self.content.fidelity.value(),
+            upscale=self.content.upscale.value(),
+            has_aligned=False,
+            only_center_face=False,
+            draw_box=False,
+            detection_model='retinaface_resnet50',
+            bg_upsampler=bg_up,
+            face_upsample=self.content.face_upsample.isChecked(),
+            bg_tile=400,
+            suffix=None,
+            save_video_fps=None
+        )
+        #print(args)
+        result = run_codeformer(args, [pil_img])
+        tensor = pil2tensor(result[0])
+        return [tensor]
 
