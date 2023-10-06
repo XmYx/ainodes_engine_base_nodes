@@ -31,7 +31,7 @@ class ImagePreviewWidget(QDMNodeContentWidget):
     def initUI(self):
         self.image = self.create_label("")
         self.fps = self.create_spin_box(min_val=1, max_val=250, default_val=24, step=1, label_text="FPS")
-
+        self.custom_dir = self.create_line_edit("Custom save directory", placeholder="Leave empty for default")
         # Create checkboxes and store the horizontal layout
         checkbox_layout = self.create_horizontal_layout([
             self.create_check_box("Autosave", spawn="autosave_checkbox"),
@@ -133,9 +133,22 @@ class ImagePreviewNode(AiNode):
 
         result = None
         self.busy = True
+
+        params = self.getInputData(1)
+
+        directory = f"{gs.prefs.output}/stills/" if self.content.custom_dir.text() == "" else self.content.custom_dir.text()
+
+        try:
+            os.makedirs(directory, exist_ok=True)
+        except:
+            directory = f"{gs.prefs.output}/stills/"
+        if params is not None:
+            filename = f"{directory}/{params.get('filename')}"
+        else:
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
+            filename = f"{directory}/{timestamp}.png"
         if len(self.getInputs(0)) > 0:
             image = self.getInputData(0)
-
             if image.shape[0] > 1:  # Assuming the tensor shape is [channels, height, width]
                 for img in image:
                     print(img.shape)
@@ -144,7 +157,10 @@ class ImagePreviewNode(AiNode):
                 self.add_image(image, show=True)
         if self.content.autosave_checkbox.isChecked() == True:
             if image is not None:
-                self.save_image(image)
+
+                print("saving image", image.shape, filename)
+
+                self.save_image(image, filename)
         # if image is not None:
         #     for item in image:
         #         if not isinstance(item, QtGui.QPixmap):
@@ -170,12 +186,12 @@ class ImagePreviewNode(AiNode):
         #for image in self.images:
         self.save_image(self.images[len(self.images) - 1][0])
 
-    def save_image(self, pixmap):
+    def save_image(self, pixmap, filename=None):
         try:
             image = tensor2pil(pixmap)
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
             os.makedirs(os.path.join(gs.prefs.output, "stills"), exist_ok=True)
-            filename = f"{gs.prefs.output}/stills/{timestamp}.png"
+            filename = f"{gs.prefs.output}/stills/{timestamp}.png" if filename == None else filename
 
             meta_save = self.content.meta_checkbox.isChecked()
 
