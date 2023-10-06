@@ -103,7 +103,7 @@ class SubgraphNode(AiNode):
                 node.data = self.getInputData(3)
                 node.images = self.getInputData(2)
 
-                print(node.images)
+                #print(node.images)
 
                 node.latents = self.getInputData(0)
                 node.conds = self.getInputData(1)
