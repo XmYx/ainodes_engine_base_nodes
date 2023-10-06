@@ -154,8 +154,8 @@ class ImagePreviewNode(AiNode):
                     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
                     filename = f"{directory}/{timestamp}.png"
 
-                    print("saving image", filename)
-                    self.save_image(image, filename)
+                print("saving image", filename)
+                self.save_image(image, filename)
             return [image]
         else:
             return [None]
