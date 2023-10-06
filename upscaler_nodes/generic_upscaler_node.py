@@ -24,7 +24,6 @@ class UpscalerWidget(QDMNodeContentWidget):
     def create_widgets(self):
         checkpoint_folder = gs.prefs.upscalers
 
-        print(os.getcwd())
 
         checkpoint_files = [f for f in os.listdir(checkpoint_folder) if f.endswith(('.ckpt', '.pt', '.bin', '.pth', '.safetensors'))]
         self.dropdown = self.create_combo_box(checkpoint_files, "Models")
@@ -74,15 +73,35 @@ class UpscalerNode(AiNode):
         model_name = self.content.dropdown.currentText()
         model_path = f"{gs.prefs.upscalers}/{model_name}"
         loaded = self.loader.load_model(model_path, model_name)
-        print("UPSCALER LOADER:", loaded)
 
         images = self.getInputData(0)
         return_pixmaps = []
         try:
-            if images:
-                for image in images:
+            if images is not None:
+                if images.shape[0] > 1:
+                    for image in images:
 
-                    img = tensor2pil(image).convert("RGB")
+                        img = tensor2pil(image).convert("RGB")
+                        img = np.array(img).astype(np.float32) / 255.0
+                        img = torch.from_numpy(img)[None,]
+
+                        in_img = img.movedim(-1, -3).to("cuda")
+
+                        tile = 128 + 64
+                        overlap = 8
+                        gs.models[model_name].to("cuda")
+                        s = tiled_scale(in_img, lambda a: gs.models[model_name](a), tile_x=tile, tile_y=tile,
+                                                    overlap=overlap, upscale_amount=gs.models[model_name].scale, pbar=None)
+                        gs.models[model_name].cpu()
+                        s = torch.clamp(s.movedim(-3, -1), min=0, max=1.0) * 255
+                        img = s[0].detach().numpy().astype(np.uint8)
+                        img = Image.fromarray(img)
+                        pixmap = pil2tensor(img)
+                        return_pixmaps.append(pixmap)
+                        tensor = torch.stack(return_pixmaps)
+                        return [tensor]
+                else:
+                    img = tensor2pil(images).convert("RGB")
                     img = np.array(img).astype(np.float32) / 255.0
                     img = torch.from_numpy(img)[None,]
 
@@ -92,29 +111,19 @@ class UpscalerNode(AiNode):
                     overlap = 8
                     gs.models[model_name].to("cuda")
                     s = tiled_scale(in_img, lambda a: gs.models[model_name](a), tile_x=tile, tile_y=tile,
-                                                overlap=overlap, upscale_amount=gs.models[model_name].scale, pbar=None)
+                                    overlap=overlap, upscale_amount=gs.models[model_name].scale, pbar=None)
                     gs.models[model_name].cpu()
                     s = torch.clamp(s.movedim(-3, -1), min=0, max=1.0) * 255
                     img = s[0].detach().numpy().astype(np.uint8)
                     img = Image.fromarray(img)
-                    pixmap = pil2tensor(img)
-                    return_pixmaps.append(pixmap)
+                    tensor = pil2tensor(img)
+                    return [tensor]
+
+
         except:
             return_pixmaps = []
 
         return return_pixmaps
-
-    #@QtCore.Slot(object)
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-        #super().onWorkerFinished(None)
-        if result:
-            self.setOutput(0, result)
-            self.markDirty(False)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
-    def onInputChanged(self, socket=None):
-        pass
 
 def get_tiled_scale_steps(width, height, tile_x, tile_y, overlap):
     return math.ceil((height / (tile_y - overlap))) * math.ceil((width / (tile_x - overlap)))

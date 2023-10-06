@@ -129,59 +129,40 @@ class ImagePreviewNode(AiNode):
             self.timer.stop()
 
     def evalImplementation_thread(self, index=0):
-        start_time = time.time()  # Start the timer
 
-        result = None
-        self.busy = True
-
+        image = self.getInputData(0)
         params = self.getInputData(1)
 
-        directory = f"{gs.prefs.output}/stills/" if self.content.custom_dir.text() == "" else self.content.custom_dir.text()
 
-        try:
-            os.makedirs(directory, exist_ok=True)
-        except:
-            directory = f"{gs.prefs.output}/stills/"
-        if params is not None:
-            filename = f"{directory}/{params.get('filename')}"
-        else:
-            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
-            filename = f"{directory}/{timestamp}.png"
-        if len(self.getInputs(0)) > 0:
-            image = self.getInputData(0)
+
+        if image is not None:
             if image.shape[0] > 1:  # Assuming the tensor shape is [channels, height, width]
                 for img in image:
                     print(img.shape)
                     self.add_image(img.unsqueeze(0), show=True)
             else:
                 self.add_image(image, show=True)
-        if self.content.autosave_checkbox.isChecked() == True:
-            if image is not None:
+            if self.content.autosave_checkbox.isChecked() == True:
+                directory = f"{gs.prefs.output}/stills/" if self.content.custom_dir.text() == "" else self.content.custom_dir.text()
+                try:
+                    os.makedirs(directory, exist_ok=True)
+                except:
+                    directory = f"{gs.prefs.output}/stills/"
+                if params is not None:
+                    filename = f"{directory}/{params.get('filename')}"
+                else:
+                    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
+                    filename = f"{directory}/{timestamp}.png"
 
-                print("saving image", image.shape, filename)
-
-                self.save_image(image, filename)
-        # if image is not None:
-        #     for item in image:
-        #         if not isinstance(item, QtGui.QPixmap):
-        #             pixmap = tensor_image_to_pixmap(item)
-        #         else:
-        #             pixmap = item
-        #         self.content.preview_signal.emit(pixmap)
-        #         self.resize(pixmap)
-        if gs.debug:
-            elapsed_time = time.time() - start_time  # Calculate elapsed time
-            print(f"Image Preview Node executed in {elapsed_time:.4f} seconds.")  # Print the time taken
-        return [image]
+                    print("saving image", filename)
+                    self.save_image(image, filename)
+            return [image]
+        else:
+            return [None]
 
     def show_image(self, image):
-
-        #pixmap = tensor_image_to_pixmap(image)
-
         self.content.image.setPixmap(image)
         self.resize(image)
-
-
     def manual_save(self):
         #for image in self.images:
         self.save_image(self.images[len(self.images) - 1][0])
