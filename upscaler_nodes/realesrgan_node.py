@@ -59,7 +59,7 @@ class RealESRGWidget(QDMNodeContentWidget):
         self.dropdown = self.create_combo_box(gans, "Models")
         self.outscale = self.create_spin_box("Upscale Amount", min_val=1, max_val=16, default_val=8)
         self.denoise_strength = self.create_double_spin_box("Denoise Strength", default_val=0.5)
-        self.tiles = self.create_spin_box("Tiles", min_val=0, max_val=16, default_val=0)
+        self.tiles = self.create_spin_box("Tiles", min_val=0, max_val=4096, default_val=0)
         self.pre_pad = self.create_spin_box("Pre Padding", min_val=0, max_val=512, default_val=0)
         self.tile_pad = self.create_spin_box("Tile Padding", min_val=0, max_val=512, default_val=0)
         self.face_enhance = self.create_check_box("Face Enhancement")
@@ -120,29 +120,31 @@ class REALESRGANNode(AiNode):
         args.fp32 = self.content.fp32.isChecked()
         args.alpha_upsampler = "realesrgan"
         args.gpu_id = 0
+        tensor = None
+        if images is not None:
 
-        if images:
-            for image in images:
+            print("REALESRGAN", type(images))
 
-                img = tensor2pil(image).convert("RGB")
+            if images.shape[0] > 1:
+                for image in images:
 
-                img = upscale_image(img, args)
+                    img = tensor2pil(image).convert("RGB")
+                    with torch.inference_mode():
+
+                        img = upscale_image(img, args)
+                    if img != None:
+
+                        pixmap = pil2tensor(img)
+                        return_pixmaps.append(pixmap)
+                    tensor = torch.stack(return_pixmaps)
+            else:
+                img = tensor2pil(images).convert("RGB")
+                with torch.inference_mode():
+                    img = upscale_image(img, args)
                 if img != None:
+                    tensor = pil2tensor(img)
 
-                    pixmap = pil2tensor(img)
-                    return_pixmaps.append(pixmap)
-
-        return return_pixmaps
-
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-        if result:
-            self.setOutput(0, result)
-            self.markDirty(False)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
-    def onInputChanged(self, socket=None):
-        pass
+        return [tensor]
 
 def upscale_image(image, args):
     if args.model_name == 'RealESRGAN_x4plus':  # x4 RRDBNet model
