@@ -6,8 +6,8 @@
         {
             "id": 2419920889760,
             "title": "Empty Latent Image",
-            "pos_x": -20.344482421874886,
-            "pos_y": 1170.6665039062495,
+            "pos_x": -641.6823730468749,
+            "pos_y": 661.0229492187494,
             "inputs": [
                 {
                     "id": 2422374053728,
@@ -65,14 +65,14 @@
                 "Subnoise Height": "512",
                 "Subnoise strength": "1.0"
             },
-            "op_code": 71,
+            "op_code": 77,
             "content_label_objname": "empty_latent_node"
         },
         {
             "id": 2422819241360,
             "title": "Conditioning",
-            "pos_x": 802.5162353515619,
-            "pos_y": 258.50830078125,
+            "pos_x": 172.023071289062,
+            "pos_y": -124.42626953124989,
             "inputs": [
                 {
                     "id": 2422374027120,
@@ -120,18 +120,18 @@
                 }
             ],
             "content": {
-                "Prompt": "highly detailed 3d render of a us police car, wavy abstract background, color splash, 70s color scheme",
+                "Prompt": "cyberpunk landscape, rainbow in the middle",
                 "Clip Skip": "-2",
                 "Use embeds": "False"
             },
-            "op_code": 66,
+            "op_code": 72,
             "content_label_objname": "cond_node"
         },
         {
             "id": 2422374026064,
             "title": "Conditioning",
-            "pos_x": 1197.5189819335933,
-            "pos_y": 251.77001953124977,
+            "pos_x": 182.74847412109352,
+            "pos_y": 310.24169921874966,
             "inputs": [
                 {
                     "id": 2419920893216,
@@ -183,14 +183,14 @@
                 "Clip Skip": "-2",
                 "Use embeds": "False"
             },
-            "op_code": 66,
+            "op_code": 72,
             "content_label_objname": "cond_node"
         },
         {
             "id": 2437554799760,
             "title": "Torch Loader",
-            "pos_x": -243.45397949218759,
-            "pos_y": 269.3574218750001,
+            "pos_x": -730.7586669921875,
+            "pos_y": 319.8945312500002,
             "inputs": [
                 {
                     "id": 2422373613328,
@@ -236,14 +236,14 @@
                 "LDM Optimization": "None",
                 "Force Reload": "False"
             },
-            "op_code": 81,
+            "op_code": 87,
             "content_label_objname": "torch_loader_node"
         },
         {
             "id": 2422374015824,
             "title": "K Sampler",
-            "pos_x": 302.61694335937534,
-            "pos_y": 864.8544311523428,
+            "pos_x": 1072.6657714843755,
+            "pos_y": 121.28997802734295,
             "inputs": [
                 {
                     "id": 2422374034704,
@@ -328,12 +328,13 @@
             "content": {
                 "Scheduler:": "karras",
                 "Sampler:": "euler",
-                "Seed:": "-716394341166733597",
+                "Seed:": "",
                 "Steps:": "50",
                 "Start Step:": "0",
                 "Last Step:": "30",
                 "Stop Sampling Early": "False",
                 "Force full denoise": "True",
+                "Preview Type": "taesd",
                 "Show Tensor Preview": "True",
                 "Disable noise generation": "False",
                 "Iterate seed": "False",
@@ -341,14 +342,14 @@
                 "Denoise:": "1.0",
                 "Guidance Scale:": "7.5"
             },
-            "op_code": 47,
+            "op_code": 53,
             "content_label_objname": "K_sampling_node"
         },
         {
             "id": 2643315715968,
             "title": "Image Preview",
-            "pos_x": 623.008728027343,
-            "pos_y": 727.2720336914058,
+            "pos_x": 1421.6464233398428,
+            "pos_y": -46.72698974609398,
             "inputs": [
                 {
                     "id": 2643315716352,
@@ -397,34 +398,30 @@
             ],
             "content": {
                 "FPS": "24",
-                "": "False"
+                "Custom save directory": "",
+                "Autosave": "False",
+                "Embed Node graph in PNG": "False",
+                "Copy to Clipboard": "False"
             },
-            "op_code": 39,
+            "op_code": 44,
             "content_label_objname": "image_output_node"
         },
         {
-            "id": 2001253870048,
-            "title": "Lora Loader",
-            "pos_x": -213.7304687500001,
-            "pos_y": 749.7148437499995,
+            "id": 1551081093584,
+            "title": "UniNode",
+            "pos_x": -188.59863281249994,
+            "pos_y": 669.5556640624999,
             "inputs": [
                 {
-                    "id": 2001253868224,
+                    "id": 1551080469888,
                     "index": 0,
-                    "multi_edges": false,
+                    "multi_edges": true,
                     "position": 3,
-                    "socket_type": 4
+                    "socket_type": 7
                 },
                 {
-                    "id": 2001253868128,
+                    "id": 1551081705088,
                     "index": 1,
-                    "multi_edges": false,
-                    "position": 3,
-                    "socket_type": 4
-                },
-                {
-                    "id": 2001253868176,
-                    "index": 2,
                     "multi_edges": false,
                     "position": 3,
                     "socket_type": 1
@@ -432,61 +429,31 @@
             ],
             "outputs": [
                 {
-                    "id": 2001253868032,
+                    "id": 1551081702928,
                     "index": 0,
                     "multi_edges": true,
                     "position": 6,
-                    "socket_type": 4
+                    "socket_type": 7
                 },
                 {
-                    "id": 2001253868080,
+                    "id": 1551081705136,
                     "index": 1,
-                    "multi_edges": true,
-                    "position": 6,
-                    "socket_type": 4
-                },
-                {
-                    "id": 2001253867744,
-                    "index": 2,
                     "multi_edges": false,
                     "position": 6,
                     "socket_type": 1
                 }
             ],
-            "content": {
-                "Lora": "3l3ctronics-step00003000.safetensors",
-                "Force Load": "False",
-                "Model Weight": "1.0",
-                "Clip Weight": "1.0"
-            },
-            "op_code": 77,
-            "content_label_objname": "lora_loader_node"
+            "content": {},
+            "op_code": 5,
+            "content_label_objname": "uninode"
         }
     ],
     "edges": [
-        {
-            "id": 2422819241216,
-            "edge_type": 2,
-            "start": 2422373612560,
-            "end": 2419920893216
-        },
         {
             "id": 2422374025056,
             "edge_type": 2,
             "start": 2422374053680,
             "end": 2422374025104
-        },
-        {
-            "id": 2422374028608,
-            "edge_type": 2,
-            "start": 2422373612560,
-            "end": 2422374027120
-        },
-        {
-            "id": 2422374028464,
-            "edge_type": 2,
-            "start": 2422374034896,
-            "end": 2422374053008
         },
         {
             "id": 2422374029184,
@@ -495,34 +462,64 @@
             "end": 2422374033936
         },
         {
-            "id": 2643834781504,
+            "id": 1551081094688,
             "edge_type": 2,
-            "start": 2422374024432,
-            "end": 2643315716352
+            "start": 1551080469888,
+            "end": 2422374053008
         },
         {
-            "id": 2001253868272,
+            "id": 1551080463696,
             "edge_type": 2,
-            "start": 2422373612368,
-            "end": 2001253868128
+            "start": 1551080469888,
+            "end": 2422373612368
         },
         {
-            "id": 2001253867648,
+            "id": 1551081705184,
             "edge_type": 2,
-            "start": 2422373612560,
-            "end": 2001253868224
+            "start": 1551080469888,
+            "end": 2422373612560
         },
         {
-            "id": 2001253868320,
+            "id": 1551081704176,
             "edge_type": 2,
-            "start": 2001253868080,
+            "start": 1551080469888,
+            "end": 2422373612752
+        },
+        {
+            "id": 1551081701968,
+            "edge_type": 2,
+            "start": 1551081702928,
+            "end": 2422374027120
+        },
+        {
+            "id": 1551081702448,
+            "edge_type": 2,
+            "start": 1551081702928,
+            "end": 2419920893216
+        },
+        {
+            "id": 1551081708352,
+            "edge_type": 2,
+            "start": 1551081702928,
+            "end": 2422374034896
+        },
+        {
+            "id": 1551081708256,
+            "edge_type": 2,
+            "start": 1551081702928,
             "end": 2422374034800
         },
         {
-            "id": 1994001909312,
+            "id": 1551081703408,
             "edge_type": 2,
-            "start": 2422374034752,
-            "end": 2422373612752
+            "start": 1551081702928,
+            "end": 2422374034752
+        },
+        {
+            "id": 1551080363088,
+            "edge_type": 2,
+            "start": 2643315716352,
+            "end": 2422374024432
         }
     ]
 }

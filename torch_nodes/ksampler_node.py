@@ -122,6 +122,12 @@ class KSamplerNode(AiNode):
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
+
+
+        unet = self.getInputData(2)
+
+
+
         from ..ainodes_backend import tensor_image_to_pixmap, get_torch_device, common_ksampler
         self.content.progress_signal.emit(0)
 
@@ -155,7 +161,6 @@ class KSamplerNode(AiNode):
             latent_list = [pre_latent]
 
         data = self.getInputData(3)
-        unet = self.getInputData(2)
 
         from comfy import model_base
 
