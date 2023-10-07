@@ -57,7 +57,7 @@ class ImageListWidget(QWidget):
                         item.setData(Qt.UserRole + 1, file)  # Store the original filename
 
                         self.list_widget.addItem(item)
-
+        self.reset_iteration()
     def on_item_clicked(self, item, prev_item=None):
         pixmap = item.data(Qt.UserRole)
         self.pixmap_selected.emit(pixmap)
