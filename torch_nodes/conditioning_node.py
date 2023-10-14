@@ -253,7 +253,9 @@ class ConditioningNode(AiNode):
 
                 tokens = clip.tokenize(prompt)
                 cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-                return {"conds":[[cond, {"pooled_output": pooled}]]}
+
+                return [[cond, {"pooled_output": pooled}]]
+
 
                 # c = clip.encode(prompt)
                 # uc = {}

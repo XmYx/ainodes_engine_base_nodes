@@ -102,7 +102,7 @@ class ImagePreviewNode(AiNode):
         else:
             self.timer.start()
 
-    def add_image(self, image_tensor, show=False, reset=True):
+    def add_image(self, image_tensor, show=False, reset=False):
         if reset:
             self.images.clear()
             self.pixmaps.clear()
@@ -111,6 +111,10 @@ class ImagePreviewNode(AiNode):
         if show:
             self.content.preview_signal.emit(pixmap)
         self.pixmaps.append(pixmap)
+
+    def clear(self):
+        self.images.clear()
+        self.pixmaps.clear()
 
     def iter_preview(self):
         self.show_next_image()
@@ -129,7 +133,7 @@ class ImagePreviewNode(AiNode):
             self.timer.stop()
 
     def evalImplementation_thread(self, index=0):
-
+        self.clear()
         image = self.getInputData(0)
         params = self.getInputData(1)
 
@@ -210,7 +214,7 @@ class ImagePreviewNode(AiNode):
             self.dim = dims
             self.grNode.height = dims[0]
             self.grNode.width = dims[1]
-            self.content.setGeometry(0, 25, pixmap.size().width(), pixmap.size().height() + 150)
+            self.content.setGeometry(0, 25, pixmap.size().width() + 32, pixmap.size().height() + 200)
             self.update_all_sockets()
 
     def onInputChanged(self, socket=None):

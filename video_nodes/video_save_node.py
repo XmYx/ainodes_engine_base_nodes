@@ -83,6 +83,9 @@ class VideoOutputNode(AiNode):
     category = "aiNodes Base/Video"
     input_socket_name = ["EXEC", "IMAGE"]
     output_socket_name = ["EXEC", "IMAGE"]
+
+    mark_dirty = True
+
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])
         self.filename = ""
@@ -199,9 +202,7 @@ class GifRecorder:
             self.close(timestamp, fps, type, True)
 
 
-
     def close(self, timestamp, fps, type='GIF', dump=False, audio_path=None):
-        print(type)
         if type == 'GIF':
             os.makedirs("output/gifs", exist_ok=True)
             filename = f"output/gifs/{timestamp}.gif"

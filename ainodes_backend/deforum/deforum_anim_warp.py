@@ -202,11 +202,11 @@ def anim_frame_warp_3d(device, prev_img_cv2, depth, translation_x, translation_y
         math.radians(rotation_3d_z)
     ]
     rot_mat = p3d.euler_angles_to_matrix(torch.tensor(rotate_xyz, device=device), "XYZ").unsqueeze(0)
-    result = transform_image_3d(device, prev_img_cv2, depth, rot_mat, translate_xyz)
+    result, mask = transform_image_3d(device, prev_img_cv2, depth, rot_mat, translate_xyz, add_noise=True, noise_std=1000)
     torch.cuda.empty_cache()
-    return result
+    return result, mask
 
-def transform_image_3d(device, prev_img_cv2, depth_tensor, rot_mat, translate):
+def transform_image_3d(device, prev_img_cv2, depth_tensor, rot_mat, translate, add_noise=False, noise_std=0.1):
     # adapted and optimized version of transform_image_3d from Disco Diffusion https://github.com/alembics/disco-diffusion
     w, h = prev_img_cv2.shape[1], prev_img_cv2.shape[0]
 
@@ -231,20 +231,40 @@ def transform_image_3d(device, prev_img_cv2, depth_tensor, rot_mat, translate):
     offset_coords_2d = coords_2d - torch.reshape(offset_xy, (h,w,2)).unsqueeze(0)
 
     image_tensor = rearrange(torch.from_numpy(prev_img_cv2.astype(np.float32)), 'h w c -> c h w').to(device)
+    image_tensor[image_tensor == 0] += 1e-5
     new_image = torch.nn.functional.grid_sample(
         image_tensor.add(1/512 - 0.0001).unsqueeze(0),
         offset_coords_2d,
         mode='bicubic',
-        padding_mode='border',
+        padding_mode='zeros',
         align_corners=False
     )
+    if add_noise:
+        # Create a noise tensor with the same shape as new_image
+        noise = torch.randn_like(new_image) * noise_std
 
+        # Create a mask of pixels that are close to zero
+        mask = (new_image.abs() < 1e-5).float()
+
+        # Check and print min/max values of noise and masked new_image
+        print("Noise Min:", noise.min().item(), "Noise Max:", noise.max().item())
+        print("Masked New Image Min (before noise):", (new_image * mask).min().item())
+        print("Masked New Image Max (before noise):", (new_image * mask).max().item())
+
+        # Add noise to those pixels
+        new_image += noise * mask
+
+        # Check and print min/max values of masked new_image after adding noise
+        print("Masked New Image Min (after noise):", (new_image * mask).min().item())
+        print("Masked New Image Max (after noise):", (new_image * mask).max().item())
+    else:
+        mask = None
     # convert back to cv2 style numpy array
     result = rearrange(
         new_image.squeeze().clamp(0,255),
         'c h w -> h w c'
     ).cpu().numpy().astype(prev_img_cv2.dtype)
-    return result
+    return result, mask
 
 class DeformAnimKeys():
     def __init__(self, anim_args):

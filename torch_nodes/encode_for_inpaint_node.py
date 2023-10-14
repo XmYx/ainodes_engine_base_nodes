@@ -35,13 +35,12 @@ class InpaintEncodeNode(AiNode):
 
     def evalImplementation_thread(self, index=0):
 
-        masks = self.getInputData(0)
-        images = self.getInputData(1)
+        mask = self.getInputData(0)
+        image = self.getInputData(1)
 
-        image = pixmap_to_tensor(images[0])
-        mask = pixmap_to_tensor(masks[0])
         try:
-            latent, noise_mask = self.encode(image, mask)
+            from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor2pil
+            latent, noise_mask = self.encode(image, tensor2pil(mask))
 
             data = {"noise_mask":noise_mask}
 
@@ -54,7 +53,7 @@ class InpaintEncodeNode(AiNode):
 
     def encode(self, pixels, mask, grow_mask_by=6):
 
-        pixels = torch.from_numpy(np.array(pixels.convert("RGB"))[None].astype(np.uint8)).to(dtype=torch.float32)
+        #pixels = torch.from_numpy(np.array(pixels.convert("RGB"))[None].astype(np.uint8)).to(dtype=torch.float32)
 
         x = (pixels.shape[1] // 8) * 8
         y = (pixels.shape[2] // 8) * 8
@@ -88,7 +87,7 @@ class InpaintEncodeNode(AiNode):
         else:
             kernel_tensor = torch.ones((1, 1, grow_mask_by, grow_mask_by))
             padding = math.ceil((grow_mask_by - 1) / 2)
-
+            print(mask.shape)
             mask_erosion = torch.clamp(torch.nn.functional.conv2d(mask.round(), kernel_tensor, padding=padding), 0, 1)
         m = (1.0 - mask.round()).squeeze(1)
 

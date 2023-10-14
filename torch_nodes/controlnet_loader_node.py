@@ -42,8 +42,8 @@ class ControlnetLoaderNode(AiNode):
     content_label_objname = "controlnet_loader_node"
     category = "aiNodes Base/Model Loading"
 
-    custom_input_socket_name = ["CNET", "EXEC"]
-    custom_output_socket_name = ["CNET", "EXEC"]
+    custom_input_socket_name = ["CONTROL_NET", "EXEC"]
+    custom_output_socket_name = ["CONTROL_NET", "EXEC"]
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[4,1], outputs=[4,1])
@@ -113,6 +113,8 @@ class ControlnetLoaderNode(AiNode):
         #         gs.models["controlnet"] = None
         #     except:
         #         pass
+        from comfy.controlnet import load_controlnet
+
         cnet = load_controlnet(controlnet_path, prev_net)
         return cnet
 

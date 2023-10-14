@@ -131,7 +131,7 @@ class ImageOpNode(AiNode):
 
 
     def __init__(self, scene):
-        super().__init__(scene, inputs=[5,6,1], outputs=[5,6,1])
+        super().__init__(scene, inputs=[5,6,1], outputs=[5,5,1])
 
     def initInnerClasses(self):
         self.content = ImageOpsWidget(self)
@@ -140,7 +140,7 @@ class ImageOpNode(AiNode):
         self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
 
         #self.content.dropdown.currentIndexChanged.connect(self.evalImplementation)
-        self.output_socket_name = ["EXEC", "DATA","IMAGE"]
+        self.output_socket_name = ["EXEC", "MASK","IMAGE"]
         self.input_socket_name = ["EXEC", "DATA", "IMAGE"]
         self.grNode.height = 340
         self.grNode.width = 280
@@ -152,21 +152,23 @@ class ImageOpNode(AiNode):
     def evalImplementation_thread(self):
         return_pixmap = None
         return_tensor_list = []
+
         if self.getInput(0) != None:
             node, index = self.getInput(0)
             if node != None:
                 tensor_list = node.getOutput(index)
                 method = self.content.dropdown.currentText()
                 for tensor in tensor_list:
-                    return_tensor = self.image_op(tensor, method)
+                    return_tensor, mask = self.image_op(tensor, method)
                     return_tensor_list.append(return_tensor)
 
 
-        return [torch.stack(return_tensor_list), None]
+        return [torch.stack(return_tensor_list), mask]
 
 
     def image_op(self, pixmap, method):
         tensor = None
+        mask = None
         # Convert the QPixmap object to a PIL Image object
         image = tensor2pil(pixmap)
         if method in image_ops_valid_methods:
@@ -246,11 +248,10 @@ class ImageOpNode(AiNode):
             del detector
         elif method == 'depth_transform':
             image = np.array(image)
-            if "deforum_midas" not in gs.models:
-                gs.models["deforum_midas"] = MidasDetector()
-                gs.models["deforum_midas"].model.cpu()
-                gs.models["deforum_midas"].model = None
-                gs.models["deforum_midas"].load_midas()
+            model = MidasDetector()
+            model.model.cpu()
+            model.model = None
+            model.load_midas()
 
             a = self.content.midas_a.value()
             bg_threshold = self.content.midas_bg.value()
@@ -259,11 +260,11 @@ class ImageOpNode(AiNode):
                     "translation_x" : 0,
                     "translation_y" : 0,
                     "translation_z" : 0,
-                    "rotation_3d_x" : 0,
+                    "rotation_3d_x" : 25,
                     "rotation_3d_y" : 0,
                     "rotation_3d_z" : 0,
                     }
-            tensor = gs.models["deforum_midas"].predict(image)
+            tensor = model.predict(image)
             if self.getInput(1) != None:
                 node, index = self.getInput(1)
                 data = node.getOutput(index)
@@ -271,7 +272,14 @@ class ImageOpNode(AiNode):
                     if key[0] == 'Warp3D':
                         #print(key, value)
                         args[key[1]] = value
-            np_image = anim_frame_warp_3d(device, image, tensor, args["translation_x"], args["translation_y"], args["translation_z"], args["rotation_3d_x"], args["rotation_3d_y"], args["rotation_3d_z"])
+            with torch.no_grad():
+                np_image, mask = anim_frame_warp_3d(device, image, tensor, args["translation_x"], args["translation_y"], args["translation_z"], args["rotation_3d_x"], args["rotation_3d_y"], args["rotation_3d_z"])
+                mask = mask.cpu()
+                mask = mask.reshape((-1, 1, mask.shape[-2], mask.shape[-1])).movedim(1, -1).expand(-1, -1, -1, 3)
+                print(mask.device)
+            model.deforum_midas.cpu()
+            del model.deforum_midas
+            del model
             image = Image.fromarray(np_image)
 
         elif method == 'normal':
@@ -328,11 +336,11 @@ class ImageOpNode(AiNode):
             image = ImageOps.invert(image)
         if image != None:
             # Convert the PIL Image object to a QPixmap object
-            tensor = pil2tensor(image)
+            tensor = pil2tensor(image)[0]
 
 
         print(tensor.shape)
-        return tensor
+        return tensor, mask
 
 
 

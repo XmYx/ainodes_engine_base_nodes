@@ -88,7 +88,8 @@ class MidasDetector:
         depth_tensor = torch.from_numpy(depth_map).squeeze().to(self.device)
         return depth_tensor
     def load_midas(self, half_precision=True):
-        models_path = "models/other"
+        models_path = "models/midas"
+        os.makedirs(models_path, exist_ok=True)
         if not os.path.exists(os.path.join(models_path, 'dpt_large-midas-2f21e586.pt')):
             print("Downloading dpt_large-midas-2f21e586.pt...")
             poorman_wget("https://github.com/intel-isl/DPT/releases/download/1_0/dpt_large-midas-2f21e586.pt", models_path)

@@ -237,21 +237,7 @@ class ImageInputNode(AiNode):
                 self.content.image.setPixmap(pixmap)
         else:
             pixmap = self.content.image.pixmap()
-        return pixmap
-
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-
-        self.markDirty(False)
-        self.markInvalid(False)
-
-        if result is not None:
-            self.setOutput(0, [pixmap_to_tensor(result)])
-
-            if exec:
-                self.executeChild(output_index=1)
-        else:
-            print("End of Video or No Image loaded, stopping execution at", self)
+        return [pixmap_to_tensor(pixmap)]
 
 
     def openFileDialog(self):
