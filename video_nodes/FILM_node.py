@@ -1,6 +1,7 @@
 import copy
 
 import numpy as np
+import torch
 from PIL import Image
 from qtpy import QtWidgets, QtCore, QtGui
 
@@ -29,7 +30,7 @@ class FILMNode(AiNode):
     op_title = "FILM"
     content_label_objname = "FILM_node"
     category = "aiNodes Base/Interpolation"
-
+    make_dirty = True
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,5,1], outputs=[5,1])
@@ -75,42 +76,43 @@ class FILMNode(AiNode):
             pixmap2 = node.getOutput(index)
         else:
             pixmap2 = None
+        #print("FILM NODE", pixmap1, pixmap2)
         if pixmap1 != None and pixmap2 != None:
             image1 = tensor2pil(pixmap1[0])
             image2 = tensor2pil(pixmap2[0])
             np_image1 = np.array(image1)
             np_image2 = np.array(image2)
             frames = gs.models["FILM"].inference(np_image1, np_image2, inter_frames=25)
-            print(f"FILM NODE:  {len(frames)}")
+            #print(f"FILM NODE:  {len(frames)}")
             for frame in range(len(frames) - 2):
                 image = Image.fromarray(frame)
                 pixmap = tensor_image_to_pixmap(image)
                 return_frames.append(pixmap)
         elif pixmap1 != None:
-            for pixmap in pixmap1:
-                image = tensor2pil(pixmap)
-                np_image = np.array(image.convert("RGB"))
-                self.FILM_temp.append(np_image)
-                if len(self.FILM_temp) == 2:
-                    frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
-                    skip_first, skip_last = False, True
-                    if skip_first:
-                        frames.pop(0)
-                    if skip_last:
-                        frames.pop(-1)
+            #for pixmap in pixmap1:
+            image = tensor2pil(pixmap1)
+            np_image = np.array(image.convert("RGB"))
+            self.FILM_temp.append(np_image)
+            if len(self.FILM_temp) == 2:
+                frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
+                skip_first, skip_last = False, True
+                if skip_first:
+                    frames.pop(0)
+                if skip_last:
+                    frames.pop(-1)
 
-                    for frame in frames:
-                        image = Image.fromarray(copy.deepcopy(frame))
-                        pixmap = pil2tensor(image)
-                        return_frames.append(pixmap)
-                    self.FILM_temp = [self.FILM_temp[1]]
-        print(f"FILM NODE: Using only First input, created {len(return_frames) - 2} between frames, returning {len(return_frames)} frames.")
-        return return_frames
-    def onWorkerFinished(self, return_frames):
-        self.busy = False
-        self.setOutput(0, return_frames)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
+                for frame in frames:
+                    image = Image.fromarray(copy.deepcopy(frame))
+                    pixmap = pil2tensor(image)
+                    return_frames.append(pixmap)
+                self.FILM_temp = [self.FILM_temp[1]]
+            print(f"FILM NODE: Using only First input, created {len(return_frames) - 2} between frames, returning {len(return_frames)} frames.")
+        if len(return_frames) > 0:
+            return_frames = torch.stack(return_frames, dim=0)
+
+            return [return_frames]
+        else:
+            return [None]
 
     def iterate_frames(self, frames):
         self.iterating = True

@@ -142,7 +142,7 @@ class ImagePreviewNode(AiNode):
         if image is not None:
             if image.shape[0] > 1:  # Assuming the tensor shape is [channels, height, width]
                 for img in image:
-                    print(img.shape)
+                    #print(img.shape)
                     self.add_image(img.unsqueeze(0), show=True)
             else:
                 self.add_image(image, show=True)
@@ -158,7 +158,7 @@ class ImagePreviewNode(AiNode):
                     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
                     filename = f"{directory}/{timestamp}.png"
 
-                print("saving image", filename)
+                print("Saving image", filename)
                 self.save_image(image, filename)
             return [image]
         else:

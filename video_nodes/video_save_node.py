@@ -1,11 +1,13 @@
 import datetime
 import os
 import subprocess
+from multiprocessing import Process
 
 import cv2
 import imageio
 import numpy as np
 from PIL import Image
+from PyQt6.QtCore import QThread
 from qtpy import QtWidgets, QtGui, QtCore
 from qtpy.QtWidgets import QPushButton, QVBoxLayout
 
@@ -14,7 +16,7 @@ from ..ainodes_backend import pixmap_to_tensor, tensor2pil
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
-
+from tqdm import tqdm
 OP_NODE_VIDEO_SAVE = get_next_opcode()
 
 class VideoOutputWidget(QDMNodeContentWidget):
@@ -205,127 +207,283 @@ class GifRecorder:
 
 
     def close(self, timestamp, fps, type='GIF', dump=False, audio_path=None):
-        if type == 'GIF':
-            os.makedirs("output/gifs", exist_ok=True)
-            filename = f"output/gifs/{timestamp}.gif"
-            if len(self.frames) > 0:
 
-                self.filename = filename
-                self.fps = fps
-                print(f"VIDEO SAVE NODE: Video saving {len(self.frames)} frames at {self.fps}fps as {self.filename}")
-                #imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), subrectangles=True, quantizer='nq-fs', palettesize=8)
-                imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), palettesize=8)
-                # pils = []
-                # for frame in self.frames:
-                #     pils.append(Image.fromarray(frame))
-
-                #pils[0].save("test_gif.gif", "GIF", save_all=True, duration=40, append_images=pils[1:], loop=1, quality=1)
-
-            else:
-                print("The buffer is empty, cannot save.")
-
-        elif type == 'mp4_ffmpeg':
-            os.makedirs("output/mp4s", exist_ok=True)
-            filename = f"output/mp4s/{timestamp}.mp4"
-            if len(self.frames) > 0:
-                width = self.frames[0].shape[1]
-                height = self.frames[0].shape[0]
-
-                cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
-                       'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-an',
-                       filename]
-                video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-                for frame in self.frames:
-                    video_writer.stdin.write(frame.tobytes())
-                video_writer.communicate()
-
-                # if audio path is provided, merge the audio and the video
-                if audio_path is not None:
-                    try:
-                        output_filename = f"output/mp4s/{timestamp}_with_audio.mp4"
-                        cmd = ['ffmpeg', '-y', '-i', filename, '-i', audio_path, '-c:v', 'copy', '-c:a', 'aac', '-strict', 'experimental', output_filename]
-                        subprocess.run(cmd)
-                    except Exception as e:
-                        print(f"Audio file merge failed from path {audio_path}\n{repr(e)}")
-                        pass
-            else:
-                print("The buffer is empty, cannot save.")
-
-        elif type == 'mp4_ffmpeg':
-            os.makedirs("output/mp4s", exist_ok=True)
-            filename = f"output/mp4s/{timestamp}.mp4"
-            if len(self.frames) > 0:
-                width = self.frames[0].shape[1]
-                height = self.frames[0].shape[0]
-
-                #print(width, height)
-                cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
-                       'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-an',
-                       filename]
-                video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-                for frame in self.frames:
-                    #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                    video_writer.stdin.write(frame.tobytes())
-                video_writer.communicate()
-            else:
-                print("The buffer is empty, cannot save.")
-
-        elif type == 'mp4_fourcc':
-            os.makedirs("output/mp4s", exist_ok=True)
-            filename = f"output/mp4s/{timestamp}.mp4"
-            if len(self.frames) > 0:
-
-                width = self.frames[0].shape[0]
-                height = self.frames[0].shape[1]
-                video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
-                for frame in self.frames:
-                    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                    video_writer.write(frame)
-                video_writer.release()
-            else:
-                print("The buffer is empty, cannot save.")
-        elif type == 'webm_ffmpeg':
-            os.makedirs("output/webms", exist_ok=True)
-            filename = f"output/webms/{timestamp}.webm"
-            if len(self.frames) > 0:
-                width = self.frames[0].shape[1]
-                height = self.frames[0].shape[0]
-                cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
-                       'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libvpx-vp9', '-b:v', '1M', '-c:a', 'libopus',
-                       '-strict', '-2',
-                       filename]
-                video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-                for frame in self.frames:
-                    video_writer.stdin.write(frame.tobytes())
-                video_writer.communicate()
-
-                # if audio path is provided, merge the audio and the video
-                if audio_path is not None:
-                    try:
-                        output_filename = f"output/webms/{timestamp}_with_audio.webm"
-                        cmd = ['ffmpeg', '-y', '-i', filename, '-i', audio_path, '-c:v', 'copy', '-c:a', 'libopus',
-                               '-strict', '-2', output_filename]
-                        subprocess.run(cmd)
-                    except Exception as e:
-                        print(f"Audio file merge failed from path {audio_path}\n{repr(e)}")
-                        pass
-        elif type == 'webm_cv2':
-            print("saving webm")
-            os.makedirs("output/webms", exist_ok=True)
-            filename = f"output/webms/{timestamp}.webm"
-            if len(self.frames) > 0:
-                width = self.frames[0].shape[1]
-                height = self.frames[0].shape[0]
-                video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'VP90'), fps, (width, height))
-                for frame in self.frames:
-                    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                    video_writer.write(frame)
-                video_writer.release()
-            else:
-                print("The buffer is empty, cannot save.")
-
+        self.worker = SaveWorker(self.frames, timestamp, fps, type, audio_path)
+        self.worker.start()
 
         if dump == True:
             self.frames = []
 
+        # if type == 'GIF':
+        #     os.makedirs("output/gifs", exist_ok=True)
+        #     filename = f"output/gifs/{timestamp}.gif"
+        #     if len(self.frames) > 0:
+        #
+        #         self.filename = filename
+        #         self.fps = fps
+        #         print(f"VIDEO SAVE NODE: Video saving {len(self.frames)} frames at {self.fps}fps as {self.filename}")
+        #         #imageio.mimsave(self.filename, self.frames, duration=int(1000 * 1/self.fps), subrectangles=True, quantizer='nq-fs', palettesize=8)
+        #         frames_to_save = [frame for frame in tqdm(self.frames, desc="Saving GIF")]
+        #
+        #         imageio.mimsave(self.filename, frames_to_save, duration=int(1000 * 1 / self.fps), palettesize=8)
+        #         # pils = []
+        #         # for frame in self.frames:
+        #         #     pils.append(Image.fromarray(frame))
+        #
+        #         #pils[0].save("test_gif.gif", "GIF", save_all=True, duration=40, append_images=pils[1:], loop=1, quality=1)
+        #
+        #     else:
+        #         print("The buffer is empty, cannot save.")
+        #
+        # elif type == 'mp4_ffmpeg':
+        #     os.makedirs("output/mp4s", exist_ok=True)
+        #     filename = f"output/mp4s/{timestamp}.mp4"
+        #     if len(self.frames) > 0:
+        #         width = self.frames[0].shape[1]
+        #         height = self.frames[0].shape[0]
+        #
+        #         cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
+        #                'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-an',
+        #                filename]
+        #         video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        #         for frame in tqdm(self.frames, desc="Saving MP4 (ffmpeg)"):
+        #             video_writer.stdin.write(frame.tobytes())
+        #         video_writer.communicate()
+        #
+        #         # if audio path is provided, merge the audio and the video
+        #         if audio_path is not None:
+        #             try:
+        #                 output_filename = f"output/mp4s/{timestamp}_with_audio.mp4"
+        #                 cmd = ['ffmpeg', '-y', '-i', filename, '-i', audio_path, '-c:v', 'copy', '-c:a', 'aac', '-strict', 'experimental', output_filename]
+        #                 subprocess.run(cmd)
+        #             except Exception as e:
+        #                 print(f"Audio file merge failed from path {audio_path}\n{repr(e)}")
+        #                 pass
+        #     else:
+        #         print("The buffer is empty, cannot save.")
+        #
+        # # elif type == 'mp4_ffmpeg':
+        # #     os.makedirs("output/mp4s", exist_ok=True)
+        # #     filename = f"output/mp4s/{timestamp}.mp4"
+        # #     if len(self.frames) > 0:
+        # #         width = self.frames[0].shape[1]
+        # #         height = self.frames[0].shape[0]
+        # #
+        # #         #print(width, height)
+        # #         cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
+        # #                'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-an',
+        # #                filename]
+        # #         video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        # #         for frame in self.frames:
+        # #             #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        # #             video_writer.stdin.write(frame.tobytes())
+        # #         video_writer.communicate()
+        # #     else:
+        # #         print("The buffer is empty, cannot save.")
+        #
+        # elif type == 'mp4_fourcc':
+        #     os.makedirs("output/mp4s", exist_ok=True)
+        #     filename = f"output/mp4s/{timestamp}.mp4"
+        #     if len(self.frames) > 0:
+        #
+        #         width = self.frames[0].shape[0]
+        #         height = self.frames[0].shape[1]
+        #         video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+        #         for frame in tqdm(self.frames, desc="Saving MP4 (fourcc)"):
+        #             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        #             video_writer.write(frame)
+        #         video_writer.release()
+        #     else:
+        #         print("The buffer is empty, cannot save.")
+        # elif type == 'webm_ffmpeg':
+        #     os.makedirs("output/webms", exist_ok=True)
+        #     filename = f"output/webms/{timestamp}.webm"
+        #     if len(self.frames) > 0:
+        #         width = self.frames[0].shape[1]
+        #         height = self.frames[0].shape[0]
+        #         cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
+        #                'rgb24', '-r', str(fps), '-i', '-', '-c:v', 'libvpx-vp9', '-b:v', '1M', '-c:a', 'libopus',
+        #                '-strict', '-2',
+        #                filename]
+        #         video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        #         for frame in tqdm(self.frames, desc="Saving WebM (ffmpeg)"):
+        #             video_writer.stdin.write(frame.tobytes())
+        #         video_writer.communicate()
+        #
+        #         # if audio path is provided, merge the audio and the video
+        #         if audio_path is not None:
+        #             try:
+        #                 output_filename = f"output/webms/{timestamp}_with_audio.webm"
+        #                 cmd = ['ffmpeg', '-y', '-i', filename, '-i', audio_path, '-c:v', 'copy', '-c:a', 'libopus',
+        #                        '-strict', '-2', output_filename]
+        #                 subprocess.run(cmd)
+        #             except Exception as e:
+        #                 print(f"Audio file merge failed from path {audio_path}\n{repr(e)}")
+        #                 pass
+        # elif type == 'webm_cv2':
+        #     print("saving webm")
+        #
+        #     self.worker = SaveWebmWorker(self.frames, timestamp, fps)
+        #     self.worker.start()
+        #
+        #     # os.makedirs("output/webms", exist_ok=True)
+        #     # filename = f"output/webms/{timestamp}.webm"
+        #     # if len(self.frames) > 0:
+        #     #     width = self.frames[0].shape[1]
+        #     #     height = self.frames[0].shape[0]
+        #     #     video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'VP90'), fps, (width, height))
+        #     #     for frame in tqdm(self.frames, desc="Saving WebM (cv2)"):
+        #     #         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        #     #         video_writer.write(frame)
+        #     #     video_writer.release()
+        #     # else:
+        #     #     print("The buffer is empty, cannot save.")
 
+
+        # if dump == True:
+        #     self.frames = []
+
+
+class SaveWebmWorker(QThread):
+
+    def __init__(self, frames, timestamp, fps):
+        super().__init__()
+        self.frames = frames
+        self.timestamp = timestamp
+        self.fps = fps
+
+    def run(self):
+        print("saving webm")
+        os.makedirs("output/webms", exist_ok=True)
+        filename = f"output/webms/{self.timestamp}.webm"
+        if len(self.frames) > 0:
+            width = self.frames[0].shape[1]
+            height = self.frames[0].shape[0]
+            video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'VP90'), self.fps, (width, height))
+            for frame in tqdm(self.frames, desc="Saving WebM (cv2)"):
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                video_writer.write(frame)
+
+            video_writer.release()
+        else:
+            print("The buffer is empty, cannot save.")
+
+
+
+class SaveWorker(QThread):
+    def __init__(self, frames, timestamp, fps, type, audio_path=None):
+        super().__init__()
+        self.frames = frames
+        self.timestamp = timestamp
+        self.fps = fps
+        self.type = type
+        self.audio_path = audio_path
+
+    def run(self):
+        if self.type == 'GIF':
+            self.save_gif()
+
+        elif self.type == 'mp4_ffmpeg':
+            self.save_mp4_ffmpeg()
+
+        elif self.type == 'mp4_fourcc':
+            self.save_mp4_fourcc()
+
+        elif self.type == 'webm_ffmpeg':
+            self.save_webm_ffmpeg()
+
+        elif self.type == 'webm_cv2':
+            self.save_webm_cv2()
+
+    def save_gif(self):
+        os.makedirs("output/gifs", exist_ok=True)
+        filename = f"output/gifs/{self.timestamp}.gif"
+        if len(self.frames) > 0:
+            frames_to_save = [frame for frame in tqdm(self.frames, desc="Saving GIF")]
+            imageio.mimsave(filename, frames_to_save, duration=int(1000 * 1 / self.fps), palettesize=8)
+        else:
+            print("The buffer is empty, cannot save.")
+
+    def save_mp4_ffmpeg(self):
+        os.makedirs("output/mp4s", exist_ok=True)
+        filename = f"output/mp4s/{self.timestamp}.mp4"
+        if len(self.frames) > 0:
+            width = self.frames[0].shape[1]
+            height = self.frames[0].shape[0]
+
+            cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
+                   'rgb24', '-r', str(self.fps), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-an',
+                   filename]
+            video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+            for frame in tqdm(self.frames, desc="Saving MP4 (ffmpeg)"):
+                video_writer.stdin.write(frame.tobytes())
+            video_writer.communicate()
+
+            # if audio path is provided, merge the audio and the video
+            if self.audio_path is not None:
+                try:
+                    output_filename = f"output/mp4s/{self.timestamp}_with_audio.mp4"
+                    cmd = ['ffmpeg', '-y', '-i', filename, '-i', self.audio_path, '-c:v', 'copy', '-c:a', 'aac', '-strict',
+                           'experimental', output_filename]
+                    subprocess.run(cmd)
+                except Exception as e:
+                    print(f"Audio file merge failed from path {self.audio_path}\n{repr(e)}")
+                    pass
+        else:
+            print("The buffer is empty, cannot save.")
+
+    def save_mp4_fourcc(self):
+        os.makedirs("output/mp4s", exist_ok=True)
+        filename = f"output/mp4s/{self.timestamp}.mp4"
+        if len(self.frames) > 0:
+
+            width = self.frames[0].shape[0]
+            height = self.frames[0].shape[1]
+            video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), self.fps, (width, height))
+            for frame in tqdm(self.frames, desc="Saving MP4 (fourcc)"):
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                video_writer.write(frame)
+            video_writer.release()
+        else:
+            print("The buffer is empty, cannot save.")
+
+    def save_webm_ffmpeg(self):
+        os.makedirs("output/webms", exist_ok=True)
+        filename = f"output/webms/{self.timestamp}.webm"
+        if len(self.frames) > 0:
+            width = self.frames[0].shape[1]
+            height = self.frames[0].shape[0]
+            cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-s', f'{width}x{height}', '-pix_fmt',
+                   'rgb24', '-r', str(self.fps), '-i', '-', '-c:v', 'libvpx-vp9', '-b:v', '1M', '-c:a', 'libopus',
+                   '-strict', '-2',
+                   filename]
+            video_writer = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+            for frame in tqdm(self.frames, desc="Saving WebM (ffmpeg)"):
+                video_writer.stdin.write(frame.tobytes())
+            video_writer.communicate()
+
+            # if audio path is provided, merge the audio and the video
+            if self.audio_path is not None:
+                try:
+                    output_filename = f"output/webms/{self.timestamp}_with_audio.webm"
+                    cmd = ['ffmpeg', '-y', '-i', filename, '-i', self.audio_path, '-c:v', 'copy', '-c:a', 'libopus',
+                           '-strict', '-2', output_filename]
+                    subprocess.run(cmd)
+                except Exception as e:
+                    print(f"Audio file merge failed from path {self.audio_path}\n{repr(e)}")
+                    pass
+
+    def save_webm_cv2(self):
+        os.makedirs("output/webms", exist_ok=True)
+        filename = f"output/webms/{self.timestamp}.webm"
+        if len(self.frames) > 0:
+            width = self.frames[0].shape[1]
+            height = self.frames[0].shape[0]
+            video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'VP90'), self.fps, (width, height))
+            for frame in tqdm(self.frames, desc="Saving WebM (cv2)"):
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                video_writer.write(frame)
+
+            video_writer.release()
+        else:
+            print("The buffer is empty, cannot save.")
