@@ -174,17 +174,18 @@ class KSamplerNode(AiNode):
         scheduler = self.content.schedulers.currentText()
         start_step = 0
         denoise = self.content.denoise.value()
-
+        force_full_denoise = self.content.force_denoise.isChecked()
         if cond_override:
             cond = cond_override[0]
             n_cond = cond_override[1]
             denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
+            force_full_denoise = True if denoise == 1.0 else False
             latent = {"samples": latent_override}
             seed = args.seed
             steps = args.steps
             cfg = args.scale
             start_step = 0
-            print("Generating using ovverride seed: [", seed, "]")
+            print("Generating using override seed: [", seed, "]", denoise)
         if cond is not None:
             self.last_step = steps if self.content.stop_early.isChecked() == False else self.content.last_step.value()
             short_steps = self.last_step - self.content.start_step.value()
@@ -215,7 +216,7 @@ class KSamplerNode(AiNode):
                                      disable_noise=self.content.disable_noise.isChecked(),
                                      start_step=start_step,
                                      last_step=steps,
-                                     force_full_denoise=self.content.force_denoise.isChecked(),
+                                     force_full_denoise=force_full_denoise,
                                      callback=self.callback)
 
             x_sample = self.decode_sample(sample[0]["samples"], vae)
