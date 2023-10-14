@@ -84,7 +84,7 @@ class VideoOutputNode(AiNode):
     input_socket_name = ["EXEC", "IMAGE"]
     output_socket_name = ["EXEC", "IMAGE"]
 
-    mark_dirty = True
+    make_dirty = True
 
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])
@@ -116,17 +116,19 @@ class VideoOutputNode(AiNode):
                 return
 
             tensors = input_node.getOutput(other_index)
-            print("Video Input", tensors.shape)
-            if tensors.shape[0] > 1:
-                for tensor in tensors:
-                    image = tensor2pil(tensor.unsqueeze(0))
+
+            if tensors is not None:
+
+                if tensors.shape[0] > 1:
+                    for tensor in tensors:
+                        image = tensor2pil(tensor.unsqueeze(0))
+                        frame = np.array(image)
+                        self.content.video.add_frame(frame, dump=self.content.dump_at.value())
+                else:
+                    image = tensor2pil(tensors)
                     frame = np.array(image)
                     self.content.video.add_frame(frame, dump=self.content.dump_at.value())
-            else:
-                image = tensor2pil(tensors)
-                frame = np.array(image)
-                self.content.video.add_frame(frame, dump=self.content.dump_at.value())
-            print(f"VIDEO SAVE NODE: Image added to frame buffer, current frames: {len(self.content.video.frames)}")
+                print(f"VIDEO SAVE NODE: Image added to frame buffer, current frames: {len(self.content.video.frames)}")
         return [tensors]
 
     def close(self):

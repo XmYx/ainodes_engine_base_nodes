@@ -159,7 +159,7 @@ class KSamplerNode(AiNode):
 
         if latent is None:
             latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
-
+        latent = {"samples":latent}
         seed = self.content.seed.text()
         try:
             seed = int(seed)
@@ -176,7 +176,6 @@ class KSamplerNode(AiNode):
         denoise = self.content.denoise.value()
 
         if cond_override:
-
             cond = cond_override[0]
             n_cond = cond_override[1]
             denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
@@ -185,51 +184,53 @@ class KSamplerNode(AiNode):
             steps = args.steps
             cfg = args.scale
             start_step = 0
-            print("using seed", seed)
-        self.last_step = steps if self.content.stop_early.isChecked() == False else self.content.last_step.value()
-        short_steps = self.last_step - self.content.start_step.value()
-        self.single_step = int(100 / steps) if self.content.start_step.value() == 0 and self.last_step == steps else int(short_steps)
+            print("Generating using ovverride seed: [", seed, "]")
+        if cond is not None:
+            self.last_step = steps if self.content.stop_early.isChecked() == False else self.content.last_step.value()
+            short_steps = self.last_step - self.content.start_step.value()
+            self.single_step = int(100 / steps) if self.content.start_step.value() == 0 and self.last_step == steps else int(short_steps)
+            generator = torch.manual_seed(seed)
+            from comfy import model_base
+            self.model_version = "xl" if type(unet.model) in [model_base.SDXL, model_base.SDXLRefiner] else "classic"
+            self.set_rgb_factor(self.model_version)
+            self.preview_mode = self.content.preview_type.currentText()
+            taesd_decoder_version = "taesd_decoder.pth" if self.model_version == "classic" else "taesdxl_decoder.pth"
+            if self.preview_mode == "taesd" and os.path.isfile(taesd_decoder_version):
+                from comfy.taesd.taesd import TAESD
+                self.taesd = TAESD(None, f"models/vae/{taesd_decoder_version}").to("cuda")
+            else:
+                print(f"TAESD enabled, but models/vae/{taesd_decoder_version} was not found, switching to simple RGB Preview")
+                self.preview_mode = "quick-rgb"
 
-        generator = torch.manual_seed(seed)
-        from comfy import model_base
-        self.model_version = "xl" if type(unet.model) in [model_base.SDXL, model_base.SDXLRefiner] else "classic"
-        self.set_rgb_factor(self.model_version)
-        self.preview_mode = self.content.preview_type.currentText()
-        taesd_decoder_version = "taesd_decoder.pth" if self.model_version == "classic" else "taesdxl_decoder.pth"
-        if self.preview_mode == "taesd" and os.path.isfile(taesd_decoder_version):
-            from comfy.taesd.taesd import TAESD
-            self.taesd = TAESD(None, f"models/vae/{taesd_decoder_version}").to("cuda")
+            sample = common_ksampler(model=unet,
+                                     seed=seed,
+                                     steps=steps,
+                                     cfg=cfg,
+                                     sampler_name=sampler_name,
+                                     scheduler=scheduler,
+                                     positive=cond,
+                                     negative=n_cond,
+                                     latent=latent,
+                                     denoise=denoise,
+                                     disable_noise=self.content.disable_noise.isChecked(),
+                                     start_step=start_step,
+                                     last_step=steps,
+                                     force_full_denoise=self.content.force_denoise.isChecked(),
+                                     callback=self.callback)
+
+            x_sample = self.decode_sample(sample[0]["samples"], vae)
+            return_samples = sample[0]["samples"].detach()
+            return_latents = x_sample.detach()
+            if self.content.tensor_preview.isChecked():
+                if len(self.getOutputs(2)) > 0:
+                    nodes = self.getOutputs(0)
+                    for node in nodes:
+                        if isinstance(node, ImagePreviewNode):
+                            node.content.preview_signal.emit(tensor_image_to_pixmap(x_sample))
+
+            return [return_latents, {"samples": return_samples}]
         else:
-            print(f"TAESD enabled, but models/vae/{taesd_decoder_version} was not found, switching to simple RGB Preview")
-            self.preview_mode = "quick-rgb"
-
-        sample = common_ksampler(model=unet,
-                                 seed=seed,
-                                 steps=steps,
-                                 cfg=cfg,
-                                 sampler_name=sampler_name,
-                                 scheduler=scheduler,
-                                 positive=cond,
-                                 negative=n_cond,
-                                 latent=latent,
-                                 denoise=denoise,
-                                 disable_noise=self.content.disable_noise.isChecked(),
-                                 start_step=start_step,
-                                 last_step=steps,
-                                 force_full_denoise=self.content.force_denoise.isChecked(),
-                                 callback=self.callback)
-
-        x_sample = self.decode_sample(sample[0]["samples"], vae)
-        return_samples = sample[0]["samples"].detach()
-        return_latents = x_sample.detach()
-        if self.content.tensor_preview.isChecked():
-            if len(self.getOutputs(2)) > 0:
-                nodes = self.getOutputs(0)
-                for node in nodes:
-                    if isinstance(node, ImagePreviewNode):
-                        node.content.preview_signal.emit(tensor_image_to_pixmap(x_sample))
-
-        return [return_latents, {"samples": return_samples}]
+            return [None, None]
 
         # unet = self.getInputData(2)
         #
