@@ -135,7 +135,7 @@ def sample(model, noise, steps, cfg, sampler_name, scheduler, positive, negative
            disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, noise_mask=None, sigmas=None,
            callback=None, disable_pbar=False, seed=None):
 
-    print("USING HIJACK SAMPLER")
+    #print("USING HIJACK SAMPLER")
     from comfy import model_management
     from comfy import samplers
 
@@ -372,7 +372,7 @@ class KSampler:
         from . import samplers, CFGNoisePredictor, CompVisVDenoiser, KSamplerX0Inpaint, simple_scheduler, \
             ddim_scheduler, \
             create_cond_with_same_area_if_none
-        print("using new sampler")
+        #print("using new sampler")
         if sigmas is None:
             sigmas = self.sigmas
         sigma_min = self.sigma_min
