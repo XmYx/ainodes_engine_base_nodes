@@ -159,7 +159,7 @@ class KSamplerNode(AiNode):
 
         if latent is None:
             latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
-        latent = {"samples":latent}
+            latent = {"samples":latent}
         seed = self.content.seed.text()
         try:
             seed = int(seed)
@@ -196,9 +196,14 @@ class KSamplerNode(AiNode):
             self.set_rgb_factor(self.model_version)
             self.preview_mode = self.content.preview_type.currentText()
             taesd_decoder_version = "taesd_decoder.pth" if self.model_version == "classic" else "taesdxl_decoder.pth"
-            if self.preview_mode == "taesd" and os.path.isfile(taesd_decoder_version):
+
+            if self.preview_mode == "taesd" and os.path.isfile(f"models/vae/{taesd_decoder_version}"):
                 from comfy.taesd.taesd import TAESD
-                self.taesd = TAESD(None, f"models/vae/{taesd_decoder_version}").to("cuda")
+
+                print(f"Loading TAESD from: models/vae/{taesd_decoder_version}")
+                print(f"current dir: {os.getcwd()}")
+
+                self.taesd = TAESD(encoder_path=None, decoder_path=f"models/vae/{taesd_decoder_version}").to("cuda")
             else:
                 print(f"TAESD enabled, but models/vae/{taesd_decoder_version} was not found, switching to simple RGB Preview")
                 self.preview_mode = "quick-rgb"
@@ -218,7 +223,10 @@ class KSamplerNode(AiNode):
                                      last_step=steps,
                                      force_full_denoise=force_full_denoise,
                                      callback=self.callback)
-
+            # from nodes import common_ksampler as ksampler
+            #
+            # sample = ksampler(unet, seed, steps, cfg, sampler_name, scheduler, cond, n_cond, latent,
+            #          denoise=denoise)
             x_sample = self.decode_sample(sample[0]["samples"], vae)
             return_samples = sample[0]["samples"].detach()
             return_latents = x_sample.detach()

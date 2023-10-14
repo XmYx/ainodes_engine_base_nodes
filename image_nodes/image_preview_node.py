@@ -133,7 +133,7 @@ class ImagePreviewNode(AiNode):
             self.timer.stop()
 
     def evalImplementation_thread(self, index=0):
-        self.clear()
+        #self.clear()
         image = self.getInputData(0)
         params = self.getInputData(1)
 
