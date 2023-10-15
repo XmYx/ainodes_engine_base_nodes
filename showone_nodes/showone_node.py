@@ -21,9 +21,9 @@ class ShowOneWidget(QDMNodeContentWidget):
                                                                   "If you want to control your resolution,\n"
                                                                   "or use an init image, use an Empty Latent Node.")
         self.frames = self.create_spin_box("Frames", min_val=1, max_val=4096, default_val=8)
+        self.width_value = self.create_spin_box("Width", min_val=256, max_val=4096, default_val=512, step=8)
+        self.height_value = self.create_spin_box("Height", min_val=256, max_val=4096, default_val=384, step=8)
         self.create_main_layout(grid=1)
-        width_value = self.create_spin_box("Width", min_val=256, max_val=4096, default_val=512, step=8)
-        height_value = self.create_spin_box("Height", min_val=256, max_val=4096, default_val=384, step=8)
 
 @register_node(OP_NODE_SHOWONE)
 class ShowOneNode(AiNode):
