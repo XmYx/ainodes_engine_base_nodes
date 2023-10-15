@@ -233,6 +233,7 @@ class KandinskyNode(AiNode):
         for image in return_pil_images:
             tensor = pil2tensor(image)
             return_images.append(tensor)
+        return_images = torch.stack(return_images, dim=0)
         return return_images
     def callback(self, tensors):
         i = tensors["i"]
