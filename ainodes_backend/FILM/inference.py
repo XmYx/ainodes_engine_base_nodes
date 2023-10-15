@@ -77,10 +77,5 @@ class FilmModel():
         y1, x1, y2, x2 = crop_region_1
         frames = [(tensor[0] * 255).byte().flip(0).permute(1, 2, 0).numpy()[y1:y2, x1:x2].copy() for tensor in results]
 
-        #return_frames = []
-        #for frame in frames:
-        #    return_frames.append(frame)
-        #for frame in frames[1:][::-1]:
-        #    return_frames.append(frame)
         self.model.cpu()
         return frames

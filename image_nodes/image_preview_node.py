@@ -140,6 +140,9 @@ class ImagePreviewNode(AiNode):
 
 
         if image is not None:
+
+            if image.device.type != "cpu":
+                image = image.detach().cpu()
             if image.shape[0] > 1:  # Assuming the tensor shape is [channels, height, width]
                 for img in image:
                     #print(img.shape)
@@ -158,7 +161,7 @@ class ImagePreviewNode(AiNode):
                     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S%f')
                     filename = f"{directory}/{timestamp}.png"
 
-                print("Saving image", filename)
+                print("Saving Image", filename)
                 self.save_image(image, filename)
             return [image]
         else:

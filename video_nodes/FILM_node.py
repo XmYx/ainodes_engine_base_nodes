@@ -84,7 +84,13 @@ class FILMNode(AiNode):
             np_image2 = np.array(image2)
             frames = gs.models["FILM"].inference(np_image1, np_image2, inter_frames=25)
             #print(f"FILM NODE:  {len(frames)}")
-            for frame in range(len(frames) - 2):
+            skip_first, skip_last = False, False
+            if skip_first:
+                frames.pop(0)
+            if skip_last:
+                frames.pop(-1)
+
+            for frame in frames:
                 image = Image.fromarray(frame)
                 pixmap = tensor_image_to_pixmap(image)
                 return_frames.append(pixmap)
@@ -95,7 +101,7 @@ class FILMNode(AiNode):
             self.FILM_temp.append(np_image)
             if len(self.FILM_temp) == 2:
                 frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
-                skip_first, skip_last = False, True
+                skip_first, skip_last = False, False
                 if skip_first:
                     frames.pop(0)
                 if skip_last:
