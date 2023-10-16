@@ -276,9 +276,3 @@ class ConditioningNode(AiNode):
         if exec:
             if gs.should_run:
                 self.executeChild(2)
-
-
-SCHEDULERS = ["karras", "normal", "simple", "ddim_uniform"]
-SAMPLERS = ["euler", "euler_ancestral", "heun", "dpm_2", "dpm_2_ancestral",
-            "lms", "dpm_fast", "dpm_adaptive", "dpmpp_2s_ancestral", "dpmpp_sde",
-            "dpmpp_2m", "ddim", "uni_pc", "uni_pc_bh2"]

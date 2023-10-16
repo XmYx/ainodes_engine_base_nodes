@@ -12,7 +12,7 @@ from qtpy import QtWidgets, QtGui, QtCore
 from qtpy.QtWidgets import QPushButton, QVBoxLayout
 
 from ..ainodes_backend import pixmap_to_tensor, tensor2pil
-
+from ainodes_frontend import singleton as gs
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode, CalcGraphicsNode
 from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidget
@@ -119,7 +119,7 @@ class VideoOutputNode(AiNode):
 
             tensors = input_node.getOutput(other_index)
 
-            if tensors is not None:
+            if tensors is not None and gs.should_run:
 
                 if tensors.shape[0] > 1:
                     for tensor in tensors:
@@ -130,7 +130,7 @@ class VideoOutputNode(AiNode):
                     image = tensor2pil(tensors)
                     frame = np.array(image)
                     self.content.video.add_frame(frame, dump=self.content.dump_at.value())
-                print(f"VIDEO SAVE NODE: Image added to frame buffer, current frames: {len(self.content.video.frames)}")
+                print(f"[ Current frame buffer: {len(self.content.video.frames)} ]")
         return [tensors]
 
     def close(self):
@@ -164,9 +164,9 @@ class VideoOutputNode(AiNode):
         audio_path = None if audio_path == "" else audio_path
         self.content.video.close(timestamp, fps, type, dump, audio_path)
         if dump:
-            print(f"VIDEO SAVE NODE: Done. The frame buffer is now empty.")
+            print(f"[ VIDEO SAVE NODE: Done. The frame buffer is now empty. ]")
         else:
-            print(f"VIDEO SAVE NODE: Done. The frame buffer still has {len(self.content.video.frames)} Frames.")
+            print(f"[ VIDEO SAVE NODE: Done. The frame buffer still has {len(self.content.video.frames)} Frames. ]")
 
 class VideoRecorder:
 
@@ -185,7 +185,7 @@ class VideoRecorder:
     def close(self, filename=""):
         self.video_writer.release()
         #os.rename("test.mp4", filename)
-        print(f"VIDEO SAVE NODE: Video saved as {filename}")
+        print(f"[ Video saved as {filename} ]")
 
 
 class GifRecorder:
@@ -436,16 +436,17 @@ class SaveWorker(QThread):
         os.makedirs("output/mp4s", exist_ok=True)
         filename = f"output/mp4s/{self.timestamp}.mp4"
         if len(self.frames) > 0:
+            # Corrected the width and height extraction
+            height = self.frames[0].shape[0]
+            width = self.frames[0].shape[1]
 
-            width = self.frames[0].shape[0]
-            height = self.frames[0].shape[1]
             video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), self.fps, (width, height))
             for frame in tqdm(self.frames, desc="Saving MP4 (fourcc)"):
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 video_writer.write(frame)
             video_writer.release()
         else:
-            print("The buffer is empty, cannot save.")
+            print("[ The buffer is empty, cannot save. ]")
 
     def save_webm_ffmpeg(self):
         os.makedirs("output/webms", exist_ok=True)
@@ -486,4 +487,4 @@ class SaveWorker(QThread):
 
             video_writer.release()
         else:
-            print("The buffer is empty, cannot save.")
+            print("[ The buffer is empty, cannot save. ]")

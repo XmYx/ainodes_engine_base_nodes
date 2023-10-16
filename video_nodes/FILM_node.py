@@ -84,7 +84,7 @@ class FILMNode(AiNode):
             np_image2 = np.array(image2)
             frames = gs.models["FILM"].inference(np_image1, np_image2, inter_frames=25)
             #print(f"FILM NODE:  {len(frames)}")
-            skip_first, skip_last = False, False
+            skip_first, skip_last = True, False
             if skip_first:
                 frames.pop(0)
             if skip_last:
@@ -101,7 +101,7 @@ class FILMNode(AiNode):
             self.FILM_temp.append(np_image)
             if len(self.FILM_temp) == 2:
                 frames = gs.models["FILM"].inference(self.FILM_temp[0], self.FILM_temp[1], inter_frames=self.content.film.value())
-                skip_first, skip_last = False, False
+                skip_first, skip_last = True, False
                 if skip_first:
                     frames.pop(0)
                 if skip_last:
@@ -112,27 +112,29 @@ class FILMNode(AiNode):
                     pixmap = pil2tensor(image)
                     return_frames.append(pixmap)
                 self.FILM_temp = [self.FILM_temp[1]]
-            print(f"FILM NODE: Using only First input, created {len(return_frames) - 2} between frames, returning {len(return_frames)} frames.")
+            print(f"[ FILM NODE: Created {len(return_frames)} frames ]")
         if len(return_frames) > 0:
             return_frames = torch.stack(return_frames, dim=0)
 
             return [return_frames]
         else:
             return [None]
-
-    def iterate_frames(self, frames):
-        self.iterating = True
-        for frame in frames:
-            node = None
-            if len(self.getOutputs(1)) > 0:
-                node = self.getOutputs(1)[0]
-            if node is not None:
-                image = Image.fromarray(copy.deepcopy(frame))
-                pixmap = tensor_image_to_pixmap(image)
-                self.setOutput(0, pixmap)
-                node.eval()
-        self.iterating = False
-    def onMarkedDirty(self):
-        self.value = None
+    def clearOutputs(self):
+        self.FILM_temp = []
+        super().clearOutputs()
+    # def iterate_frames(self, frames):
+    #     self.iterating = True
+    #     for frame in frames:
+    #         node = None
+    #         if len(self.getOutputs(1)) > 0:
+    #             node = self.getOutputs(1)[0]
+    #         if node is not None:
+    #             image = Image.fromarray(copy.deepcopy(frame))
+    #             pixmap = tensor_image_to_pixmap(image)
+    #             self.setOutput(0, pixmap)
+    #             node.eval()
+    #     self.iterating = False
+    # def onMarkedDirty(self):
+    #     self.value = None
 
 

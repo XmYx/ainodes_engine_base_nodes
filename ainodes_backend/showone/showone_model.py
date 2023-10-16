@@ -52,6 +52,18 @@ class VideoGenerator:
 
         # Set seed
         self.seed = seed
+    def cleanup(self):
+        self.pipe_base.cpu()
+        self.pipe_interp_1.cpu()
+        self.pipe_sr_1_image.cpu()
+        self.pipe_sr_1_cond.cpu()
+        self.pipe_sr_2.cpu()
+        del self.pipe_base
+        del self.pipe_interp_1
+        del self.pipe_sr_1_image
+        del self.pipe_sr_1_cond
+        del self.pipe_sr_2
+
 
     def __call__(self,
                  prompt,

@@ -48,8 +48,8 @@ class ShowOneNode(AiNode):
 
         video = self.pipe(prompt=self.content.prompt.toPlainText(),
                           frames=self.content.frames.value(),
-                          width=safe_divide_by_8(self.content.width_value.value // 8),
-                          height=safe_divide_by_8(self.content.height_value.value // 8),
+                          width=safe_divide_by_8(self.content.width_value.value() // 8),
+                          height=safe_divide_by_8(self.content.height_value.value() // 8),
                           )
 
         images = tensor2vid(video)
@@ -61,6 +61,9 @@ class ShowOneNode(AiNode):
 
 
     def remove(self):
+        if self.pipe is not None:
+            self.pipe.cleanup()
+            del self.pipe
         super().remove()
 
 

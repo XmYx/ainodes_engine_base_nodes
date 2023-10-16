@@ -34,6 +34,7 @@ class LatentWidget(QDMNodeContentWidget):
         self.subnoise_height = self.create_spin_box("Subnoise Height", 64, 4096, 512, 64)
         self.subnoise_strength = self.create_double_spin_box("Subnoise strength", min_val=0.0, max_val=10.0, default_val=1.0)
 
+        self.force_encode = self.create_check_box("Force Encode")
 
 @register_node(OP_NODE_LATENT)
 class LatentNode(AiNode):
@@ -43,6 +44,10 @@ class LatentNode(AiNode):
     content_label_objname = "empty_latent_node"
     category = "aiNodes Base/Latent"
     custom_input_socket_name = ["VAE", "LATENT", "IMAGE", "EXEC"]
+
+    make_dirty = True
+    force_run = True
+
     def __init__(self, scene):
 
         super().__init__(scene, inputs=[4,2,5,1], outputs=[2,1])
@@ -63,67 +68,39 @@ class LatentNode(AiNode):
     #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         vae = self.getInputData(0)
-        samples = []
-        if self.getInput(1) != None:
-            try:
-                latent_node, index = self.getInput(1)
-                samples = latent_node.getOutput(index)
-                print(f"EMPTY LATENT NODE: Using Latent input with parameters: {samples}")
-            except:
-                print(f"EMPTY LATENT NODE: Tried using Latent input, but found an invalid value, generating latent with parameters: {self.content.width.value(), self.content.height.value()}")
-                samples = [self.generate_latent()]
+        add_mask = False
+        # if self.getInput(1) != None:
+        #     latent_node, index = self.getInput(1)
+        samples = self.getInputData(1)
+        input_image = self.getInputData(2)
+
+        # if samples == None and self.content.force_encode.isChecked():
+        #     return [None]
+
+        if samples is not None:
+            if "noise_mask" in samples:
+                add_mask = True
+                noise_mask = samples["noise_mask"]
+
+
+            samples = samples["samples"]
+            if self.content.force_encode.isChecked():
+                with torch.inference_mode():
+                    vae.first_stage_model.cuda()
+                    samples = vae.encode_tiled_(vae, samples)
+                    vae.first_stage_model.cpu()
+            print(f"[ Using Input Latent: {samples.shape} ]")
+            # except:
+            #     print(f"EMPTY LATENT NODE: Tried using Latent input, but found an invalid value, generating latent with parameters: {self.content.width.value(), self.content.height.value()}")
+            #     samples = self.generate_latent()
             self.markDirty(False)
             self.markInvalid(False)
-        elif self.getInput(2) != None:
-
-            #print("encoding image")
-
-            input_image = self.getInputData(2)
-
-            #print("input_image", input_image.shape)
+        elif input_image is not None:
             vae.first_stage_model.cuda()
-
             input_image = input_image.movedim(-1, 1).detach().clone()
-            #print("input_image_after", input_image.shape)
             with torch.inference_mode():
                 samples = vae.encode_tiled_(vae, input_image)
-            #print("latent", samples.shape)
             vae.first_stage_model.cpu()
-            # node, index = self.getInput(2)
-            # pixmap_list = self.getInputData(2)
-            # samples = []
-            # assert vae is not None, "No VAE found for encoding your image, please make sure to load and connect one."
-            # vae.first_stage_model.cuda()
-            # for image in pixmap_list:
-            #     #image = pixmap_to_tensor(pixmap)
-            #
-            #     #print("image", image)
-            #
-            #     """image, mask_image = load_img(image,
-            #                                  shape=(image.size[0], image.size[1]),
-            #                                  use_alpha_as_mask=True)
-            #     image = image.to("cuda")
-            #     image = repeat(image, '1 ... -> b ...', b=1)"""
-            #
-            #
-            #     # image = image.convert("RGB")
-            #     # image = np.array(image).astype(np.float32) / 255.0
-            #     # image = image[None] #.transpose(0, 3, 1, 2)
-            #     # image = torch.from_numpy(image)
-            #     # image = image.detach().cpu()
-            #     # torch_gc()
-            #     #img = image.movedim(-1,1).detach().clone()
-            #     #print("img", img.shape)
-            #     latent = vae.encode_tiled_(vae, image)
-            #     latent = latent.to("cpu")
-            #     image = image.detach().to("cpu")
-            #     del image
-            #     samples = latent
-            #     shape = latent.shape
-            #     del latent
-            #     torch_gc()
-            # vae.first_stage_model.cpu()
-            # torch_gc()
         else:
             samples = self.generate_latent()
         if self.content.rescale_latent.isChecked() == True:
@@ -143,24 +120,26 @@ class LatentNode(AiNode):
                 print(f"{len(samples)}x Latents rescaled to: {samples[0].shape}")
         #print(samples[0].shape)
         result = {"samples":samples}
-        return result
+        if add_mask:
+            result["noise_mask"] = noise_mask
+        return [result]
             #return self.value
 
-    ##@QtCore.Slot(object)
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-        #super().onWorkerFinished(None)
-        self.markDirty(False)
-        self.markInvalid(False)
-        self.setOutput(0, result)
-        self.content.update()
-
-        self.content.finished.emit()
-        if exec:
-            if len(self.getOutputs(1)) > 0:
-                self.executeChild(output_index=1)
-    def onMarkedDirty(self):
-        self.value = None
+    # ##@QtCore.Slot(object)
+    # def onWorkerFinished(self, result, exec=True):
+    #     self.busy = False
+    #     #super().onWorkerFinished(None)
+    #     self.markDirty(False)
+    #     self.markInvalid(False)
+    #     self.setOutput(0, result)
+    #     self.content.update()
+    #
+    #     self.content.finished.emit()
+    #     if exec:
+    #         if len(self.getOutputs(1)) > 0:
+    #             self.executeChild(output_index=1)
+    # def onMarkedDirty(self):
+    #     self.value = None
     def encode_image(self, init_image=None):
         init_latent = gs.models["vae"].encode(init_image)
         latent = init_latent.detach().to("cpu")# move to latent space

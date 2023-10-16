@@ -87,7 +87,8 @@ class KSamplerNode(AiNode):
         self.content.setMinimumWidth(316)
         self.content.setMinimumHeight(500)
         self.update_all_sockets()
-
+        self.taesd = None
+        self.decoder_version = ""
     #     # Create a worker object
     # def initInnerClasses(self):
     #     self.content = KSamplerWidget(self)
@@ -158,8 +159,9 @@ class KSamplerNode(AiNode):
         cond = self.getInputData(6)
 
         if latent is None:
-            latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
-            latent = {"samples":latent}
+            return [None, None]
+            # latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
+            # latent = {"samples":latent}
         seed = self.content.seed.text()
         try:
             seed = int(seed)
@@ -185,7 +187,20 @@ class KSamplerNode(AiNode):
             steps = args.steps
             cfg = args.scale
             start_step = 0
-            print("Generating using override seed: [", seed, "]", denoise)
+            # print("Generating using override seed: [", seed, "]", denoise)
+
+        if data is not None:
+            denoise = data.get("strength", denoise)
+            seed = data.get("seed", seed)
+            args = data.get("args", None)
+            if args is not None:
+                seed = args.seed
+                steps = args.steps
+                cfg = args.scale
+            force_full_denoise = True if denoise == 1.0 else False
+            start_step = 0
+            # print(f"Using strength from data: {denoise}")
+
         if cond is not None:
             self.last_step = steps if self.content.stop_early.isChecked() == False else self.content.last_step.value()
             short_steps = self.last_step - self.content.start_step.value()
@@ -196,17 +211,15 @@ class KSamplerNode(AiNode):
             self.set_rgb_factor(self.model_version)
             self.preview_mode = self.content.preview_type.currentText()
             taesd_decoder_version = "taesd_decoder.pth" if self.model_version == "classic" else "taesdxl_decoder.pth"
-
             if self.preview_mode == "taesd" and os.path.isfile(f"models/vae/{taesd_decoder_version}"):
                 from comfy.taesd.taesd import TAESD
+                if self.decoder_version != taesd_decoder_version or self.taesd == None:
+                    self.taesd = TAESD(encoder_path=None, decoder_path=f"models/vae/{taesd_decoder_version}").to("cuda")
+                else:
+                    print(f"TAESD enabled, but models/vae/{taesd_decoder_version} was not found, switching to simple RGB Preview")
+                    self.preview_mode = "quick-rgb"
 
-                print(f"Loading TAESD from: models/vae/{taesd_decoder_version}")
-                print(f"current dir: {os.getcwd()}")
-
-                self.taesd = TAESD(encoder_path=None, decoder_path=f"models/vae/{taesd_decoder_version}").to("cuda")
-            else:
-                print(f"TAESD enabled, but models/vae/{taesd_decoder_version} was not found, switching to simple RGB Preview")
-                self.preview_mode = "quick-rgb"
+            print(f"[ SEED: {seed} ]")
 
             sample = common_ksampler(model=unet,
                                      seed=seed,
@@ -417,6 +430,8 @@ class KSamplerNode(AiNode):
         #     print(e)
         # return [return_pixmaps, return_samples]
     def decode_sample(self, sample, vae):
+        vae.first_stage_model.cuda()
+
         decoded = vae.decode_tiled(sample)
         return decoded
 
