@@ -2,6 +2,8 @@ import copy
 import os
 import random
 import secrets
+import sys
+
 import numpy as np
 from einops import rearrange
 
@@ -38,8 +40,9 @@ class KSamplerWidget(QDMNodeContentWidget):
         self.create_widgets()
         self.create_main_layout(grid=1)
     def create_widgets(self):
-        self.schedulers = self.create_combo_box(SCHEDULERS, "Scheduler:")
-        self.sampler = self.create_combo_box(SAMPLERS, "Sampler:")
+        from comfy.samplers import SAMPLER_NAMES, SCHEDULER_NAMES
+        self.schedulers = self.create_combo_box(SCHEDULER_NAMES, "Scheduler:")
+        self.sampler = self.create_combo_box(SAMPLER_NAMES, "Sampler:")
         self.seed = self.create_line_edit("Seed:", placeholder="Leave empty for random seed")
         self.steps = self.create_spin_box("Steps:", 1, 10000, 10)
         self.start_step = self.create_spin_box("Start Step:", 0, 1000, 0)
@@ -123,6 +126,8 @@ class KSamplerNode(AiNode):
 
     def evalImplementation_thread_(self):
         from nodes import common_ksampler as ksampler
+
+
         print("running new")
         model = self.getInputData(2)
 
@@ -150,6 +155,8 @@ class KSamplerNode(AiNode):
 
     #@QtCore.Slot()
     def evalImplementation_thread(self, cond_override = None, args = None, latent_override=None):
+        from ai_nodes.ainodes_engine_comfy_nodes.adapter_nodes.was_adapter_node import latent_preview
+        latent_preview.set_callback(self.callback)
         self.progress_value = 0
         vae = self.getInputData(1)
         unet = self.getInputData(2)
@@ -159,7 +166,10 @@ class KSamplerNode(AiNode):
         cond = self.getInputData(6)
 
         if latent is None and cond_override is None:
+            latent_preview.set_callback(None)
+
             return [None, None]
+
             # latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
             # latent = {"samples":latent}
         seed = self.content.seed.text()
@@ -219,8 +229,8 @@ class KSamplerNode(AiNode):
                     self.preview_mode = "quick-rgb"
 
             print(f"[ SEED: {seed} ]")
-
-            sample = common_ksampler(model=unet,
+            from nodes import common_ksampler as ksampler
+            sample = ksampler(model=unet,
                                      seed=seed,
                                      steps=steps,
                                      cfg=cfg,
@@ -233,8 +243,23 @@ class KSamplerNode(AiNode):
                                      disable_noise=self.content.disable_noise.isChecked(),
                                      start_step=start_step,
                                      last_step=steps,
-                                     force_full_denoise=force_full_denoise,
-                                     callback=self.callback)
+                                     force_full_denoise=force_full_denoise)
+                                     # callback=self.callback)
+            # sample = common_ksampler(model=unet,
+            #                          seed=seed,
+            #                          steps=steps,
+            #                          cfg=cfg,
+            #                          sampler_name=sampler_name,
+            #                          scheduler=scheduler,
+            #                          positive=cond,
+            #                          negative=n_cond,
+            #                          latent=latent,
+            #                          denoise=denoise,
+            #                          disable_noise=self.content.disable_noise.isChecked(),
+            #                          start_step=start_step,
+            #                          last_step=steps,
+            #                          force_full_denoise=force_full_denoise,
+            #                          callback=self.callback)
             # from nodes import common_ksampler as ksampler
             #
             # sample = ksampler(unet, seed, steps, cfg, sampler_name, scheduler, cond, n_cond, latent,
@@ -248,9 +273,12 @@ class KSamplerNode(AiNode):
                     for node in nodes:
                         if isinstance(node, ImagePreviewNode):
                             node.content.preview_signal.emit(tensor_image_to_pixmap(x_sample))
+            latent_preview.set_callback(None)
 
             return [return_latents, {"samples": return_samples}]
         else:
+            latent_preview.set_callback(None)
+
             return [None, None]
 
     def decode_sample(self, sample, vae):
@@ -259,6 +287,7 @@ class KSamplerNode(AiNode):
         decoded = vae.decode_tiled(sample)
         return decoded
 
+    #k_callback = lambda x: callback(x["i"], x["denoised"], x["x"], total_steps)
     def callback(self, i, tensors, *args, **kwargs):
         # i = tensors["i"]
         self.content.progress_signal.emit(self.single_step)

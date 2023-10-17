@@ -209,7 +209,7 @@ class ConditioningNode(AiNode):
                 result = self.get_conditioning(prompt=prompt, clip=clip)
             if gs.logging:
                 print(f"CONDITIONING NODE: Applying conditioning with prompt: {prompt}")
-            return result, data
+            return data, result
         except Exception as e:
             done = handle_ainodes_exception()
             if type(e) is KeyError and 'clip' in str(e):
@@ -253,7 +253,6 @@ class ConditioningNode(AiNode):
 
                 tokens = clip.tokenize(prompt)
                 cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-
                 return [[cond, {"pooled_output": pooled}]]
 
 
