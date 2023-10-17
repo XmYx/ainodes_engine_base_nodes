@@ -70,7 +70,7 @@ class DiffInpaintNode(AiNode):
         images = self.getInputData(2)[0]
 
 
-        print(masks.shape, images.shape)
+        # print(masks.shape, images.shape)
 
 
         self.pipe.to("cuda")

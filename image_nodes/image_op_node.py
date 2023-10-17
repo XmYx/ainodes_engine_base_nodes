@@ -276,7 +276,7 @@ class ImageOpNode(AiNode):
                 np_image, mask = anim_frame_warp_3d(device, image, tensor, args["translation_x"], args["translation_y"], args["translation_z"], args["rotation_3d_x"], args["rotation_3d_y"], args["rotation_3d_z"])
                 mask = mask.cpu()
                 mask = mask.reshape((-1, 1, mask.shape[-2], mask.shape[-1])).movedim(1, -1).expand(-1, -1, -1, 3)
-                print(mask.shape)
+                # print(mask.shape)
                 #print(mask.device)
             model.deforum_midas.cpu()
             del model.deforum_midas
