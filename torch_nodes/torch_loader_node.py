@@ -15,13 +15,10 @@ from ..ainodes_backend.sd_optimizations.sd_hijack import valid_optimizations
 
 OP_NODE_TORCH_LOADER = get_next_opcode()
 
-
 class TorchLoaderWidget(QDMNodeContentWidget):
     def initUI(self):
         self.create_widgets()
         self.create_main_layout(grid=1)
-
-
 
     def create_widgets(self):
         checkpoint_folder = gs.prefs.checkpoints
@@ -119,38 +116,14 @@ class TorchLoaderNode(AiNode):
 
         torch_gc()
 
-        # gs.loaded_loras = []
-        # if "sd" in gs.models:
-        #     try:
-        #         gs.models["sd"].cpu()
-        #     except:
-        #         pass
-        #     del gs.models["sd"]
-        #     gs.models["sd"] = None
-        #     torch_gc()
-        # if "inpaint" in gs.models:
-        #     try:
-        #         gs.models["inpaint"].cpu()
-        #     except:
-        #         pass
-        #     del gs.models["inpaint"]
-        #     gs.models["inpaint"] = None
-        #     torch_gc()
 
-    #@QtCore.Slot()
     def evalImplementation_thread(self, index=0):
         self.busy = True
         model_name = self.content.dropdown.currentText()
-        # config_name = self.content.config_dropdown.currentText()
-
-        #print(gs.loaded_sd, model_name)
-
         inpaint = True if "inpaint" in model_name else False
         m = "sd_model" if not inpaint else "inpaint"
         if self.loaded_sd != model_name or self.content.force_reload.isChecked() == True:
             self.clean_sd()
-            #gs.loaded_hypernetworks.clear()
-            # self.model, self.clip, self.vae, self.clipvision = self.loader.load_model(model_name, config_name, inpaint, style=self.content.optimization.currentText())
             self.model, self.clip, self.vae, self.clipvision = self.loader.load_checkpoint_guess_config(model_name, style=self.content.optimization.currentText())
             self.loaded_sd = model_name
         if self.content.vae_dropdown.currentText() != 'default':
@@ -164,10 +137,6 @@ class TorchLoaderNode(AiNode):
             self.vae = self.loader.load_vae(model)
             self.loaded_vae = model
         return [self.vae, self.clip, self.model]
-
-    #@QtCore.Slot(object)
-
-
 
 
 

@@ -117,6 +117,7 @@ class KandinskyNode(AiNode):
             task_type = 'inpainting'
 
         if f"kandinsky" not in gs.models or gs.loaded_kandinsky != task_type:
+            print("[ Loading Kandinsky, please wait. ]")
             use_finetune = self.content.use_finetune.isChecked()
             flash = False if not self.content.flash_attn_avail else self.content.flash_attn.isChecked()
             gs.models["kandinsky"] = get_kandinsky2_1('cuda', task_type=task_type, use_flash_attention=flash, use_finetune=use_finetune)
@@ -163,7 +164,7 @@ class KandinskyNode(AiNode):
                 print(prompt, strength, guidance_scale, num_steps)
                 self.seed = args.seed
         torch.manual_seed(self.seed)
-        print(f"KANDINSKY NODE: seed:{self.seed}")
+        print(f"[ KANDINSKY: seed:{self.seed} ]")
         gs.models["kandinsky"].clip_model.to("cuda")
         gs.models["kandinsky"].image_encoder.to("cuda")
 
