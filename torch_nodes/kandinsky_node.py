@@ -22,6 +22,7 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 
 from kandinsky2 import CONFIG_2_1, Kandinsky2_1
 
+from ..ainodes_backend.kandinsky_2_2 import Kandinsky2_2
 from ..image_nodes.image_preview_node import ImagePreviewNode
 from ..video_nodes.video_save_node import VideoOutputNode
 
@@ -145,7 +146,6 @@ class KandinskyNode(AiNode):
             use_finetune = self.content.use_finetune.isChecked()
             flash = False if not self.content.flash_attn_avail else self.content.flash_attn.isChecked()
             #self.model = get_kandinsky2_1('cuda', task_type=task_type, use_flash_attention=flash, use_finetune=use_finetune)
-            from kandinsky2.kandinsky2_2_model import Kandinsky2_2
             self.model = Kandinsky2_2(gs.device.type)
             self.loaded_kandinsky = task_type
         else:
