@@ -156,15 +156,9 @@ class DataNode(AiNode):
             data = merge_dicts(data, values)
         else:
             data = values
-        return data
+        return [data]
 
 
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-        self.markDirty(False)
-        self.setOutput(0, result)
-        if len(self.getOutputs(1)) > 0:
-            self.executeChild(output_index=1)
 
     def onMarkedDirty(self):
         self.value = None

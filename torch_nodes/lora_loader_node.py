@@ -138,12 +138,6 @@ class LoraLoaderNode(AiNode):
             words = "\n".join(data["trainedWords"])
             self.content.help_prompt.setText(f"Trained Words:\n{words}")
 
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-        self.setOutput(0, result[0])
-        self.setOutput(1, result[1])
-        self.executeChild(2)
-
     def onInputChanged(self, socket=None):
         pass
     def load_lora(self, model, clip, lora_name, strength_model, strength_clip):

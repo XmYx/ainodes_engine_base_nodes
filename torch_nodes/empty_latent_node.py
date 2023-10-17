@@ -93,8 +93,6 @@ class LatentNode(AiNode):
             # except:
             #     print(f"EMPTY LATENT NODE: Tried using Latent input, but found an invalid value, generating latent with parameters: {self.content.width.value(), self.content.height.value()}")
             #     samples = self.generate_latent()
-            self.markDirty(False)
-            self.markInvalid(False)
         elif input_image is not None:
             vae.first_stage_model.cuda()
             input_image = input_image.movedim(-1, 1).detach().clone()
@@ -122,6 +120,7 @@ class LatentNode(AiNode):
         result = {"samples":samples}
         if add_mask:
             result["noise_mask"] = noise_mask
+        print("will return", samples.shape)
         return [result]
             #return self.value
 
@@ -269,16 +268,8 @@ class LatentCompositeNode(AiNode):
 
                 self.value = self.composite()
         else:
-            return self.value
+            return [self.value]
 
-    def onWorkerFinished(self, result, exec=True):
-        self.setOutput(0, result)
-        self.markDirty(False)
-        self.markInvalid(False)
-        if exec:
-            if len(self.getOutputs(1)) > 0:
-                self.executeChild(output_index=1)
-        #return self.value
 
     def onMarkedDirty(self):
         self.value = None

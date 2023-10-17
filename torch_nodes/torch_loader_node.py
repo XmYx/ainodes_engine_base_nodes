@@ -163,20 +163,9 @@ class TorchLoaderNode(AiNode):
             model = self.content.vae_dropdown.currentText()
             self.vae = self.loader.load_vae(model)
             self.loaded_vae = model
-        return True
+        return [self.vae, self.clip, self.model]
 
     #@QtCore.Slot(object)
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-
-        self.setOutput(0, self.vae)
-        self.setOutput(1, self.clip)
-        self.setOutput(2, self.model)
-
-        self.markDirty(False)
-        self.markInvalid(False)
-        if exec:
-            self.executeChild(3)
 
 
 

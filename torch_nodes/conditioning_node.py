@@ -257,22 +257,3 @@ class ConditioningNode(AiNode):
                 return [[cond, {"pooled_output": pooled}]]
 
 
-                # c = clip.encode(prompt)
-                # uc = {}
-                # return {"conds":[[c, uc]]}
-
-    #@QtCore.Slot(object)
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-        #super().onWorkerFinished(None)
-        if result is not None:
-            self.setOutput(1, result[0])
-            self.setOutput(0, result[1])
-            self.markDirty(False)
-            self.markInvalid(False)
-        self.content.update()
-
-        self.content.finished.emit()
-        if exec:
-            if gs.should_run:
-                self.executeChild(2)

@@ -158,7 +158,7 @@ class KSamplerNode(AiNode):
         n_cond = self.getInputData(5)
         cond = self.getInputData(6)
 
-        if latent is None:
+        if latent is None and cond_override is None:
             return [None, None]
             # latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
             # latent = {"samples":latent}
@@ -200,7 +200,6 @@ class KSamplerNode(AiNode):
             force_full_denoise = True if denoise == 1.0 else False
             start_step = 0
             # print(f"Using strength from data: {denoise}")
-
         if cond is not None:
             self.last_step = steps if self.content.stop_early.isChecked() == False else self.content.last_step.value()
             short_steps = self.last_step - self.content.start_step.value()
@@ -254,181 +253,6 @@ class KSamplerNode(AiNode):
         else:
             return [None, None]
 
-        # unet = self.getInputData(2)
-        #
-        #
-        #
-        # from ..ainodes_backend import tensor_image_to_pixmap, get_torch_device, common_ksampler
-        # self.content.progress_signal.emit(0)
-        #
-        # #pass
-        # # Add a task to the task queue
-        # cond_list = [self.getInputData(6)]
-        # n_cond_list = [self.getInputData(5)]
-        # # print("C", cond_list, isinstance(cond_list, dict))
-        # if isinstance(cond_list[0], dict):
-        #     cond_list = cond_list[0]["conds"]
-        #
-        #     # print(len(cond_list))
-        #
-        #     if len(cond_list) == 1:
-        #         cond_list = [cond_list]
-        #
-        # if isinstance(n_cond_list[0], dict):
-        #     n_cond_list = n_cond_list[0]["conds"]
-        #
-        #     if len(n_cond_list) == 1:
-        #         n_cond_list = [n_cond_list]
-        #
-        # self.steps = self.content.steps.value()
-        # latent_list = self.getInputData(4)
-        #
-        # pre_latent = torch.zeros([1, 4, 512 // 8, 512 // 8])
-        #
-        # if latent_list != None:
-        #     latent_list = [latent_list.get("samples")]
-        # else:
-        #     latent_list = [pre_latent]
-        #
-        # data = self.getInputData(3)
-        #
-        # from comfy import model_base
-        #
-        # self.model_version = "xl" if type(unet.model) in [model_base.SDXL, model_base.SDXLRefiner] else "classic"
-        # self.set_rgb_factor(self.model_version)
-        # self.preview_mode = self.content.preview_type.currentText()
-        # taesd_decoder_version = "taesd_decoder.pth" if self.model_version == "classic" else "taesdxl_decoder.pth"
-        # if self.preview_mode == "taesd" and os.path.isfile(taesd_decoder_version):
-        #     from comfy.taesd.taesd import TAESD
-        #     self.taesd = TAESD(None, f"models/vae/{taesd_decoder_version}").to("cuda")
-        # else:
-        #     print(f"TAESD enabled, but models/vae/{taesd_decoder_version} was not found, switching to simple RGB Preview")
-        #     self.preview_mode = "quick-rgb"
-        #
-        # vae = self.getInputData(1)
-        # control_model = self.getInputData(0)
-        # #unet.cuda()
-        #
-        # assert unet is not None, "UNET NOT FOUND, MAKE SURE TO LOAD A MODEL AND CONNECT IT'S OUTPUTS"
-        # assert vae is not None, "VAE NOT FOUND"
-        # assert cond_list is not None, "POSITIVE CONDITIONING NOT FOUND, MAKE SURE TO ADD A CONDITIONING NODE"
-        # assert n_cond_list is not None, "POSITIVE CONDITIONING NOT FOUND, MAKE SURE TO ADD A CONDITIONING NODE"
-        #
-        #
-        #
-        # return_latents = []
-        # return_samples = []
-        # try:
-        #     x=0
-        #     if cond_override is not None:
-        #         cond_list = cond_override[0]
-        #         n_cond_list = cond_override[1]
-        #
-        #     if len(cond_list) < len(latent_list):
-        #         new_cond_list = []
-        #         for x in range(len(latent_list)):
-        #             new_cond_list.append(cond_list[0])
-        #         # cond_list = len(latent_list) * cond_list[0]
-        #         cond_list = new_cond_list
-        #     cpu_s = None
-        #     for cond in cond_list:
-        #         self.seed = self.content.seed.text()
-        #         try:
-        #             self.seed = int(self.seed)
-        #         except:
-        #             self.seed = get_fixed_seed('')
-        #         if self.content.iterate_seed.isChecked() == True:
-        #             self.content.seed_signal.emit()
-        #             self.seed += 1
-        #         generator = torch.manual_seed(self.seed)
-        #
-        #         if len(latent_list) == len(cond_list):
-        #             latent = latent_list[x]
-        #         else:
-        #             latent = latent_list[0]
-        #         if len(n_cond_list) == len(cond_list):
-        #             n_cond = n_cond_list[x]
-        #         else:
-        #             n_cond = n_cond_list[0]
-        #         for i in cond:
-        #             if 'control_hint' in i[1]:
-        #                 cond = self.apply_control_net(cond, control_model)
-        #
-        #         self.denoise = self.content.denoise.value()
-        #         self.steps = self.content.steps.value()
-        #         self.cfg = self.content.guidance_scale.value()
-        #         self.start_step = self.content.start_step.value()
-        #         self.sampler_name = self.content.sampler.currentText()
-        #         self.scheduler = self.content.schedulers.currentText()
-        #         noise_mask = None
-        #         if data is not None:
-        #             self.update_vars(data)
-        #             if 'noise_mask' in data:
-        #                 noise_mask = data['noise_mask']
-        #
-        #         if cond_override:
-        #             self.denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
-        #             latent = latent_override
-        #             self.seed = args.seed
-        #             self.steps = args.steps
-        #             self.cfg = args.scale
-        #             self.start_step = 0
-        #             print("using seed", self.seed)
-        #         self.last_step = self.steps if self.content.stop_early.isChecked() == False else self.content.last_step.value()
-        #         short_steps = self.last_step - self.content.start_step.value()
-        #
-        #         self.single_step = int(100 / self.steps) if self.content.start_step.value() == 0 and self.last_step == self.steps else int(short_steps)
-        #
-        #
-        #         self.progress_value = 0
-        #         if self.content.use_internal_latent.isChecked():
-        #             if cpu_s is not None:
-        #                 latent = cpu_s
-        #                 self.denoise = self.content.denoise.value()
-        #             else:
-        #                 self.denoise = 1.0
-        #         latent_dict = {}
-        #         latent_dict["samples"] = latent
-        #         sample = common_ksampler(model=unet,
-        #                                  seed=self.seed,
-        #                                  steps=self.steps,
-        #                                  cfg=self.cfg,
-        #                                  sampler_name=self.sampler_name,
-        #                                  scheduler=self.scheduler,
-        #                                  positive=cond,
-        #                                  negative=n_cond,
-        #                                  latent=latent_dict,
-        #                                  denoise=self.denoise,
-        #                                  disable_noise=self.content.disable_noise.isChecked(),
-        #                                  start_step=self.start_step,
-        #                                  last_step=self.last_step,
-        #                                  force_full_denoise=self.content.force_denoise.isChecked(),
-        #                                  callback=self.callback)
-        #
-        #         for c in cond:
-        #             if "control" in c[1]:
-        #                 del c[1]["control"]
-        #         x_sample = self.decode_sample(sample[0]["samples"], vae)
-        #         return_samples = sample[0]["samples"].detach()
-        #         return_latents = x_sample.detach()
-        #         if self.content.tensor_preview.isChecked():
-        #             if len(self.getOutputs(2)) > 0:
-        #                 nodes = self.getOutputs(0)
-        #                 for node in nodes:
-        #                     if isinstance(node, ImagePreviewNode):
-        #                         node.content.preview_signal.emit(tensor_image_to_pixmap(x_sample))
-        #
-        #
-        #         x+=1
-        #     if self.preview_mode == "taesd":
-        #         del self.taesd
-        #     return [return_latents, {"samples":return_samples}]
-        #
-        # except Exception as e:
-        #     handle_ainodes_exception()
-        #     return_pixmaps, return_samples = None, None
-        #     print(e)
-        # return [return_pixmaps, return_samples]
     def decode_sample(self, sample, vae):
         vae.first_stage_model.cuda()
 
