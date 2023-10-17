@@ -2,6 +2,7 @@ import os
 import secrets
 
 import torch
+from diffusers.pipelines.controlnet import MultiControlNetModel
 
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import tensor2pil, pil2tensor
 from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.ip_adapter import IPAdapterXL, IPAdapterPlus, IPAdapterPlusXL
@@ -111,10 +112,40 @@ class DiffSDIpNode(AiNode):
         del data["prompt_2"]
         data["negative_prompt_2"] = None
         del data["negative_prompt_2"]
+        if isinstance(pipe, StableDiffusionXLControlNetPipeline):
+            if "denoising_start" in data:
+                del data["denoising_start"]
+            if "denoising_end" in data:
+                del data["denoising_end"]
+            if "scheduler" in data:
+                del data["scheduler"]
+            if "guidance_rescale" in data:
+                del data["guidance_rescale"]
+            if "return_type" in data:
+                del data["return_type"]
+            if "aesthetic_score" in data:
+                del data["aesthetic_score"]
+            if "negative_aesthetic_score" in data:
+                del data["negative_aesthetic_score"]
+            if "strength" in data:
+                del data["strength"]
+            if "mask" in data:
+                del data["mask"]
+
+
+            if not isinstance(pipe.controlnet, list) or isinstance(pipe.controlnet, MultiControlNetModel):
+                if isinstance(data["controlnet_conditioning_scale"], list):
+                    data["controlnet_conditioning_scale"] = data["controlnet_conditioning_scale"][0]
+                    data["control_guidance_start"] = data["control_guidance_start"][0]
+                    data["control_guidance_end"] = data["control_guidance_end"][0]
+                    data["image"] = data["image"][0]
+
+
+        print(f"[ IP ADAPTER NODE: {data} ]")
 
         image = self.pipe.generate(**data)[0]
         image = pil2tensor(image)
-        return [[image]]
+        return [image]
 
 
     def remove(self):

@@ -41,6 +41,8 @@ class DiffusersControlNetApplyNode(AiNode):
     output_data_ports = [0]
     exec_port = 1
 
+    make_dirty = True
+
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,6,1], outputs=[6,1])
 
@@ -49,11 +51,10 @@ class DiffusersControlNetApplyNode(AiNode):
 
 
         image = self.getInputData(0)
-        print(type(image))
-
         data = self.getInputData(1)
-        print("data", data)
-        image = tensor2pil(image[0])
+
+        if image is not None:
+            image = tensor2pil(image)
         scale = self.content.scale_value.value()
         start = self.content.start_value.value()
         stop = self.content.stop_value.value()

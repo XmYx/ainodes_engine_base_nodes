@@ -183,6 +183,7 @@ class DiffSamplerNode(AiNode):
     output_data_ports = [0, 1, 2]
     exec_port = 1
     use_gpu = True
+    make_dirty = True
     def __init__(self, scene):
         super().__init__(scene, inputs=[4,6,1], outputs=[5,2,6,1])
 
@@ -242,7 +243,6 @@ class DiffSamplerNode(AiNode):
             pipe.to(f"{gs.device.type}:{gpu_id}")
 
         seed = int(data["seed"])
-        print(seed)
         generator = torch.Generator(target_device).manual_seed(seed)
         latents = None
         args = {
@@ -289,6 +289,8 @@ class DiffSamplerNode(AiNode):
             latents, image = pipe.generate(**args)
             image = image[0]
         else:
+
+            print(f"[ UNISAMPLER GENERATING WITH ARGS: {args} ]")
             image = pipe(**args).images[0]
 
         if not keepinvram:

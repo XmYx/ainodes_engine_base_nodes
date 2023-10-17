@@ -32,7 +32,7 @@ class DiffSDSimplePipelineWidget(QDMNodeContentWidget):
             print(f"TORCH LOADER NODE: please download your favorite ckpt before Evaluating this node.")
 
 
-        self.create_combo_box(["txt2img", "img2img", "txt2img_cnet", "img2img_cnet", "txt2img_xl", "txt2img_xl_cnet", "img2img_xl"], "pipeline", spawn="pipe_select")
+        self.create_combo_box(["txt2img", "img2img", "txt2img_cnet", "img2img_cnet", "txt2img_xl", "img2img_xl", "txt2img_xl_cnet","img2img_xl_cnet",], "pipeline", spawn="pipe_select")
         self.create_main_layout(grid=1)
 
 @register_node(OP_NODE_DIFF_SIMPLE_PIPE)
@@ -46,14 +46,17 @@ class DiffSDPipelineNode(AiNode):
     NodeContent_class = DiffSDSimplePipelineWidget
     dim = (340, 460)
     output_data_ports = [0]
+
+    custom_input_socket_name = ["CONTROLNET", "EXEC"]
+
     def __init__(self, scene):
-        super().__init__(scene, inputs=[1], outputs=[4,1])
+        super().__init__(scene, inputs=[4,1], outputs=[4,1])
         self.pipe = None
     def evalImplementation_thread(self, index=0):
 
 
         isxl = self.content.xl.isChecked()
-
+        controlnet = self.getInputData(0)
 
         # scheduler_name = self.content.schedulers.currentText()
         # scheduler = SchedulerType(scheduler_name)
@@ -65,15 +68,30 @@ class DiffSDPipelineNode(AiNode):
         pipe_select = self.content.pipe_select.currentText()
 
         pipes = {"txt2img_xl":StableDiffusionXLPipeline,
-                 "img2img_xl":StableDiffusionXLImg2ImgPipeline}
+                 "img2img_xl":StableDiffusionXLImg2ImgPipeline,
+                 "txt2img_cnet":StableDiffusionControlNetPipeline,
+                 "img2img_cnet":StableDiffusionControlNetImg2ImgPipeline,
+                 "txt2img_xl_cnet":StableDiffusionXLControlNetPipeline,
+                 "img2img_xl_cnet":StableDiffusionControlNetImg2ImgPipeline}
+
+
 
         pipe_class = pipes.get(pipe_select, StableDiffusionXLPipeline)
 
+        args = {"torch_dtype":torch.float16}
+
+        if "cnet" in pipe_select:
+            args["controlnet"] = controlnet
+
         if not self.content.use_local_models.isChecked():
-            self.pipe = pipe_class.from_pretrained(model_name, torch_dtype=torch.float16)
+            args["pretrained_model_name_or_path"] = model_name
+            self.pipe = pipe_class.from_pretrained(**args)
         else:
             model_name = f"{gs.prefs.checkpoints}/{self.content.local_model.currentText()}"
-            self.pipe = pipe_class.from_single_file(model_name, torch_dtype=torch.float16)
+
+            args["pretrained_model_link_or_path"] = model_name
+
+            self.pipe = pipe_class.from_single_file(**args)
 
         if isinstance(self.pipe, StableDiffusionXLPipeline):
 

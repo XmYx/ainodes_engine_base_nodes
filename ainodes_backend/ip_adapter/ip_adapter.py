@@ -320,7 +320,7 @@ class IPAdapterPlusXL(IPAdapter):
         image_prompt_embeds = image_prompt_embeds.view(bs_embed * num_samples, seq_len, -1)
         uncond_image_prompt_embeds = uncond_image_prompt_embeds.repeat(1, num_samples, 1)
         uncond_image_prompt_embeds = uncond_image_prompt_embeds.view(bs_embed * num_samples, seq_len, -1)
-
+        self.pipe.to(self.device)
         with torch.inference_mode():
             prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds = self.pipe.encode_prompt(
                 prompt, num_images_per_prompt=num_samples, do_classifier_free_guidance=True,
@@ -329,14 +329,27 @@ class IPAdapterPlusXL(IPAdapter):
             negative_prompt_embeds = torch.cat([negative_prompt_embeds, uncond_image_prompt_embeds], dim=1)
 
         generator = torch.Generator(self.device).manual_seed(seed) if seed is not None else None
-        images = self.pipe.generate(
-            prompt_embeds=prompt_embeds,
-            negative_prompt_embeds=negative_prompt_embeds,
-            pooled_prompt_embeds=pooled_prompt_embeds,
-            negative_pooled_prompt_embeds=negative_pooled_prompt_embeds,
-            num_inference_steps=num_inference_steps,
-            generator=generator,
-            **kwargs,
-        )[1]
+
+        from diffusers import StableDiffusionXLPipeline
+        if isinstance(self.pipe, StableDiffusionXLPipeline):
+            images = self.pipe.generate(
+                prompt_embeds=prompt_embeds,
+                negative_prompt_embeds=negative_prompt_embeds,
+                pooled_prompt_embeds=pooled_prompt_embeds,
+                negative_pooled_prompt_embeds=negative_pooled_prompt_embeds,
+                num_inference_steps=num_inference_steps,
+                generator=generator,
+                **kwargs,
+            )[1]
+        else:
+            images = self.pipe(
+                prompt_embeds=prompt_embeds,
+                negative_prompt_embeds=negative_prompt_embeds,
+                pooled_prompt_embeds=pooled_prompt_embeds,
+                negative_pooled_prompt_embeds=negative_pooled_prompt_embeds,
+                num_inference_steps=num_inference_steps,
+                generator=generator,
+                **kwargs,
+            ).images
 
         return images

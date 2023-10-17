@@ -66,7 +66,7 @@ class DiffSDIpNode(AiNode):
             pipe.to("cuda")
 
         seed = secrets.randbelow(999999999999)
-        images = pipe.generate(pil_image=image, num_samples=1, num_inference_steps=30, seed=seed   )[0]
+        images = pipe.generate(pil_image=image, num_samples=1, num_inference_steps=30, seed=seed)[0]
         image = pil2tensor(images)
         del pipe
         return [[image]]

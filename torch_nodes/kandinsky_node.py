@@ -69,31 +69,19 @@ class KandinskyWidget(QDMNodeContentWidget):
 class KandinskyNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/v2/kandinsky.png"
     op_code = OP_NODE_KANDINSKY
-    op_title = "Kandinsky"
+    op_title = "Kandinsky 2.1"
     content_label_objname = "kandinsky_node"
     category = "aiNodes Base/Sampling"
-    def __init__(self, scene, inputs=[], outputs=[]):
+
+    dim = (256,850)
+    NodeContent_class = KandinskyWidget
+
+    def __init__(self, scene):
         super().__init__(scene, inputs=[5,5,6,1], outputs=[5,1])
-        self.content.button.clicked.connect(self.evalImplementation)
 
-        # Create a worker object
-    def initInnerClasses(self):
-        self.content = KandinskyWidget(self)
-        self.grNode = CalcGraphicsNode(self)
-        self.grNode.icon = self.icon
-        self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
-
-        self.grNode.height = 850
-        self.grNode.width = 256
-        self.content.setMinimumWidth(256)
-        self.content.setMinimumHeight(256)
-        self.seed = ""
-        self.content.seed_signal.connect(self.setSeed)
-        self.content.progress_signal.connect(self.setProgress)
-        self.progress_value = 0
-        self.content.eval_signal.connect(self.evalImplementation)
         self.content.text_signal.connect(self.set_prompt)
         self.busy = False
+        self.model = None
         self.task = None
         self.latent_rgb_factors = torch.tensor([
             #   R        G        B
@@ -102,10 +90,43 @@ class KandinskyNode(AiNode):
             [-0.158, 0.189, 0.264],  # L3
             [-0.184, -0.271, -0.473],  # L4
         ], dtype=torch.float, device='cpu')
+        self.seed = ""
+        self.content.seed_signal.connect(self.setSeed)
+        self.content.progress_signal.connect(self.setProgress)
+        self.progress_value = 0
+        self.loaded_kandinsky = ""
+
+
+
+        # Create a worker object
+    # def initInnerClasses(self):
+    #     self.content = KandinskyWidget(self)
+    #     self.grNode = CalcGraphicsNode(self)
+    #     self.grNode.icon = self.icon
+    #     self.grNode.thumbnail = QtGui.QImage(self.grNode.icon).scaled(64, 64, QtCore.Qt.KeepAspectRatio)
+    #
+    #     self.grNode.height = 850
+    #     self.grNode.width = 256
+    #     self.content.setMinimumWidth(256)
+    #     self.content.setMinimumHeight(256)
+    #     self.content.eval_signal.connect(self.evalImplementation)
 
     ##@QtCore.Slot(str)
     def set_prompt(self, text):
         self.content.prompt.setText(text)
+
+    def remove(self):
+        if self.model:
+            self.model.model.to("cpu")
+            self.model.clip_model.to("cpu")
+            self.model.image_encoder.to("cpu")
+            del self.model.model
+            del self.model.clip_model
+            del self.model.image_encoder
+            del self.model
+        from ai_nodes.ainodes_engine_base_nodes.ainodes_backend import torch_gc
+        torch_gc()
+        super().remove()
 
 
     def evalImplementation_thread(self, prompt_override=None, args=None, init_image=None):
@@ -116,13 +137,20 @@ class KandinskyNode(AiNode):
         else:
             task_type = 'inpainting'
 
-        if f"kandinsky" not in gs.models or gs.loaded_kandinsky != task_type:
+        if init_image is not None:
+            task_type = "img2img"
+
+        if self.model is None:
             print("[ Loading Kandinsky, please wait. ]")
             use_finetune = self.content.use_finetune.isChecked()
             flash = False if not self.content.flash_attn_avail else self.content.flash_attn.isChecked()
-            gs.models["kandinsky"] = get_kandinsky2_1('cuda', task_type=task_type, use_flash_attention=flash, use_finetune=use_finetune)
-            gs.loaded_kandinsky = task_type
-
+            #self.model = get_kandinsky2_1('cuda', task_type=task_type, use_flash_attention=flash, use_finetune=use_finetune)
+            from kandinsky2.kandinsky2_2_model import Kandinsky2_2
+            self.model = Kandinsky2_2(gs.device.type)
+            self.loaded_kandinsky = task_type
+        else:
+            print("[ Switching Kandinsky Task, please wait. ]")
+            self.model.switch_task(task_type)
 
         masks = self.getInputData(0)
         images = self.getInputData(1)
@@ -154,6 +182,9 @@ class KandinskyNode(AiNode):
         strength = self.content.strength.value()
         if prompt_override is not None:
             images = init_image
+
+            task_type = "text2img" if images == None else "img2img"
+
             h = args.H
             w = args.W
             if not self.content.force_values.isChecked():
@@ -165,77 +196,78 @@ class KandinskyNode(AiNode):
                 self.seed = args.seed
         torch.manual_seed(self.seed)
         print(f"[ KANDINSKY: seed:{self.seed} ]")
-        gs.models["kandinsky"].clip_model.to("cuda")
-        gs.models["kandinsky"].image_encoder.to("cuda")
+        # if self.model.clip_model.device != gs.device.type:
+        if hasattr(self.model, "clip_model"):
+            self.model.clip_model.to(gs.device.type)
+            self.model.image_encoder.to(gs.device.type)
 
-        if images is not None:
-            for image in images:
+        # print(f"[ KANDINSKY: {images} {task_type} {self.model.task_type}]")
 
-                if task_type == "text2img":
+        if task_type == "text2img":
+            return_pil_images = self.model.generate_text2img(
+                    prompt,
+                    negative_prior_prompt=n_p_prompt,
+                    negative_decoder_prompt=n_prompt,
+                    num_steps=num_steps,
+                    batch_size=1,
+                    guidance_scale=guidance_scale,
+                    h=h, w=w,
+                    sampler=sampler,
+                    prior_cf_scale=prior_cf_scale,
+                    prior_steps=str(prior_steps),
+                    callback=self.callback
 
-                    pil_img = tensor2pil(image)
-                    return_pil_images = gs.models["kandinsky"].generate_img2img(
-                        prompt,
-                        pil_img,
-                        strength=strength,
-                        num_steps=num_steps,
-                        batch_size=1,
-                        guidance_scale=guidance_scale,
-                        h=pil_img.size[1],
-                        w=pil_img.size[0],
-                        sampler=sampler,
-                        prior_cf_scale=prior_cf_scale,
-                        prior_steps=str(prior_steps),
-                        callback=self.callback
-                    )
-                else:
-                    pil_img = tensor2pil(image)
-                    img_mask = pixmap_to_tensor(masks[0]).convert("L")
-
-                    # Get the original dimensions
-                    #original_height, original_width = img_mask.size
-
-                    # Calculate the new dimensions
-                    #new_width = int(original_width // 8)
-                    #new_height = int(original_height // 8)
-
-                    # Resize the image
-                    resized_img_mask = img_mask.resize(pil_img.size)
-
-                    return_pil_images = gs.models["kandinsky"].generate_inpainting(prompt,
-                                                                                    pil_img,
-                                                                                    np.array(resized_img_mask),
-                                                                                    num_steps=num_steps,
-                                                                                    batch_size=1,
-                                                                                    guidance_scale=guidance_scale,
-                                                                                    h=pil_img.size[1],
-                                                                                    w=pil_img.size[0],
-                                                                                    sampler="ddim_sampler",
-                                                                                    prior_cf_scale=prior_cf_scale,
-                                                                                    prior_steps=str(prior_steps),
-                                                                                    negative_prior_prompt="",
-                                                                                    negative_decoder_prompt="",
-                    )
-        else:
-            return_pil_images = gs.models["kandinsky"].generate_text2img(
+                )
+        elif task_type == "img2img":
+            pil_img = tensor2pil(images)
+            return_pil_images = self.model.generate_img2img(
                 prompt,
-                negative_prior_prompt=n_p_prompt,
-                negative_decoder_prompt=n_prompt,
+                pil_img,
+                strength=strength,
                 num_steps=num_steps,
                 batch_size=1,
                 guidance_scale=guidance_scale,
-                h=h, w=w,
+                h=pil_img.size[1],
+                w=pil_img.size[0],
                 sampler=sampler,
                 prior_cf_scale=prior_cf_scale,
                 prior_steps=str(prior_steps),
                 callback=self.callback
-
             )
+        elif task_type == "inpaint":
+            pil_img = tensor2pil(images)
+            img_mask = pixmap_to_tensor(masks[0]).convert("L")
+
+            # Get the original dimensions
+            #original_height, original_width = img_mask.size
+
+            # Calculate the new dimensions
+            #new_width = int(original_width // 8)
+            #new_height = int(original_height // 8)
+
+            # Resize the image
+            resized_img_mask = img_mask.resize(pil_img.size)
+
+            return_pil_images = self.model.generate_inpainting(prompt,
+                                                                            pil_img,
+                                                                            np.array(resized_img_mask),
+                                                                            num_steps=num_steps,
+                                                                            batch_size=1,
+                                                                            guidance_scale=guidance_scale,
+                                                                            h=pil_img.size[1],
+                                                                            w=pil_img.size[0],
+                                                                            sampler="ddim_sampler",
+                                                                            prior_cf_scale=prior_cf_scale,
+                                                                            prior_steps=str(prior_steps),
+                                                                            negative_prior_prompt="",
+                                                                            negative_decoder_prompt="",
+            )
+
         for image in return_pil_images:
             tensor = pil2tensor(image)
             return_images.append(tensor)
         return_images = torch.stack(return_images, dim=0)
-        return return_images
+        return [return_images]
     def callback(self, tensors):
         i = tensors["i"]
 
@@ -262,16 +294,16 @@ class KandinskyNode(AiNode):
                             node.content.video.add_frame(frame, dump=node.content.dump_at.value())
 
 
-    ##@QtCore.Slot(object)
-    def onWorkerFinished(self, result, exec=True):
-        self.busy = False
-        #super().onWorkerFinished(None)
-        self.busy = False
-        self.markDirty(False)
-        self.markInvalid(False)
-        self.setOutput(0, result)
-        self.progress_value = 0
-        self.executeChild(output_index=1)
+    # ##@QtCore.Slot(object)
+    # def onWorkerFinished(self, result, exec=True):
+    #     self.busy = False
+    #     #super().onWorkerFinished(None)
+    #     self.busy = False
+    #     self.markDirty(False)
+    #     self.markInvalid(False)
+    #     self.setOutput(0, result)
+    #     self.progress_value = 0
+    #     self.executeChild(output_index=1)
 
     ##@QtCore.Slot()
     def setSeed(self):

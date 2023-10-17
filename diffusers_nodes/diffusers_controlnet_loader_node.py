@@ -94,7 +94,7 @@ class DiffusersControlNetNode(AiNode):
     icon = "ainodes_frontend/icons/base_nodes/v2/experimental.png"
     help_text = "Diffusers - "
     op_code = OP_NODE_DIFF_CONTROLNET
-    op_title = "Diffusers - ControlNet"
+    op_title = "Diffusers - ControlNet [deprecated]"
     content_label_objname = "diffusers_controlnet_node"
     category = "aiNodes Base/Diffusers"
     NodeContent_class = DiffusersControlNetWidget
