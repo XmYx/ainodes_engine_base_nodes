@@ -97,7 +97,7 @@ class LatentNode(AiNode):
             vae.first_stage_model.cuda()
             input_image = input_image.movedim(-1, 1).detach().clone()
             with torch.inference_mode():
-                samples = vae.encode_tiled_(vae, input_image)
+                samples = vae.encode_tiled_(input_image)
             vae.first_stage_model.cpu()
         else:
             samples = self.generate_latent()
@@ -120,7 +120,7 @@ class LatentNode(AiNode):
         result = {"samples":samples}
         if add_mask:
             result["noise_mask"] = noise_mask
-        print("will return", samples.shape)
+        #print("will return", samples.shape)
         return [result]
             #return self.value
 
