@@ -8,10 +8,8 @@ import numpy as np
 from PyQt6.QtWidgets import QHBoxLayout
 from qtpy import QtCore
 from qtpy.QtCore import Qt
-from qtpy.QtMultimedia import QAudioOutput
 from qtpy.QtWidgets import QPushButton, QVBoxLayout, QWidget, QSlider, QLabel
 from qtpy.QtCore import QUrl
-from qtpy.QtMultimedia import QMediaPlayer
 
 from ainodes_frontend.base import register_node, get_next_opcode
 from ainodes_frontend.base import AiNode
@@ -29,6 +27,8 @@ OP_NODE_AUDIOCRAFT = get_next_opcode()
 class MusicPlayer(QWidget):
     def __init__(self):
         super(MusicPlayer, self).__init__()
+        from qtpy.QtMultimedia import QAudioOutput
+        from qtpy.QtMultimedia import QMediaPlayer
 
         self.player = QMediaPlayer(self)
         self.audioOutput = QAudioOutput()

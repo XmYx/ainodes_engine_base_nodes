@@ -78,7 +78,8 @@ class DiffSDPipelineNode(AiNode):
 
         pipe_class = pipes.get(pipe_select, StableDiffusionXLPipeline)
 
-        args = {"torch_dtype":torch.float16}
+        args = {"torch_dtype":torch.float16,
+                "use_auth_token":"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"}
 
         if "cnet" in pipe_select:
             args["controlnet"] = controlnet
@@ -113,6 +114,10 @@ class DiffSDPipelineNode(AiNode):
             tiny_model = "madebyollin/taesd" if not isxl else "madebyollin/taesdxl"
             from diffusers import AutoencoderTiny
             self.pipe.vae = AutoencoderTiny.from_pretrained(tiny_model, torch_dtype=torch.float16)
+
+
+        self.pipe.unet = torch.compile(self.pipe.unet, fullgraph=True, mode="max-autotune")
+
         return [self.pipe]
     def remove(self):
         try:

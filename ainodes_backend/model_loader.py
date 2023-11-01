@@ -15,14 +15,14 @@ import yaml
 from omegaconf import OmegaConf
 from torch.nn.functional import silu
 
-from ldm.models.autoencoder import AutoencoderKL
-from ldm.modules.sub_quadratic_attention import OOM_EXCEPTION
+from ldm_ainodes.models.autoencoder import AutoencoderKL
+from ldm_ainodes.modules.sub_quadratic_attention import OOM_EXCEPTION
 from . import diffusers_convert, model_base
 from .chainner_models import model_loading
 #from .lora_loader import ModelPatcher
 from .sd_optimizations.sd_hijack import apply_optimizations
 from .torch_gc import torch_gc
-from ldm.util import instantiate_from_config, get_free_memory
+from ldm_ainodes.util import instantiate_from_config, get_free_memory
 from ainodes_frontend import singleton as gs
 
 from .ESRGAN import model as upscaler
@@ -30,7 +30,7 @@ from .ESRGAN import model as upscaler
 import torch
 from torch import nn
 import safetensors.torch
-import ldm.modules.diffusionmodules.model
+import ldm_ainodes.modules.diffusionmodules.model
 
 class UpscalerLoader(torch.nn.Module):
 

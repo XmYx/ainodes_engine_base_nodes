@@ -46,7 +46,7 @@ class LatentNode(AiNode):
     custom_input_socket_name = ["VAE", "LATENT", "IMAGE", "EXEC"]
 
     make_dirty = True
-    force_run = True
+    #force_run = True
 
     def __init__(self, scene):
 

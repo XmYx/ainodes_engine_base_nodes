@@ -11,6 +11,7 @@ from diffusers.models.controlnet import ControlNetOutput
 
 diffusers_models = [
     {"name": "XL BASE", "repo": "stabilityai/stable-diffusion-xl-base-1.0"},
+    {"name": "XL TINY", "repo": "segmind/SDXL-Mini"},
     {"name": "XL REFINER", "repo": "stabilityai/stable-diffusion-xl-refiner-1.0"},
     {"name": "CyberRealistic", "repo": "emilianJR/CyberRealistic_V3"},
     {"name": "segmind_tiny", "repo": "segmind/tiny-sd"},

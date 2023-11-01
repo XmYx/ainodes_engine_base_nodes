@@ -8,9 +8,9 @@ from enum import Enum
 
 #cond_cast_unet = getattr(devices, 'cond_cast_unet', lambda x: x)
 
-from ldm.modules.diffusionmodules.util import timestep_embedding
-from ldm.modules.diffusionmodules.openaimodel import UNetModel
-from ldm.modules.attention import BasicTransformerBlock
+from ldm_ainodes.modules.diffusionmodules.util import timestep_embedding
+from ldm_ainodes.modules.diffusionmodules.openaimodel import UNetModel
+from ldm_ainodes.modules.attention import BasicTransformerBlock
 from ainodes_frontend import singleton as gs
 
 def cond_cast_unet(input):

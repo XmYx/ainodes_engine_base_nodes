@@ -284,10 +284,11 @@ class DiffSamplerNode(AiNode):
         if isinstance(pipe, StableDiffusionXLPipeline):
             args["width"] = data["width"]
             args["height"] = data["height"]
+            latents = None
 
-
-            latents, image = pipe.generate(**args)
-            image = image[0]
+            #latents, image = pipe.generate(**args)
+            image = pipe(**args).images[0]
+            # image = image[0]
         else:
 
             print(f"[ UNISAMPLER GENERATING WITH ARGS: {args} ]")

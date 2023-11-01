@@ -52,6 +52,8 @@ class UpscalerNode(AiNode):
     content_label_objname = "torch_upscaler_node"
     category = "aiNodes Base/Upscalers"
 
+    make_dirty = True
+
     def __init__(self, scene):
         super().__init__(scene, inputs=[5,1], outputs=[5,1])
         self.loader = UpscalerLoader()

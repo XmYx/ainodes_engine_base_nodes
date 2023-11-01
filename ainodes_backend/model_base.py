@@ -1,7 +1,7 @@
 import torch
-from ldm.modules.diffusionmodules.openaimodel import UNetModel
-from ldm.modules.encoders.noise_aug_modules import CLIPEmbeddingNoiseAugmentation
-from ldm.modules.diffusionmodules.util import make_beta_schedule
+from ldm_ainodes.modules.diffusionmodules.openaimodel import UNetModel
+from ldm_ainodes.modules.encoders.noise_aug_modules import CLIPEmbeddingNoiseAugmentation
+from ldm_ainodes.modules.diffusionmodules.util import make_beta_schedule
 import numpy as np
 
 class BaseModel(torch.nn.Module):

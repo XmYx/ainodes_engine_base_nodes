@@ -8,8 +8,8 @@ from .extra_samplers import uni_pc
 import torch
 import contextlib
 #from . import model_management
-from ldm.models.diffusion.ddim import DDIMSampler
-from ldm.modules.diffusionmodules.util import make_ddim_timesteps
+from ldm_ainodes.models.diffusion.ddim import DDIMSampler
+from ldm_ainodes.modules.diffusionmodules.util import make_ddim_timesteps
 from ainodes_frontend import singleton as gs
 from .model_wrap import CFGDenoiserWithGrad
 

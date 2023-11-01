@@ -64,7 +64,7 @@ class ImagePreviewNode(AiNode):
     category = "aiNodes Base/Image"
     output_data_ports = [0]
     NodeContent_class = ImagePreviewWidget
-    dim = (340, 460)
+    dim = (450, 460)
 
     make_dirty = True
 

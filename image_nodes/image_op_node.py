@@ -127,6 +127,7 @@ class ImageOpNode(AiNode):
     op_title = "Image Operators"
     content_label_objname = "image_op_node"
     category = "aiNodes Base/Image"
+
     make_dirty = True
 
 
@@ -150,20 +151,19 @@ class ImageOpNode(AiNode):
 
     #@QtCore.Slot()
     def evalImplementation_thread(self):
+        tensors = None
+        mask = None
         return_pixmap = None
         return_tensor_list = []
+        tensors = self.getInputData(0)
+        method = self.content.dropdown.currentText()
+        if tensors is not None:
+            for tensor in tensors:
+                return_tensor, mask = self.image_op(tensor, method)
+                return_tensor_list.append(return_tensor)
+            tensors = torch.stack(return_tensor_list)
 
-        if self.getInput(0) != None:
-            node, index = self.getInput(0)
-            if node != None:
-                tensor_list = node.getOutput(index)
-                method = self.content.dropdown.currentText()
-                for tensor in tensor_list:
-                    return_tensor, mask = self.image_op(tensor, method)
-                    return_tensor_list.append(return_tensor)
-
-
-        return [torch.stack(return_tensor_list), mask]
+        return [tensors, mask]
 
 
     def image_op(self, pixmap, method):

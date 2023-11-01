@@ -6,7 +6,7 @@ import importlib
 import torch
 from torch import einsum
 
-from ldm.util import default
+from ldm_ainodes.util import default
 from einops import rearrange
 
 #from backend.hypernetworks.modules import shared

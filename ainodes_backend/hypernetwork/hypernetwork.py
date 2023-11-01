@@ -22,7 +22,7 @@ from ..sd_optimizations import sd_hijack  # sd_hijack_optimizations, sd_hijack
 from ..textual_inversion import dataset
 from ..textual_inversion.learn_schedule import LearnRateScheduler
 from ainodes_frontend import singleton
-from ldm.util import default, instantiate_from_config
+from ldm_ainodes.util import default, instantiate_from_config
 
 gs = singleton
 

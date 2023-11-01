@@ -19,31 +19,31 @@ from .. import devices
 
 
 #from backend.hypernetworks import hyper_jack
-import ldm.modules.attention
-import ldm.modules.diffusionmodules.model
-import ldm.models.diffusion.ddpm
-from ldm.util import instantiate_from_config
+import ldm_ainodes.modules.attention
+import ldm_ainodes.modules.diffusionmodules.model
+import ldm_ainodes.models.diffusion.ddpm
+from ldm_ainodes.util import instantiate_from_config
 
-attention_CrossAttention_forward = ldm.modules.attention.CrossAttention.forward
-diffusionmodules_model_nonlinearity = ldm.modules.diffusionmodules.model.nonlinearity
-diffusionmodules_model_AttnBlock_forward = ldm.modules.diffusionmodules.model.AttnBlock.forward
-util_instantiate_from_config = ldm.util.instantiate_from_config
-ddpm_LatentDiffusion_init = ldm.models.diffusion.ddpm.LatentDiffusion.__init__
+attention_CrossAttention_forward = ldm_ainodes.modules.attention.CrossAttention.forward
+diffusionmodules_model_nonlinearity = ldm_ainodes.modules.diffusionmodules.model.nonlinearity
+diffusionmodules_model_AttnBlock_forward = ldm_ainodes.modules.diffusionmodules.model.AttnBlock.forward
+util_instantiate_from_config = ldm_ainodes.util.instantiate_from_config
+ddpm_LatentDiffusion_init = ldm_ainodes.models.diffusion.ddpm.LatentDiffusion.__init__
 
 def undo_optimizations():
 
-    ldm.modules.attention.CrossAttention.forward = attention_CrossAttention_forward
-    ldm.modules.diffusionmodules.model.nonlinearity = diffusionmodules_model_nonlinearity
-    ldm.modules.diffusionmodules.model.AttnBlock.forward = diffusionmodules_model_AttnBlock_forward
-    ldm.util.instantiate_from_config = instantiate_from_config
-    ldm.models.diffusion.ddpm.LatentDiffusion.__init__ = ddpm_LatentDiffusion_init
+    ldm_ainodes.modules.attention.CrossAttention.forward = attention_CrossAttention_forward
+    ldm_ainodes.modules.diffusionmodules.model.nonlinearity = diffusionmodules_model_nonlinearity
+    ldm_ainodes.modules.diffusionmodules.model.AttnBlock.forward = diffusionmodules_model_AttnBlock_forward
+    ldm_ainodes.util.instantiate_from_config = instantiate_from_config
+    ldm_ainodes.models.diffusion.ddpm.LatentDiffusion.__init__ = ddpm_LatentDiffusion_init
 
 def add_training_optimizations():
-    ldm.modules.diffusionmodules.model.nonlinearity = silu
-    ldm.modules.attention.CrossAttention.forward = sd_hijack_optimizations.split_cross_attention_forward
-    ldm.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.cross_attention_attnblock_forward
- #   ldm.util.instantiate_from_config = hyper_jack.instantiate_from_config
- #   ldm.models.diffusion.ddpm.LatentDiffusion.__init__ = hyper_jack.LatentDiffusion_init__
+    ldm_ainodes.modules.diffusionmodules.model.nonlinearity = silu
+    ldm_ainodes.modules.attention.CrossAttention.forward = sd_hijack_optimizations.split_cross_attention_forward
+    ldm_ainodes.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.cross_attention_attnblock_forward
+ #   ldm_ainodes.util.instantiate_from_config = hyper_jack.instantiate_from_config
+ #   ldm_ainodes.models.diffusion.ddpm.LatentDiffusion.__init__ = hyper_jack.LatentDiffusion_init__
 
 def list_hypernetworks(path):
     res = {}

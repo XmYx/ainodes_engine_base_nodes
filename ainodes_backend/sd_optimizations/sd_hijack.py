@@ -6,44 +6,44 @@ from torch import optim, autocast
 from torch.nn.functional import silu
 #from transformers import CLIPModel, CLIPTokenizer, CLIPTextModel, CLIPProcessor
 
-import ldm.modules.attention
-import ldm.modules.diffusionmodules.model
-import ldm.modules.diffusionmodules.util
+import ldm_ainodes.modules.attention
+import ldm_ainodes.modules.diffusionmodules.model
+import ldm_ainodes.modules.diffusionmodules.util
 from ..devices import torch_gc, choose_torch_device
 from . import sd_hijack_optimizations, sd_hijack_unet
 from ..textual_inversion import prompt_parser, textual_inversion
 
-ddim_timesteps = ldm.modules.diffusionmodules.util.make_ddim_timesteps
-attention_CrossAttention_forward = ldm.modules.attention.CrossAttention.forward
-diffusionmodules_model_nonlinearity = ldm.modules.diffusionmodules.model.nonlinearity
-diffusionmodules_model_AttnBlock_forward = ldm.modules.diffusionmodules.model.AttnBlock.forward
+ddim_timesteps = ldm_ainodes.modules.diffusionmodules.util.make_ddim_timesteps
+attention_CrossAttention_forward = ldm_ainodes.modules.attention.CrossAttention.forward
+diffusionmodules_model_nonlinearity = ldm_ainodes.modules.diffusionmodules.model.nonlinearity
+diffusionmodules_model_AttnBlock_forward = ldm_ainodes.modules.diffusionmodules.model.AttnBlock.forward
 
 from ainodes_frontend import singleton
 
 gs = singleton
 gs.embeddings_path = ""
 
-import ldm.modules.attention
-import ldm.modules.diffusionmodules.model
-import ldm.modules.diffusionmodules.openaimodel
-import ldm.models.diffusion.ddim
-import ldm.models.diffusion.plms
-import ldm.modules.encoders.modules
+import ldm_ainodes.modules.attention
+import ldm_ainodes.modules.diffusionmodules.model
+import ldm_ainodes.modules.diffusionmodules.openaimodel
+import ldm_ainodes.models.diffusion.ddim
+import ldm_ainodes.models.diffusion.plms
+import ldm_ainodes.modules.encoders.modules
 
-attention_CrossAttention_forward = ldm.modules.attention.CrossAttention.forward
-diffusionmodules_model_nonlinearity = ldm.modules.diffusionmodules.model.nonlinearity
-diffusionmodules_model_AttnBlock_forward = ldm.modules.diffusionmodules.model.AttnBlock.forward
+attention_CrossAttention_forward = ldm_ainodes.modules.attention.CrossAttention.forward
+diffusionmodules_model_nonlinearity = ldm_ainodes.modules.diffusionmodules.model.nonlinearity
+diffusionmodules_model_AttnBlock_forward = ldm_ainodes.modules.diffusionmodules.model.AttnBlock.forward
 
 # new memory efficient cross attention blocks do not support hypernets and we already
 # have memory efficient cross attention anyway, so this disables SD2.0's memory efficient cross attention
-ldm.modules.attention.MemoryEfficientCrossAttention = ldm.modules.attention.CrossAttention
-#ldm.modules.attention.BasicTransformerBlock.ATTENTION_MODES["softmax-xformers"] = ldm.modules.attention.CrossAttention
+ldm_ainodes.modules.attention.MemoryEfficientCrossAttention = ldm_ainodes.modules.attention.CrossAttention
+#ldm_ainodes.modules.attention.BasicTransformerBlock.ATTENTION_MODES["softmax-xformers"] = ldm_ainodes.modules.attention.CrossAttention
 
 
 # silence new console spam from SD2
-ldm.modules.attention.print = lambda *args: None
-ldm.modules.diffusionmodules.model.print = lambda *args: None
-orig_linear = ldm.modules.diffusionmodules.model.nonlinearity
+ldm_ainodes.modules.attention.print = lambda *args: None
+ldm_ainodes.modules.diffusionmodules.model.print = lambda *args: None
+orig_linear = ldm_ainodes.modules.diffusionmodules.model.nonlinearity
 
 valid_optimizations = ["sdp", "sdp_quick", "sdp-no-mem", "doggetx"]
 
@@ -56,45 +56,45 @@ def apply_optimizations(style=""):
         return
     if style == "":
         hijack_style = "sdp"
-    ldm.modules.diffusionmodules.model.nonlinearity = silu
-    ldm.modules.diffusionmodules.openaimodel.th = sd_hijack_unet.th
+    ldm_ainodes.modules.diffusionmodules.model.nonlinearity = silu
+    ldm_ainodes.modules.diffusionmodules.openaimodel.th = sd_hijack_unet.th
 
     if hijack_style == 'xformers':
         print("Applying xformers cross attention optimization.")
         if gs.system.xformer == True:
             if not gs.xformers_not_available:
-                ldm.modules.attention.CrossAttention.forward = sd_hijack_optimizations.xformers_attention_forward
-                ldm.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.xformers_attnblock_forward
+                ldm_ainodes.modules.attention.CrossAttention.forward = sd_hijack_optimizations.xformers_attention_forward
+                ldm_ainodes.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.xformers_attnblock_forward
     elif hijack_style == 'sdp':
         print("Applying scaled dot product cross attention optimization.")
-        ldm.modules.attention.CrossAttention.forward = sd_hijack_optimizations.scaled_dot_product_attention_forward
-        ldm.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.sdp_attnblock_forward
+        ldm_ainodes.modules.attention.CrossAttention.forward = sd_hijack_optimizations.scaled_dot_product_attention_forward
+        ldm_ainodes.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.sdp_attnblock_forward
     elif hijack_style == 'sdp_quick':
         print("Applying scaled dot product cross attention optimization (without memory efficient attention).")
-        ldm.modules.attention.CrossAttention.forward = sd_hijack_optimizations.scaled_dot_product_no_mem_attention_forward
-        ldm.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.sdp_no_mem_attnblock_forward
+        ldm_ainodes.modules.attention.CrossAttention.forward = sd_hijack_optimizations.scaled_dot_product_no_mem_attention_forward
+        ldm_ainodes.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.sdp_no_mem_attnblock_forward
         optimization_method = 'sdp-no-mem'
     elif hijack_style == 'doggetx':
         print("Applying cross attention optimization (Doggettx).")
-        ldm.modules.attention.CrossAttention.forward = sd_hijack_optimizations.split_cross_attention_forward
-        ldm.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.cross_attention_attnblock_forward
+        ldm_ainodes.modules.attention.CrossAttention.forward = sd_hijack_optimizations.split_cross_attention_forward
+        ldm_ainodes.modules.diffusionmodules.model.AttnBlock.forward = sd_hijack_optimizations.cross_attention_attnblock_forward
         optimization_method = 'Doggettx'
 
     #print('hijack util')
-    #ldm.modules.diffusionmodules.util.make_ddim_timesteps = hijack_util.make_ddim_timesteps
+    #ldm_ainodes.modules.diffusionmodules.util.make_ddim_timesteps = hijack_util.make_ddim_timesteps
     #print(hijack_util.make_ddim_timesteps)
-    #print(ldm.modules.diffusionmodules.util.make_ddim_timesteps)
+    #print(ldm_ainodes.modules.diffusionmodules.util.make_ddim_timesteps)
 
 
 def undo_optimizations():
     #from ..hypernetwork import hypernetwork
-    ldm.modules.diffusionmodules.model.nonlinearity = orig_linear
+    ldm_ainodes.modules.diffusionmodules.model.nonlinearity = orig_linear
 
-    ldm.modules.attention.CrossAttention.forward = attention_CrossAttention_forward
-    ldm.modules.diffusionmodules.model.nonlinearity = diffusionmodules_model_nonlinearity
-    ldm.modules.diffusionmodules.model.AttnBlock.forward = diffusionmodules_model_AttnBlock_forward
+    ldm_ainodes.modules.attention.CrossAttention.forward = attention_CrossAttention_forward
+    ldm_ainodes.modules.diffusionmodules.model.nonlinearity = diffusionmodules_model_nonlinearity
+    ldm_ainodes.modules.diffusionmodules.model.AttnBlock.forward = diffusionmodules_model_AttnBlock_forward
 
-    #ldm.modules.diffusionmodules.util.make_ddim_timesteps = ddim_timesteps
+    #ldm_ainodes.modules.diffusionmodules.util.make_ddim_timesteps = ddim_timesteps
 
 
 def get_target_prompt_token_count(token_count):

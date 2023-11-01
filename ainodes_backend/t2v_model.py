@@ -39,11 +39,11 @@ except:
         """
         pass
 
-from ldm.modules.diffusionmodules.model import Decoder, Encoder
-from ldm.modules.distributions.distributions import DiagonalGaussianDistribution
+from ldm_ainodes.modules.diffusionmodules.model import Decoder, Encoder
+from ldm_ainodes.modules.distributions.distributions import DiagonalGaussianDistribution
 
 DEFAULT_MODEL_REVISION = None
-from ldm.util import instantiate_from_config
+from ldm_ainodes.util import instantiate_from_config
 class Invoke(object):
     KEY = 'invoked_by'
     PRETRAINED = 'from_pretrained'

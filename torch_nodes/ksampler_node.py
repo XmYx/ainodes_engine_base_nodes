@@ -180,6 +180,9 @@ class KSamplerNode(AiNode):
         if self.content.iterate_seed.isChecked() == True:
             self.content.seed_signal.emit()
             seed += 1
+
+        gs.seed = seed
+
         steps = self.content.steps.value()
         cfg = self.content.guidance_scale.value()
         sampler_name = self.content.sampler.currentText()
@@ -187,16 +190,19 @@ class KSamplerNode(AiNode):
         start_step = 0
         denoise = self.content.denoise.value()
         force_full_denoise = self.content.force_denoise.isChecked()
+        last_step = steps
         if cond_override:
             cond = cond_override[0]
             n_cond = cond_override[1]
             denoise = 1.0 if args.strength == 0 or not args.use_init else args.strength
-            force_full_denoise = True if denoise == 1.0 else False
+            force_full_denoise = True # if denoise == 1.0 else False
             latent = {"samples": latent_override}
             seed = args.seed
             steps = args.steps
             cfg = args.scale
             start_step = 0
+
+            last_step = int((1 - denoise) * steps) + 1 if denoise != 1.0 else steps
             # print("Generating using override seed: [", seed, "]", denoise)
 
         if data is not None:
@@ -207,7 +213,9 @@ class KSamplerNode(AiNode):
                 seed = args.seed
                 steps = args.steps
                 cfg = args.scale
-            force_full_denoise = True if denoise == 1.0 else False
+            force_full_denoise = True #  if denoise == 1.0 else False
+            last_step = int((1 - denoise) * steps) + 1 if denoise != 1.0 else steps
+
             start_step = 0
             # print(f"Using strength from data: {denoise}")
         if cond is not None:
@@ -228,7 +236,7 @@ class KSamplerNode(AiNode):
                     print(f"TAESD enabled, but models/vae/{taesd_decoder_version} was not found, switching to simple RGB Preview")
                     self.preview_mode = "quick-rgb"
 
-            print(f"[ SEED: {seed} ]")
+            print(f"[ SEED: {seed} LAST STEP:{last_step} DENOISE:{denoise}]")
             from nodes import common_ksampler as ksampler
             sample = ksampler(model=unet,
                                      seed=seed,
@@ -242,7 +250,7 @@ class KSamplerNode(AiNode):
                                      denoise=denoise,
                                      disable_noise=self.content.disable_noise.isChecked(),
                                      start_step=start_step,
-                                     last_step=steps,
+                                     last_step=last_step,
                                      force_full_denoise=force_full_denoise)
                                      # callback=self.callback)
             # sample = common_ksampler(model=unet,
@@ -377,9 +385,8 @@ class KSamplerNode(AiNode):
 
 def get_fixed_seed(seed):
     if seed is None or seed == '':
-        sign = random.choice([-1, 1])
-        value = secrets.randbelow(999999999999999999)
-        return sign * value
+        value = secrets.randbelow(18446744073709551615)
+        return value
 
 def enable_misc_optimizations():
     torch.backends.cudnn.allow_tf32 = True
