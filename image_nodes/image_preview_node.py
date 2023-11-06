@@ -47,12 +47,12 @@ class ImagePreviewWidget(QDMNodeContentWidget):
 
         self.start_stop = QtWidgets.QPushButton("Play / Pause")
         checkbox_layout.addWidget(self.start_stop)
-
+        self.widget_list.append(checkbox_layout)
 
         self.create_main_layout()
-
-        # Add the checkbox_layout to the main layout
-        self.main_layout.addLayout(checkbox_layout)
+        #
+        # # Add the checkbox_layout to the main layout
+        # self.main_layout.addLayout(checkbox_layout)
 
 
 @register_node(OP_NODE_IMG_PREVIEW)
