@@ -17,10 +17,11 @@ from torch.nn.functional import silu
 
 from ldm.models.autoencoder import AutoencoderKL
 from ldm.modules.sub_quadratic_attention import OOM_EXCEPTION
+
 from . import diffusers_convert, model_base
 from .chainner_models import model_loading
 #from .lora_loader import ModelPatcher
-from .sd_optimizations.sd_hijack import apply_optimizations
+#from .sd_optimizations.sd_hijack import apply_optimizations
 from .torch_gc import torch_gc
 from ldm.util import instantiate_from_config, get_free_memory
 from ainodes_frontend import singleton as gs
@@ -183,8 +184,8 @@ class ModelLoader(torch.nn.Module):
         #     torch.backends.cuda.matmul.allow_tf32 = True
         #     torch.backends.cudnn.allow_tf32 = True
         # apply_optimizations(style)
-        if style != "None":
-            apply_optimizations(style)
+        # if style != "None":
+        #     apply_optimizations(style)
 
         return ModelPatcher(model), clip, vae
         # gs.models["sd"] = ModelPatcher(model)
