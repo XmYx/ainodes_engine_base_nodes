@@ -21,7 +21,7 @@ from .. import devices
 #from backend.hypernetworks import hyper_jack
 import ldm_ainodes.modules.attention
 import ldm_ainodes.modules.diffusionmodules.model
-import ldm_ainodes.models.diffusion.ddpm
+# import ldm_ainodes.models.diffusion.ddpm
 from ldm_ainodes.util import instantiate_from_config
 
 attention_CrossAttention_forward = ldm_ainodes.modules.attention.CrossAttention.forward

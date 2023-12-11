@@ -11,7 +11,7 @@ from ainodes_frontend.node_engine.node_content_widget import QDMNodeContentWidge
 
 
 from ainodes_frontend import singleton as gs
-from ..ainodes_backend.sd_optimizations.sd_hijack import valid_optimizations
+#from ..ainodes_backend.sd_optimizations.sd_hijack import valid_optimizations
 
 OP_NODE_TORCH_LOADER = get_next_opcode()
 
@@ -47,7 +47,7 @@ class TorchLoaderWidget(QDMNodeContentWidget):
         self.vae_dropdown = self.create_combo_box(vae_files, "Vae")
         self.vae_dropdown.addItem("default")
         self.vae_dropdown.setCurrentText("default")
-        self.optimization = self.create_combo_box(["None"] + valid_optimizations, "LDM Optimization")
+        self.optimization = self.create_combo_box(["None"], "LDM Optimization")
 
         self.force_reload = self.create_check_box("Force Reload")
 

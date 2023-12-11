@@ -14,7 +14,7 @@ from ldm_ainodes.modules.diffusionmodules.util import (
 
 from ldm_ainodes.modules.attention import SpatialTransformer
 from ldm_ainodes.modules.diffusionmodules.openaimodel import UNetModel, TimestepEmbedSequential, ResBlock, Downsample, AttentionBlock
-from ldm_ainodes.models.diffusion.ddpm import LatentDiffusion
+# from ldm_ainodes.models.diffusion.ddpm import LatentDiffusion
 from ldm_ainodes.util import log_txt_as_img, exists, instantiate_from_config
 
 

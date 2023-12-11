@@ -2,8 +2,7 @@ from types import SimpleNamespace
 
 import torch
 
-from deforum.rng import rng_philox
-
+from ai_nodes.ainodes_engine_base_nodes.ainodes_backend.rng import rng_philox
 
 
 class Devices:
